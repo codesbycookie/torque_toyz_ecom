@@ -8,7 +8,8 @@ reg add "HKCU\Console" /v VirtualTerminalLevel /t REG_DWORD /d 1 /f >nul 2>&1
 
 set ROOT_DIR=%~dp0
 set SCRIPTS_DIR=%ROOT_DIR%scripts\
-set FRONTEND_DIR=%ROOT_DIR%frontend
+set ADMIN_DIR=%ADMIN_DIR%admin
+set CUSTOMER_DIR=%ROOT_DIR%customer
 set BACKEND_DIR=%ROOT_DIR%backend
 
 echo(
@@ -23,8 +24,14 @@ if not exist "%BACKEND_DIR%" (
     exit /b 1
 )
 
-if not exist "%FRONTEND_DIR%" (
-    echo [ERROR] frontend directory not found at: %FRONTEND_DIR%
+if not exist "%CUSTOMER_DIR%" (
+    echo [ERROR] frontend directory not found at: %CUSTOMER_DIR%
+    pause
+    exit /b 1
+)
+
+if not exist "%ADMIN_DIR%" (
+    echo [ERROR] frontend directory not found at: %ADMIN_DIR%
     pause
     exit /b 1
 )
@@ -35,8 +42,14 @@ if not exist "%SCRIPTS_DIR%run-backend.bat" (
     exit /b 1
 )
 
-if not exist "%SCRIPTS_DIR%run-frontend.bat" (
-    echo [ERROR] scripts\run-frontend.bat not found.
+if not exist "%SCRIPTS_DIR%run-admin.bat" (
+    echo [ERROR] scripts\run-admin.bat not found.
+    pause
+    exit /b 1
+)
+
+if not exist "%SCRIPTS_DIR%run-customer.bat" (
+    echo [ERROR] scripts\run-customer.bat not found.
     pause
     exit /b 1
 )
@@ -46,8 +59,11 @@ start "BACKEND" cmd /k "%SCRIPTS_DIR%run-backend.bat"
 
 timeout /t 1 /nobreak >nul
 
-echo Launching FRONTEND terminal...
-start "FRONTEND" cmd /k "%SCRIPTS_DIR%run-frontend.bat"
+echo Launching ADMIN terminal...
+start "ADMIN" cmd /k "%SCRIPTS_DIR%run-admin.bat"
+
+echo Launching CUSTOMER terminal...
+start "CUSTOMER" cmd /k "%SCRIPTS_DIR%run-customer.bat"
 
 echo(
 echo Both terminals launched. Check the new windows for logs.

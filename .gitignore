@@ -1,7 +1,12 @@
 backend/node_modules
 backend/.env
 
-frontend/node_modules
-frontend/.env
+admin/node_modules
+admin/.env
+
+customer/node_modules
+customer/.env
+
+
 gitstats.py
 git_summary.csv
