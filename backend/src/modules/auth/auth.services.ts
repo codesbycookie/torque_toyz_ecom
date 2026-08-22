@@ -1,4 +1,3 @@
-import bcrypt from 'bcryptjs';
 import { Types } from 'mongoose';
 
 import User from '@db/models/user.model.ts';
@@ -25,23 +24,18 @@ interface ReturnedUser {
   [key: string]: any;
 }
 
-const validatePassword = async (raw: string, hashed: string) => {
-  const match = await bcrypt.compare(raw, hashed);
-  if (!match) throw new ApiError(401, ERROR.INVALID_PASSWORD);
-};
-
 export const login = async (loginId: string, password?: string) => {
   ensureFields({ loginId, password });
 
-  const user: any = await User.findOne({ login_id: loginId }).select('+password');
+  const user = await User.findByLoginId(loginId);
   if (!user) throw new ApiError(404, ERROR.USER_NOT_FOUND);
-
-  const role: Role = user.role;
 
   if (!user.active) throw new ApiError(403, ERROR.USER_INACTIVE);
 
-  await validatePassword(password!, user.password);
+  const isMatch = await User.comparePassword(password!, user.password);
+  if (!isMatch) throw new ApiError(401, ERROR.INVALID_PASSWORD);
 
+  const role: Role = user.role;
   const payload = buildPayload(user, role, loginId);
 
   return {
@@ -64,8 +58,8 @@ export const adminResetPassword = async (data: {
   const user = await User.findById(data.targetId);
   if (!user) throw new ApiError(404, ERROR.TARGET_NOT_FOUND);
 
-  (user as any).password = data.newPassword;
-  await (user as any).save();
+  user.password = data.newPassword;
+  await user.save();
 
   return { message: SUCCESS.PASSWORD_RESET };
 };
@@ -77,14 +71,14 @@ export const changePassword = async (data: {
 }) => {
   ensureFields(data);
 
-  const user = await User.findById(data.userId).select('+password');
+  const user = await User.findById(data.userId);
   if (!user) throw new ApiError(404, ERROR.USER_NOT_FOUND);
 
-  const valid = await bcrypt.compare(data.currentPassword, (user as any).password);
-  if (!valid) throw new ApiError(401, ERROR.CURRENT_PASSWORD_INVALID);
+  const isMatch = await User.comparePassword(data.currentPassword, user.password);
+  if (!isMatch) throw new ApiError(401, ERROR.CURRENT_PASSWORD_INVALID);
 
-  (user as any).password = data.newPassword;
-  await (user as any).save();
+  user.password = data.newPassword;
+  await user.save();
 
   return { message: SUCCESS.PASSWORD_CHANGED };
 };
@@ -101,10 +95,7 @@ export const getCurrentUser = async (token: string): Promise<ReturnedUser> => {
 
   const { id, role } = decoded;
 
-  const user = await User.findById(id)
-    .select('-password')
-    .lean();
-
+  const user = await User.findById(id).select('-password').lean();
   if (!user) throw new ApiError(404, ERROR.USER_NOT_FOUND);
 
   return {
@@ -122,10 +113,10 @@ export const verifyPassword = async (data: {
   userId: string;
   password: string;
 }): Promise<{ verified: boolean; message: string }> => {
-  const user = await User.findById(data.userId).select('+password');
+  const user = await User.findById(data.userId);
   if (!user) throw new ApiError(404, ERROR.USER_NOT_FOUND);
 
-  const match = await bcrypt.compare(data.password, (user as any).password);
+  const match = await User.comparePassword(data.password, user.password);
 
   return match
     ? { verified: true, message: SUCCESS.VERIFICATION_SUCCESS }

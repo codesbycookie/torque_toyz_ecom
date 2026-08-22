@@ -1,5 +1,5 @@
 import { Types } from 'mongoose';
-import { Role } from '@typings/auth.types.ts';
+import { Role } from '@typings/auth.types.js';
 
 const ROLE = { ADMIN: 'admin' } as const;
 
@@ -28,13 +28,6 @@ const toObjectId = (value?: string | Types.ObjectId | null) => {
   return null;
 };
 
-const getVisibility = (role?: Role) =>
-  role === ROLE.ADMIN ? 'all' : 'active-only';
+const getVisibility = (role?: Role) => (role === ROLE.ADMIN ? 'all' : 'active-only');
 
-export {
-  UPDATE_OPTIONS,
-  SOFT_DELETE,
-  RETRIEVE,
-  toObjectId,
-  getVisibility,
-};
+export { UPDATE_OPTIONS, SOFT_DELETE, RETRIEVE, toObjectId, getVisibility };

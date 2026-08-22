@@ -4,6 +4,6 @@ import { IUser } from '@db/models/user.model.ts';
 export const userFilterConfig: FilterConfig<IUser> = {
   searchable: ['name', 'login_id', 'email', 'phone'],
   filterable: ['role', 'active', 'deleted'],
-  sortable: ['name', 'login_id', 'createdAt', 'updatedAt', 'active', 'email', 'phone', 'role'],
+  sortable: ['name', 'login_id', 'createdAt', 'active'],
   defaultSort: 'name',
 };
