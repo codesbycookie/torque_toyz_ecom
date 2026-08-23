@@ -1,31 +1,42 @@
-
 'use client';
+
 import { useEffect } from 'react';
-import { Sidebar, SidebarBody, SidebarLink } from '@/components/ui/sidebar';
+import {
+    Sidebar,
+    SidebarBody,
+    SidebarLink,
+} from '@/components/ui/sidebar';
 import { cn } from '@/lib/utils';
 import { Link, Outlet, useLocation } from 'react-router-dom';
 import { CommandMenu } from './globalcommand';
 import { Search } from 'lucide-react';
 import { useUI } from '@/core/contexts/ui.context';
 import { camelToTitle } from '@/core/utils/helper.utils';
+import { appRoutes } from '@/core/router/routes';
 
-export default function Layout({ routes, logoutComponent }) {
+export default function Layout() {
     const {
         setCommandOpen,
-        role,
         sidebarOpen,
-        setOpenLogout,
         setSidebarOpen,
         commandOpen,
         commands,
     } = useUI();
+
     const location = useLocation();
 
-    const currentRoute = routes.find((r) => location.pathname === r.path) || null;
+    /*
+     * Use routes directly from your route configuration.
+     * No auth / role required.
+     */
+    const routes = appRoutes;
+
+    const currentRoute =
+        routes.find((route) => route.path === location.pathname) || null;
 
     useEffect(() => {
         setSidebarOpen(false);
-    }, [location.pathname]);
+    }, [location.pathname, setSidebarOpen]);
 
     return (
         <div
@@ -33,59 +44,73 @@ export default function Layout({ routes, logoutComponent }) {
                 'mx-auto flex w-full flex-1 flex-col overflow-hidden rounded-md border border-neutral-200 bg-gray-100 md:flex-row dark:border-neutral-700 dark:bg-neutral-800 h-[100vh]'
             )}
         >
-            {}
             <Sidebar open={sidebarOpen} setOpen={setSidebarOpen}>
                 <SidebarBody className="justify-between gap-10">
                     <div className="flex flex-1 flex-col overflow-x-hidden overflow-y-auto scrollbar-none">
-                        {sidebarOpen ? <Logo role={role}/> : <LogoIcon />}
 
-                        
+                        {/* Logo */}
+                        {sidebarOpen ? <Logo /> : <LogoIcon />}
 
+                        {/* Navigation */}
                         <div className="mt-8 flex flex-col gap-2">
-                            {}
                             {routes.map((route) => (
-                                <SidebarLink key={route.path} link={route} />
+                                <SidebarLink
+                                    key={route.path}
+                                    link={{
+                                        label: route.title || camelToTitle(
+                                            route.path
+                                                ?.replace(/^\/+/, '')
+                                                .split('/')
+                                                .pop() || ''
+                                        ),
+                                        path: route.path,
+                                        icon: route.icon,
+                                    }}
+                                />
                             ))}
-
-                            <SidebarLink
-                                className="hover:text-destructive"
-                                onClick={(e) => {
-                                    e.preventDefault();
-                                    setSidebarOpen(false);
-                                    setOpenLogout(true);
-                                }}
-                                link={logoutComponent}
-                            />
                         </div>
                     </div>
                 </SidebarBody>
             </Sidebar>
 
+            {/* Command Menu */}
             <CommandMenu
                 open={commandOpen}
                 setOpen={setCommandOpen}
-                commands={commands && commands.length > 0 ? commands : routes}
-                role={role}
+                commands={
+                    commands?.length > 0
+                        ? commands
+                        : routes
+                }
             />
 
-            {}
+            {/* Main Content */}
             <div
                 className={
                     currentRoute?.title
                         ? 'relative w-full min-h-screen md:p-6 p-4 bg-gray-50 dark:bg-gray-900 overflow-auto scrollbar-none'
-                        : 'relative w-full  bg-gray-50 dark:bg-gray-900 overflow-auto scrollbar-none'
+                        : 'relative w-full bg-gray-50 dark:bg-gray-900 overflow-auto scrollbar-none'
                 }
             >
-                {}
-                {currentRoute?.title && currentRoute?.description && (
+                {/* Page Header */}
+                {currentRoute?.title && (
                     <div className="flex justify-between items-center md:m-[20px] mb-[40px]">
-                        <div className="">
-                            <h1 className="text-3xl font-bold text-gray-900">{currentRoute.title}</h1>
-                            <p className="text-gray-600 mt-2">{currentRoute.description}</p>
+                        <div>
+                            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+                                {currentRoute.title}
+                            </h1>
+
+                            {currentRoute.description && (
+                                <p className="text-gray-600 dark:text-gray-400 mt-2">
+                                    {currentRoute.description}
+                                </p>
+                            )}
                         </div>
 
                         <button
-                            onClick={() => setCommandOpen((prev) => !prev)}
+                            onClick={() =>
+                                setCommandOpen((prev) => !prev)
+                            }
                             className="hidden lg:flex p-2 rounded-md hover:bg-gray-200 dark:hover:bg-gray-800 transition"
                             aria-label="Open command menu"
                         >
@@ -94,7 +119,7 @@ export default function Layout({ routes, logoutComponent }) {
                     </div>
                 )}
 
-                {}
+                {/* Page */}
                 <div className="m-1 md:m-10 overflow-auto">
                     <Outlet />
                 </div>
@@ -103,10 +128,10 @@ export default function Layout({ routes, logoutComponent }) {
     );
 }
 
-export const Logo = ({role}) => (
+export const Logo = () => (
     <SidebarLink
         link={{
-            label: `${camelToTitle(role)} Menu`,
+            label: 'Menu',
             path: '#',
             icon: (
                 <img
@@ -114,7 +139,7 @@ export const Logo = ({role}) => (
                     className="h-10 w-10 me-3 transition-all shrink-0 rounded-full object-cover"
                     width={15}
                     height={15}
-                    alt="Avatar"
+                    alt="Logo"
                 />
             ),
         }}
