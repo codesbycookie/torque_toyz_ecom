@@ -1,5 +1,5 @@
 import Wishlist from '@db/models/wishlist.model.ts';
-import { enhanceWishlist } from './wishlist.util.ts';
+import { enhanceWishlist } from './wishlist.utils.ts';
 
 export const getWishlistByUser = async (userId: string) => {
   const wishlist = await Wishlist.getByUser(userId);

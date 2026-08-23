@@ -25,7 +25,9 @@ export const getAllLocations = async (
 };
 
 export const getLocationById = async (id: string) => {
-  return Location.findById(id);
+  const location = await Location.findById(id);
+  if (!location) return null;
+  return enhanceLocation(location);
 };
 
 export const updateLocation = async (id: string, data: UpdateLocationPayload) => {

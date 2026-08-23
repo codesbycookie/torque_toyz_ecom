@@ -1,3 +1,4 @@
+// src/tests/route.smoke.test.ts
 import { describe, it, expect } from 'vitest';
 import request from 'supertest';
 import { glob } from 'glob';
@@ -30,20 +31,14 @@ const endpoints = resources.flatMap((resource) => {
 });
 
 describe('Route smoke test (auto-discovered)', () => {
-  if (endpoints.length === 0) {
-    it('no endpoints registered yet', () => {
-      expect(true).toBe(true);
-    });
-  } else {
-    it.each(endpoints)('$label responds without a 500', async ({ method, path: routePath }) => {
-      const testPath = routePath.replace(/:[a-zA-Z0-9_]+/g, '000000000000000000000000');
-      const res = await (request(app) as any)[method.toLowerCase()](testPath);
+  it.each(endpoints)('$label responds without a 500', async ({ method, path: routePath }) => {
+    const testPath = routePath.replace(/:[a-zA-Z0-9_]+/g, '000000000000000000000000');
+    const res = await (request(app) as any)[method.toLowerCase()](testPath);
 
-      if (res.status === 500) {
-        console.error(`${method} ${routePath} → 500:`, res.body?.message);
-      }
+    if (res.status === 500) {
+      console.error(`${method} ${routePath} → 500:`, res.body?.message);
+    }
 
-      expect(res.status, `${method} ${routePath} → ${res.status}: ${res.body?.message}`).not.toBe(500);
-    });
-  }
+    expect(res.status, `${method} ${routePath} → ${res.status}: ${res.body?.message}`).not.toBe(500);
+  });
 });

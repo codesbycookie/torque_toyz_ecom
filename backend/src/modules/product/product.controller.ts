@@ -6,6 +6,7 @@ import { createStatusControllers } from '@core/constants/createstatuscontroller.
 import sendResponse from '@core/constants/responsewrapper.constant.ts';
 import { buildQuery } from '@core/constants/querybuilder.constant.ts';
 import { wrapControllers } from '@core/constants/wrapcontroller.constant.ts';
+import { AccessRequest } from '@core/middlewares/access.middleware.ts';
 
 const productStatus = createStatusControllers(
   {
@@ -17,12 +18,12 @@ const productStatus = createStatusControllers(
 );
 
 const controllers = {
-  createProduct: async (req: Request<{}, {}, CreateProductPayload>, res: Response) => {
+  createProduct: async (req: AccessRequest<{}, {}, CreateProductPayload>, res: Response) => {
     const product = await service.createProduct(req.body);
     return sendResponse.created(res, 'Product', product);
   },
 
-  getAllProducts: async (req: Request, res: Response) => {
+  getAllProducts: async (req: AccessRequest, res: Response) => {
     const queries = buildQuery(req);
     const result = await service.getAllProducts(queries, req.user?.role);
     return sendResponse.paginated(res, 'product', result);

@@ -6,6 +6,7 @@ import { createStatusControllers } from '@core/constants/createstatuscontroller.
 import sendResponse from '@core/constants/responsewrapper.constant.ts';
 import { buildQuery } from '@core/constants/querybuilder.constant.ts';
 import { wrapControllers } from '@core/constants/wrapcontroller.constant.ts';
+import { AccessRequest } from '@core/middlewares/access.middleware.ts';
 
 const userStatus = createStatusControllers(
   {
@@ -22,7 +23,7 @@ const controllers = {
     return sendResponse.created(res, 'User', user);
   },
 
-  getAllUsers: async (req: Request, res: Response) => {
+  getAllUsers: async (req: AccessRequest, res: Response) => {
     const queries = buildQuery(req);
     const result = await service.getAllUsers(queries, req.user?.role);
     return sendResponse.paginated(res, 'user', result);

@@ -3,7 +3,7 @@ import { dynamicFilter } from '@core/constants/dynamicfilter.constant.ts';
 import { CreateProductPayload, UpdateProductPayload } from '@typings/product.types.ts';
 import { Role } from '@typings/auth.types.js';
 import { UPDATE_OPTIONS, SOFT_DELETE, RETRIEVE, getVisibility } from './product.constants.ts';
-import { enhanceProduct } from './product.util.ts';
+import { enhanceProduct } from './product.utils.ts';
 import { productFilterConfig } from './product.filterconfig.ts';
 
 export const createProduct = async (data: CreateProductPayload) => {

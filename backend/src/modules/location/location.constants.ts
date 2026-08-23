@@ -17,6 +17,6 @@ const toObjectId = (value?: string | Types.ObjectId | null) => {
 };
 
 const getVisibility = (role?: Role) =>
-  role === ROLE.ADMIN ? 'all' : 'deliverable-only';
+  role === ROLE.ADMIN ? 'all' : 'active-only';
 
 export { UPDATE_OPTIONS, toObjectId, getVisibility };

@@ -4,6 +4,7 @@ export const createProductSchema = z.object({
   name: z.string().trim().min(2, 'Product name is too short'),
   description: z.string().trim().optional(),
   images: z.array(z.string().url()).optional(),
+  weight: z.number().positive('Weight must be greater than 0'),
   stock: z.number().nonnegative().optional().default(0),
 });
 

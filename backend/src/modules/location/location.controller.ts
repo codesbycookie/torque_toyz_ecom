@@ -22,7 +22,7 @@ const controllers = {
 
   getAllLocations: async (req: Request, res: Response) => {
     const queries = buildQuery(req);
-    const result = await service.getAllLocations(queries, 'super_admin');
+    const result = await service.getAllLocations(queries, 'admin');
     return sendResponse.paginated(res, 'location', result);
   },
 
