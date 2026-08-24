@@ -1,17 +1,13 @@
 import mongoose, { Schema, Document, Types } from 'mongoose';
 import { Counter } from './counter.model.ts';
 
-export interface IProductVariant extends Document {
-  attributes: Map<string, string>;
-  sku?: string;
-  active: boolean;
-}
-
 export interface IProduct extends Document {
   code: string;
   name: string;
   images: string[];
   description?: string;
+  weight: number;
+  price: number;
   active: boolean;
   deleted: boolean;
   stock: number;
@@ -37,9 +33,18 @@ const ProductSchema = new Schema<IProduct>(
         trim: true,
       },
     ],
+    weight: {
+      type: Number,
+      required: true,
+      min: 0,
+    },
     stock: {
       type: Number,
       default: 0,
+    },
+    price: {
+      type: Number,
+      default: 0
     },
     active: { type: Boolean, default: true },
     deleted: { type: Boolean, default: false },

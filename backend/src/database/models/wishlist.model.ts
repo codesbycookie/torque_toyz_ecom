@@ -1,4 +1,4 @@
-import mongoose, { Schema, Document, Types } from "mongoose";
+import mongoose, { Schema, Document, Model, Types } from "mongoose";
 
 export interface IWishlist extends Document {
   user: Types.ObjectId;
@@ -7,7 +7,20 @@ export interface IWishlist extends Document {
   updatedAt: Date;
 }
 
-const WishlistSchema = new Schema<IWishlist>(
+export interface IWishlistModel extends Model<IWishlist> {
+  getByUser(userId: Types.ObjectId | string): Promise<IWishlist | null>;
+  addProduct(
+    userId: Types.ObjectId | string,
+    productId: Types.ObjectId | string
+  ): Promise<IWishlist>;
+  removeProduct(
+    userId: Types.ObjectId | string,
+    productId: Types.ObjectId | string
+  ): Promise<IWishlist | null>;
+  clear(userId: Types.ObjectId | string): Promise<IWishlist | null>;
+}
+
+const WishlistSchema = new Schema<IWishlist, IWishlistModel>(
   {
     user: {
       type: Schema.Types.ObjectId,
@@ -17,9 +30,50 @@ const WishlistSchema = new Schema<IWishlist>(
     },
     products: [{ type: Schema.Types.ObjectId, ref: "Product" }],
   },
-  { timestamps: true },
+  { timestamps: true }
 );
 
 WishlistSchema.index({ user: 1 });
 
-export default mongoose.model<IWishlist>("Wishlist", WishlistSchema);
+WishlistSchema.statics.getByUser = async function (
+  userId: Types.ObjectId | string
+): Promise<IWishlist | null> {
+  return this.findOne({ user: userId });
+};
+
+WishlistSchema.statics.addProduct = async function (
+  userId: Types.ObjectId | string,
+  productId: Types.ObjectId | string
+): Promise<IWishlist> {
+  return this.findOneAndUpdate(
+    { user: userId },
+    { $addToSet: { products: productId } },
+    { upsert: true, new: true, runValidators: true, context: "query" }
+  );
+};
+
+WishlistSchema.statics.removeProduct = async function (
+  userId: Types.ObjectId | string,
+  productId: Types.ObjectId | string
+): Promise<IWishlist | null> {
+  return this.findOneAndUpdate(
+    { user: userId },
+    { $pull: { products: productId } },
+    { new: true }
+  );
+};
+
+WishlistSchema.statics.clear = async function (
+  userId: Types.ObjectId | string
+): Promise<IWishlist | null> {
+  return this.findOneAndUpdate(
+    { user: userId },
+    { $set: { products: [] } },
+    { new: true }
+  );
+};
+
+export default mongoose.model<IWishlist, IWishlistModel>(
+  "Wishlist",
+  WishlistSchema
+);

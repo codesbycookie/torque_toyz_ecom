@@ -10,8 +10,6 @@ export interface AccessRequest<
 > extends Request<Params, ResBody, ReqBody, ReqQuery> {
   user?: AuthUser;
   role?: Role;
-  branchId?: string;
-  permissions?: Record<string, any>;
   queryFilter?: Record<string, any>;
   can?: (action: string, module: string) => boolean;
 }
@@ -23,9 +21,7 @@ export async function accessControl(req: AccessRequest, res: Response, next: Nex
     }
 
     req.role = req.user.role as Role;
-    req.branchId = req.user.branch;
 
-    req.permissions = {};
     req.can = () => true;
     req.queryFilter = {};
 

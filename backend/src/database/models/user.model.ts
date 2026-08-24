@@ -1,6 +1,6 @@
 import { getNextSequence } from "@core/utils/getsequence.util.ts";
 import bcrypt from "bcryptjs";
-import mongoose, { Document, Schema } from "mongoose";
+import mongoose, { Document, Model, Schema } from "mongoose";
 
 export interface IUser extends Document {
   name: string;
@@ -25,16 +25,21 @@ export interface IUser extends Document {
   updatedAt: Date;
 }
 
-const UserSchema = new Schema(
+export interface IUserModel extends Model<IUser> {
+  findByLoginId(login_id: string): Promise<IUser | null>;
+  comparePassword(candidate: string, hash: string): Promise<boolean>;
+}
+
+const UserSchema = new Schema<IUser, IUserModel>(
   {
     name: { type: String, required: true },
     login_id: { type: String, unique: true },
     email: { type: String, required: true },
     phone: { type: String, required: true },
     address: {
-      door: {type: String},
-      street: {type: String},
-      city: {type: String},
+      door: { type: String },
+      street: { type: String },
+      city: { type: String },
       state: { type: Schema.Types.ObjectId, ref: "location" },
       pincode: { type: Number },
     },
@@ -49,7 +54,7 @@ const UserSchema = new Schema(
     deleted: { type: Boolean, default: false },
     deletedAt: { type: Date, default: null },
   },
-  { timestamps: true },
+  { timestamps: true }
 );
 
 UserSchema.index({ login_id: 1 });
@@ -68,4 +73,17 @@ UserSchema.pre("save", async function () {
   this.login_id = `${this.role[0].toUpperCase()}-${String(nextSeq).padStart(3, "0")}`;
 });
 
-export default mongoose.model<IUser>("User", UserSchema);
+UserSchema.statics.findByLoginId = async function (
+  login_id: string
+): Promise<IUser | null> {
+  return this.findOne({ login_id });
+};
+
+UserSchema.statics.comparePassword = async function (
+  candidate: string,
+  hash: string
+): Promise<boolean> {
+  return bcrypt.compare(candidate, hash);
+};
+
+export default mongoose.model<IUser, IUserModel>("User", UserSchema);
