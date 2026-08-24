@@ -1,3 +1,4 @@
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   DialogClose,
@@ -7,21 +8,24 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Form, FormControl, FormField, FormItem, FormLabel } from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
+import { Form } from "@/components/ui/form";
 import { useAsync } from "@/core/hooks/useAsync";
 import { useClearError } from "@/core/hooks/useClearError";
 import { useSubmit } from "@/core/hooks/useSubmit";
-import { useForm, useFieldArray } from "react-hook-form";
+import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Plus, Trash2 } from "lucide-react";
-import { locationCreateSchema, locationEditSchema, slabsFormSchema } from "./location.schema";
+import { locationCreateSchema, locationEditSchema } from "./location.schema";
 import LocationForm from "./location.form";
 
 export const Create = ({ submitFn = () => {}, closeModal = () => {} } = {}) => {
   const form = useForm({
     resolver: zodResolver(locationCreateSchema),
-    defaultValues: { state: "", code: "", deliverable: true },
+    defaultValues: {
+      state: "",
+      code: "",
+      deliverable: true,
+      slabs: [{ min: 0, max: 5, rate: 0 }],
+    },
   });
 
   const { run, loading, ErrorAlert, clearError } = useAsync(submitFn);
@@ -33,7 +37,7 @@ export const Create = ({ submitFn = () => {}, closeModal = () => {} } = {}) => {
     <DialogContent className="w-xl">
       <DialogHeader>
         <DialogTitle>Create Location</DialogTitle>
-        <DialogDescription>Enter details of the location</DialogDescription>
+        <DialogDescription>Enter details and tariff slabs for the location</DialogDescription>
       </DialogHeader>
 
       <Form {...form}>
@@ -61,6 +65,9 @@ export const Edit = ({ location, submitFn = () => {}, closeModal = () => {} } = 
       state: location?.state || "",
       code: location?.code || "",
       deliverable: location?.deliverable ?? true,
+      slabs: location?.slabs?.length
+        ? location.slabs.map((s) => ({ min: s.min, max: s.max, rate: s.rate }))
+        : [{ min: 0, max: 5, rate: 0 }],
     },
   });
 
@@ -73,7 +80,7 @@ export const Edit = ({ location, submitFn = () => {}, closeModal = () => {} } = 
     <DialogContent className="w-xl">
       <DialogHeader>
         <DialogTitle>Edit Location</DialogTitle>
-        <DialogDescription>Update details of {location?.state}</DialogDescription>
+        <DialogDescription>Update details and tariff slabs for {location?.state}</DialogDescription>
       </DialogHeader>
 
       <Form {...form}>
@@ -168,109 +175,43 @@ export const DeliverableStatus = ({ id, status, submitFn, closeModal, exported }
   );
 };
 
-export const ManageSlabs = ({ location, submitFn = () => {}, closeModal = () => {} }) => {
-  const form = useForm({
-    resolver: zodResolver(slabsFormSchema),
-    defaultValues: {
-      slabs: location?.slabs?.length
-        ? location.slabs.map((s) => ({ min: s.min, max: s.max, rate: s.rate }))
-        : [{ min: 0, max: 5, rate: 0 }],
-    },
-  });
+// Read-only. No form, no submit — just displays the slabs currently saved on the location.
+export const ViewSlabs = ({ location, closeModal = () => {} }) => (
+  <DialogContent className="sm:max-w-[500px]">
+    <DialogHeader>
+      <DialogTitle>Tariff Slabs</DialogTitle>
+      <DialogDescription>Weight-based rates for {location?.state}</DialogDescription>
+    </DialogHeader>
 
-  const { fields, append, remove } = useFieldArray({ control: form.control, name: "slabs" });
-  const { run, loading, ErrorAlert, clearError } = useAsync(submitFn);
-  useClearError(form, clearError);
-
-  const onSubmit = useSubmit({
-    run,
-    form,
-    transform: (values) => ({ slabs: values.slabs }),
-    onSuccess: closeModal,
-  });
-
-  return (
-    <DialogContent className="w-xl">
-      <DialogHeader>
-        <DialogTitle>Manage Tariff Slabs</DialogTitle>
-        <DialogDescription>Weight-based rates for {location?.state}</DialogDescription>
-      </DialogHeader>
-
-      <Form {...form}>
-        <form className="grid gap-4 py-2" onSubmit={form.handleSubmit(onSubmit)}>
-          <div className="flex flex-col gap-3 max-h-80 overflow-y-auto pr-1">
-            {fields.map((field, index) => (
-              <div key={field.id} className="grid grid-cols-[1fr_1fr_1fr_auto] gap-2 items-end">
-                <FormField
-                  control={form.control}
-                  name={`slabs.${index}.min`}
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Min (kg)</FormLabel>
-                      <FormControl>
-                        <Input type="number" step="0.01" {...field} />
-                      </FormControl>
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name={`slabs.${index}.max`}
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Max (kg)</FormLabel>
-                      <FormControl>
-                        <Input type="number" step="0.01" {...field} />
-                      </FormControl>
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name={`slabs.${index}.rate`}
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Rate</FormLabel>
-                      <FormControl>
-                        <Input type="number" step="0.01" {...field} />
-                      </FormControl>
-                    </FormItem>
-                  )}
-                />
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="icon"
-                  disabled={fields.length === 1}
-                  onClick={() => remove(index)}
-                >
-                  <Trash2 className="size-4" />
-                </Button>
-              </div>
-            ))}
+    <div className="flex flex-col gap-2 max-h-80 overflow-y-auto">
+      {location?.slabs?.length ? (
+        <div className="rounded-md border divide-y">
+          <div className="grid grid-cols-3 px-3 py-2 text-xs font-medium text-muted-foreground">
+            <span>Min (kg)</span>
+            <span>Max (kg)</span>
+            <span>Rate</span>
           </div>
+          {location.slabs.map((s) => (
+            <div key={s._id} className="grid grid-cols-3 px-3 py-2 text-sm">
+              <span>{s.min}</span>
+              <span>{s.max}</span>
+              <span>
+                <Badge variant="outline">₹{s.rate}</Badge>
+              </span>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <p className="text-sm text-muted-foreground">No tariff slabs configured.</p>
+      )}
+    </div>
 
-          <Button
-            type="button"
-            variant="outline"
-            className="w-fit"
-            onClick={() => append({ min: 0, max: 0, rate: 0 })}
-          >
-            <Plus className="size-4" /> Add Slab
-          </Button>
-
-          {ErrorAlert}
-
-          <DialogFooter>
-            <DialogClose asChild>
-              <Button variant="outline">Cancel</Button>
-            </DialogClose>
-            <Button type="submit" loading={loading} loadingText="Saving slabs..">
-              Save Slabs
-            </Button>
-          </DialogFooter>
-        </form>
-      </Form>
-    </DialogContent>
-  );
-};
+    <DialogFooter>
+      <DialogClose asChild>
+        <Button variant="outline" onClick={closeModal}>
+          Close
+        </Button>
+      </DialogClose>
+    </DialogFooter>
+  </DialogContent>
+);

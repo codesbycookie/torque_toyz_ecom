@@ -18,12 +18,9 @@ export const locationCreateSchema = z.object({
     .min(2, { error: "Please enter a location code" })
     .transform((v) => v.toUpperCase()),
   deliverable: z.boolean().default(true),
+  slabs: z.array(slabSchema).min(1, { error: "At least one tariff slab is required" }),
 });
 
 export const locationEditSchema = locationCreateSchema.extend({
   deliverable: z.boolean().optional(),
-});
-
-export const slabsFormSchema = z.object({
-  slabs: z.array(slabSchema).min(1, { error: "At least one tariff slab is required" }),
 });

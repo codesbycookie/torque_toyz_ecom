@@ -52,8 +52,8 @@ export const useLocationColumns = (locations) => {
             <DropdownMenuContent align="end">
               <DropdownMenuItem onClick={() => locations.openEdit(location)}>Edit</DropdownMenuItem>
 
-              <DropdownMenuItem onClick={() => locations.openManageSlabs(location)}>
-                Manage Slabs
+              <DropdownMenuItem onClick={() => locations.openViewSlabs(location)}>
+                View Slabs
               </DropdownMenuItem>
 
               <DropdownMenuItem

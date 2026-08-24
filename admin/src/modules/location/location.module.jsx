@@ -79,15 +79,28 @@ export const useLocationModule = (exported) => {
     const newLocation = {
       _id: `dummy-location-${Date.now()}`,
       deliverable: true,
-      slabs: [{ _id: `dummy-slab-${Date.now()}`, min: 0, max: 5, rate: 0 }],
       ...data,
+      slabs: (data.slabs || []).map((s, i) => ({
+        _id: `dummy-slab-${Date.now()}-${i}`,
+        ...s,
+      })),
     };
     DUMMY_LOCATIONS.push(newLocation);
     syncStore();
   };
 
   const update = (id, data) => {
-    DUMMY_LOCATIONS = DUMMY_LOCATIONS.map((l) => (l._id === id ? { ...l, ...data } : l));
+    const patched = { ...data };
+
+    if (patched.slabs) {
+      const existing = DUMMY_LOCATIONS.find((l) => l._id === id)?.slabs || [];
+      patched.slabs = patched.slabs.map((s, i) => ({
+        _id: existing[i]?._id || `dummy-slab-${Date.now()}-${i}`,
+        ...s,
+      }));
+    }
+
+    DUMMY_LOCATIONS = DUMMY_LOCATIONS.map((l) => (l._id === id ? { ...l, ...patched } : l));
     syncStore();
   };
 
@@ -139,15 +152,9 @@ export const useLocationModule = (exported) => {
       exported,
     });
 
-  const openManageSlabs = (location) =>
-    openModal(modals.manageSlabs, {
-      location,
-      submitFn: (data) => {
-        update(location._id, data);
-        toast.success("Tariff slabs updated");
-      },
-      exported,
-    });
+  // Read-only — no submitFn, nothing is written back.
+  const openViewSlabs = (location) =>
+    openModal(modals.viewSlabs, { location, exported });
 
   const fetch = (params = {}) => {
     if (Object.keys(params).length) setQuery(params);
@@ -209,7 +216,7 @@ export const useLocationModule = (exported) => {
     openEdit,
     openDelete,
     openDeliverableStatus,
-    openManageSlabs,
+    openViewSlabs,
     fetch,
     reset,
     sortByColumn,
