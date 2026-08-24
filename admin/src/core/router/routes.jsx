@@ -9,6 +9,7 @@ import {
 } from "@tabler/icons-react";
 import Product from "../../pages/products/product"
 import Location from "../../pages/location/location"
+import User from "../../pages/user/user"
 
 export const appRoutes = [
   {
@@ -26,5 +27,13 @@ export const appRoutes = [
     description: "Manage your location details.",
     icon: <IconBuildingCommunity className="h-5 w-5 shrink-0" />,
     element: <Location />,
+  },
+   {
+    path: "/admin/users",
+    label: "Users",
+    title: "Users",
+    description: "Manage your user accounts and permissions.",
+    icon: <IconBuildingCommunity className="h-5 w-5 shrink-0" />,
+    element: <User />,
   },
   ];

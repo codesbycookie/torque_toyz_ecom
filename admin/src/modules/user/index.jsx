@@ -1,0 +1,1 @@
+export { useUserModule } from "./user.module";
