@@ -14,6 +14,7 @@ const apiurls = {
       url: () => `${base_url}/auths/admin/reset-password`,
     },
   },
+
   users: {
     create: { method: "post", url: () => `${base_url}/users` },
     getAll: { method: "get", url: () => `${base_url}/users` },
@@ -29,26 +30,6 @@ const apiurls = {
       url: (id) => `${base_url}/users/${id}/retrieve`,
     },
     erase: { method: "delete", url: (id) => `${base_url}/users/${id}/erase` },
-  },
-
-  services: {
-    create: { method: "post", url: () => `${base_url}/services` },
-    getAll: { method: "get", url: () => `${base_url}/services` },
-    getOne: { method: "get", url: (id) => `${base_url}/services/${id}` },
-    edit: { method: "put", url: (id) => `${base_url}/services/${id}` },
-    delete: { method: "delete", url: (id) => `${base_url}/services/${id}` },
-    setActiveStatus: {
-      method: "patch",
-      url: (id) => `${base_url}/services/${id}/active-status`,
-    },
-    retrieve: {
-      method: "put",
-      url: (id) => `${base_url}/services/${id}/retrieve`,
-    },
-    erase: {
-      method: "delete",
-      url: (id) => `${base_url}/services/${id}/erase`,
-    },
   },
 
   products: {
@@ -71,135 +52,141 @@ const apiurls = {
     },
   },
 
-  inventoryProducts: {
-    create: { method: "post", url: () => `${base_url}/inventory-products` },
-    getAll: { method: "get", url: () => `${base_url}/inventory-products` },
-    getOne: {
+  locations: {
+    create: { method: "post", url: () => `${base_url}/locations` },
+    getAll: { method: "get", url: () => `${base_url}/locations` },
+    getOne: { method: "get", url: (id) => `${base_url}/locations/${id}` },
+    edit: { method: "put", url: (id) => `${base_url}/locations/${id}` },
+    delete: { method: "delete", url: (id) => `${base_url}/locations/${id}` },
+    getRate: {
       method: "get",
-      url: (id) => `${base_url}/inventory-products/${id}`,
+      url: (id, kgs) => `${base_url}/locations/${id}/rate?kgs=${kgs}`,
     },
-    edit: {
-      method: "put",
-      url: (id) => `${base_url}/inventory-products/${id}`,
-    },
-    delete: {
-      method: "delete",
-      url: (id) => `${base_url}/inventory-products/${id}`,
-    },
-    setActiveStatus: {
+    setDeliverableStatus: {
       method: "patch",
-      url: (id) => `${base_url}/inventory-products/${id}/active-status`,
+      url: (id) => `${base_url}/locations/${id}/deliverable-status`,
     },
-    retrieve: {
+    addSlab: {
+      method: "post",
+      url: (id) => `${base_url}/locations/${id}/slabs`,
+    },
+    updateSlab: {
       method: "put",
-      url: (id) => `${base_url}/inventory-products/${id}/retrieve`,
+      url: (id, slabId) => `${base_url}/locations/${id}/slabs/${slabId}`,
     },
-    erase: {
+    removeSlab: {
       method: "delete",
-      url: (id) => `${base_url}/inventory-products/${id}/erase`,
+      url: (id, slabId) => `${base_url}/locations/${id}/slabs/${slabId}`,
     },
   },
 
-  bills: {
-    create: { method: "post", url: () => `${base_url}/bills` },
-    getAll: { method: "get", url: () => `${base_url}/bills` },
-    getOne: { method: "get", url: (id) => `${base_url}/bills/${id}` },
-    edit: { method: "put", url: (id) => `${base_url}/bills/${id}` },
-    delete: { method: "delete", url: (id) => `${base_url}/bills/${id}` },
-    setActiveStatus: {
-      method: "patch",
-      url: (id) => `${base_url}/bills/${id}/active-status`,
-    },
-    retrieve: {
-      method: "put",
-      url: (id) => `${base_url}/bills/${id}/retrieve`,
-    },
-    erase: { method: "delete", url: (id) => `${base_url}/bills/${id}/erase` },
-    approveCredit: { method: "patch", url: (id) => `${base_url}/bills/${id}/approve-credit` },
-    rejectCredit: { method: "patch", url: (id) => `${base_url}/bills/${id}/reject-credit` },
-  },
-  branches: {
-    create: { method: "post", url: () => `${base_url}/branches` },
-    getAll: { method: "get", url: () => `${base_url}/branches` },
-    getOne: { method: "get", url: (id) => `${base_url}/branches/${id}` },
-    edit: { method: "put", url: (id) => `${base_url}/branches/${id}` },
-    delete: { method: "delete", url: (id) => `${base_url}/branches/${id}` },
-    setActiveStatus: {
-      method: "patch",
-      url: (id) => `${base_url}/branches/${id}/active-status`,
-    },
-    retrieve: {
-      method: "put",
-      url: (id) => `${base_url}/branches/${id}/retrieve`,
-    },
-    erase: {
-      method: "delete",
-      url: (id) => `${base_url}/branches/${id}/erase`,
-    },
-  },
-  departments: {
-    create: { method: "post", url: () => `${base_url}/departments` },
-    getAll: { method: "get", url: () => `${base_url}/departments` },
-    getOne: { method: "get", url: (id) => `${base_url}/departments/${id}` },
-    edit: { method: "put", url: (id) => `${base_url}/departments/${id}` },
-    delete: { method: "delete", url: (id) => `${base_url}/departments/${id}` },
-    setActiveStatus: {
-      method: "patch",
-      url: (id) => `${base_url}/departments/${id}/active-status`,
-    },
-    retrieve: {
-      method: "put",
-      url: (id) => `${base_url}/departments/${id}/retrieve`,
-    },
-    erase: {
-      method: "delete",
-      url: (id) => `${base_url}/departments/${id}/erase`,
-    },
-    clearCredit: {
-      method: "post",
-      url: (id) => `${base_url}/departments/${id}/clear-credit`,
-    },
-  },
   orders: {
     create: { method: "post", url: () => `${base_url}/orders` },
     getAll: { method: "get", url: () => `${base_url}/orders` },
+    getMine: { method: "get", url: () => `${base_url}/orders/mine` },
     getOne: { method: "get", url: (id) => `${base_url}/orders/${id}` },
-    edit: { method: "put", url: (id) => `${base_url}/orders/${id}` },
     delete: { method: "delete", url: (id) => `${base_url}/orders/${id}` },
-    setActiveStatus: {
+    updateStatus: {
       method: "patch",
-      url: (id) => `${base_url}/orders/${id}/active-status`,
+      url: (id) => `${base_url}/orders/${id}/status`,
+    },
+    updatePaymentStatus: {
+      method: "patch",
+      url: (id) => `${base_url}/orders/${id}/payment-status`,
     },
     retrieve: {
       method: "put",
       url: (id) => `${base_url}/orders/${id}/retrieve`,
     },
-    erase: {
+  },
+
+  reviews: {
+    create: { method: "post", url: () => `${base_url}/reviews` },
+    getAll: { method: "get", url: () => `${base_url}/reviews` },
+    getByProduct: {
+      method: "get",
+      url: (productId) => `${base_url}/reviews/product/${productId}`,
+    },
+    getOne: { method: "get", url: (id) => `${base_url}/reviews/${id}` },
+    edit: { method: "put", url: (id) => `${base_url}/reviews/${id}` },
+    delete: { method: "delete", url: (id) => `${base_url}/reviews/${id}` },
+    deleteAdmin: {
       method: "delete",
-      url: (id) => `${base_url}/orders/${id}/erase`,
+      url: (id) => `${base_url}/reviews/${id}/admin`,
     },
-    submit: {
+    setActiveStatus: {
       method: "patch",
-      url: (id) => `${base_url}/orders/${id}/submit`,
+      url: (id) => `${base_url}/reviews/${id}/active-status`,
     },
-    branchApprove: {
-      method: "patch",
-      url: (id) => `${base_url}/orders/${id}/branch-approve`,
-    },
-    superAdminApprove: {
-      method: "patch",
-      url: (id) => `${base_url}/orders/${id}/super-admin-approve`,
+    retrieve: {
+      method: "put",
+      url: (id) => `${base_url}/reviews/${id}/retrieve`,
     },
   },
-  search: {
-    products: { method: "get", url: () => `${base_url}/search/products` },
+
+  wishlist: {
+    get: { method: "get", url: () => `${base_url}/wishlists` },
+    addProduct: { method: "post", url: () => `${base_url}/wishlists` },
+    removeProduct: {
+      method: "delete",
+      url: (productId) => `${base_url}/wishlists/${productId}`,
+    },
+    clear: { method: "delete", url: () => `${base_url}/wishlists` },
   },
-  dashboard: {
-    superAdmin: { method: "get", url: () => `${base_url}/dashboard/super-admin` },
-    branchAdmin: { method: "get", url: () => `${base_url}/dashboard/branch-admin` },
-    departmentAdmin: { method: "get", url: () => `${base_url}/dashboard/department-admin` },
-    shopAdmin: { method: "get", url: () => `${base_url}/dashboard/shop-admin` },
-    staff: { method: "get", url: () => `${base_url}/dashboard/staff` },
+
+  settings: {
+    get: { method: "get", url: () => `${base_url}/settings` },
+    getRaw: { method: "get", url: () => `${base_url}/settings/raw` },
+    update: { method: "put", url: (key) => `${base_url}/settings/${key}` },
+    bulkUpdate: { method: "put", url: () => `${base_url}/settings/bulk` },
+  },
+
+  otp: {
+    send: { method: "post", url: () => `${base_url}/otps/send` },
+    verify: { method: "post", url: () => `${base_url}/otps/verify` },
+  },
+
+  analytics: {
+    revenueSummary: {
+      method: "get",
+      url: () => `${base_url}/analytics/revenue-summary`,
+    },
+    revenueByMonth: {
+      method: "get",
+      url: () => `${base_url}/analytics/revenue-by-month`,
+    },
+    orderStatusBreakdown: {
+      method: "get",
+      url: () => `${base_url}/analytics/order-status-breakdown`,
+    },
+    topProducts: {
+      method: "get",
+      url: () => `${base_url}/analytics/top-products`,
+    },
+    revenueByLocation: {
+      method: "get",
+      url: () => `${base_url}/analytics/revenue-by-location`,
+    },
+    customerInsights: {
+      method: "get",
+      url: () => `${base_url}/analytics/customer-insights`,
+    },
+    inventoryVelocity: {
+      method: "get",
+      url: () => `${base_url}/analytics/inventory-velocity`,
+    },
+    deliveryPerformance: {
+      method: "get",
+      url: () => `${base_url}/analytics/delivery-performance`,
+    },
+    cancellationRefundRate: {
+      method: "get",
+      url: () => `${base_url}/analytics/cancellation-refund-rate`,
+    },
+    peakTimes: {
+      method: "get",
+      url: () => `${base_url}/analytics/peak-times`,
+    },
   },
 };
 
