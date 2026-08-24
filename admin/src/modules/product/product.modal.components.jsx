@@ -69,6 +69,8 @@ export const Edit = ({ product, submitFn = () => {}, closeModal = () => {} } = {
       name: product?.name || "",
       description: product?.description || "",
       stock: product?.stock ?? 0,
+      price: product?.price ?? 0,
+      weight: product?.weight ?? 0,
       active: product?.active ?? true,
     },
   });
@@ -108,7 +110,7 @@ export const Edit = ({ product, submitFn = () => {}, closeModal = () => {} } = {
   );
 };
 
-export const Delete = ({ id, name, closeModal = () => {}, onConfirm = () => {} }) => (
+export const Delete = ({ id, name, closeModal = () => {}, submitFn = () => {} }) => (
   <DialogContent className="sm:max-w-[425px]">
     <DialogHeader>
       <DialogTitle>Are you sure you want to delete {name}?</DialogTitle>
@@ -124,7 +126,7 @@ export const Delete = ({ id, name, closeModal = () => {}, onConfirm = () => {} }
       <Button
         variant="destructive"
         onClick={() => {
-          onConfirm(id);
+          submitFn(id);
           closeModal();
         }}
       >

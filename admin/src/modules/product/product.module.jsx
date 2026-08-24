@@ -4,91 +4,125 @@ import { useProductStore } from "./product.store";
 import { modals } from "./product.modals";
 import { useProductColumns } from "./product.coulmns";
 
-const DUMMY_IMAGES = [
-  "https://placehold.co/600x400?text=Product+1",
-  "https://placehold.co/600x400?text=Product+2",
+const DUMMY_PRODUCTS = [
+  {
+    _id: "1",
+    code: "P-001",
+    name: "Classic Cotton T-Shirt",
+    description: "Soft round-neck cotton t-shirt, everyday wear.",
+    stock: 120,
+    price: 19.99,
+    weight: 0.25,
+    active: true,
+  },
+  {
+    _id: "2",
+    code: "P-002",
+    name: "Ceramic Coffee Mug",
+    description: "350ml ceramic mug, dishwasher safe.",
+    stock: 85,
+    price: 12.5,
+    weight: 0.4,
+    active: true,
+  },
+  {
+    _id: "3",
+    code: "P-003",
+    name: "Wireless Mouse",
+    description: "Ergonomic wireless mouse with silent clicks.",
+    stock: 40,
+    price: 29.99,
+    weight: 0.12,
+    active: true,
+  },
+  {
+    _id: "4",
+    code: "P-004",
+    name: "Leather Wallet",
+    description: "Genuine leather bifold wallet.",
+    stock: 0,
+    price: 45.0,
+    weight: 0.15,
+    active: false,
+  },
+  {
+    _id: "5",
+    code: "P-005",
+    name: "Notebook A5",
+    description: "Hardcover ruled notebook, 192 pages.",
+    stock: 200,
+    price: 8.99,
+    weight: 0.35,
+    active: true,
+  },
+  {
+    _id: "6",
+    code: "P-006",
+    name: "Stainless Steel Bottle",
+    description: "750ml insulated water bottle.",
+    stock: 65,
+    price: 24.99,
+    weight: 0.45,
+    active: true,
+  },
+  {
+    _id: "7",
+    code: "P-007",
+    name: "Bluetooth Earbuds",
+    description: "True wireless earbuds with charging case.",
+    stock: 28,
+    price: 59.99,
+    weight: 0.08,
+    active: true,
+  },
+  {
+    _id: "8",
+    code: "P-008",
+    name: "Desk Lamp LED",
+    description: "Adjustable LED desk lamp with USB port.",
+    stock: 15,
+    price: 34.5,
+    weight: 0.9,
+    active: false,
+  },
 ];
-
-// Plain dummy data object — add() pushes into this, update() edits by _id.
-let DUMMY_PRODUCTS = [
-  { _id: "1", code: "P-001", name: "Sample Product 1", description: "First sample product.", images: DUMMY_IMAGES, stock: 12, active: true, deleted: false },
-  { _id: "2", code: "P-002", name: "Sample Product 2", description: "Second sample product.", images: DUMMY_IMAGES, stock: 30, active: true, deleted: false },
-  { _id: "3", code: "P-003", name: "Sample Product 3", description: "Third sample product.", images: DUMMY_IMAGES, stock: 0, active: false, deleted: false },
-  { _id: "4", code: "P-004", name: "Sample Product 4", description: "Fourth sample product.", images: DUMMY_IMAGES, stock: 8, active: true, deleted: true },
-  { _id: "5", code: "P-005", name: "Sample Product 5", description: "Fifth sample product.", images: DUMMY_IMAGES, stock: 45, active: true, deleted: false },
-];
-
-const sortList = (list, key, order = "asc") =>
-  [...list].sort((a, b) => {
-    if (a[key] === b[key]) return 0;
-    const result = a[key] > b[key] ? 1 : -1;
-    return order === "asc" ? result : -result;
-  });
-
-const paginate = (list, page, limit) => {
-  const total = list.length;
-  const pages = Math.max(Math.ceil(total / limit), 1);
-  const safePage = Math.min(Math.max(page, 1), pages);
-  const start = (safePage - 1) * limit;
-
-  return {
-    pageItems: list.slice(start, start + limit),
-    pagination: {
-      page: safePage,
-      limit,
-      total,
-      pages,
-      hasNext: safePage < pages,
-      hasPrev: safePage > 1,
-    },
-  };
-};
 
 export const useProductModule = (exported) => {
   const { openModal } = useUI();
   const store = useProductStore();
-  const { set, setPagination, setQuery, resetQuery, setCurrent } = store;
+  const {
+    set,
+    add,
+    update,
+    remove,
+    setCurrent,
+    setQuery,
+    resetQuery,
+    setPagination,
+  } = store;
 
-  const syncStore = () => {
-    const { query } = useProductStore.getState();
-    let list = [...DUMMY_PRODUCTS];
-
-    if (query.sortBy) {
-      list = sortList(list, query.sortBy, query.order || "asc");
-    }
-
-    const { pageItems, pagination } = paginate(list, query.page || 1, query.limit || 10);
-    set(pageItems);
-    setPagination(pagination);
-  };
-
-  const add = (data) => {
-    const newProduct = {
-      _id: `dummy-product-${Date.now()}`,
-      code: `P-${String(DUMMY_PRODUCTS.length + 1).padStart(3, "0")}`,
-      images: DUMMY_IMAGES,
-      active: true,
-      deleted: false,
-      ...data,
-    };
-    DUMMY_PRODUCTS.push(newProduct);
-    syncStore();
-  };
-
-  const update = (id, data) => {
-    DUMMY_PRODUCTS = DUMMY_PRODUCTS.map((p) => (p._id === id ? { ...p, ...data } : p));
-    syncStore();
-  };
-
-  const remove = (id) => {
-    DUMMY_PRODUCTS = DUMMY_PRODUCTS.filter((p) => p._id !== id);
-    syncStore();
-  };
+  // Load dummy data once (only using store methods)
+  if (useProductStore.getState().list.length === 0) {
+    set(DUMMY_PRODUCTS);
+    setPagination({
+      page: 1,
+      limit: 10,
+      total: DUMMY_PRODUCTS.length,
+      pages: 1,
+      hasNext: false,
+      hasPrev: false,
+    });
+  }
 
   const openCreate = () => {
     return openModal(modals.create, {
       submitFn: (data) => {
-        add(data);
+        const newProduct = {
+          _id: `dummy-${Date.now()}`,
+          code: `P-${String(Date.now()).slice(-3)}`,
+          ...data,
+        };
+        add(newProduct);
         toast.success("Product created successfully");
       },
       exported,
@@ -110,7 +144,7 @@ export const useProductModule = (exported) => {
     return openModal(modals.delete, {
       id,
       name,
-      onConfirm: (id) => {
+      submitFn: (id) => {
         update(id, { deleted: true, active: false });
         toast.success("Product deleted successfully");
       },
@@ -146,49 +180,36 @@ export const useProductModule = (exported) => {
       status,
       submitFn: (id, data) => {
         update(id, data);
-        toast.success(data?.active ? "Product is now active" : "Product has been deactivated");
+        toast.success(
+          data?.active ? "Product is now active" : "Product has been deactivated"
+        );
       },
       exported,
     });
   };
 
+  const toggleActive = (product) => {
+    update(product._id, { active: !product.active });
+  };
+
   const fetch = (params = {}) => {
     if (Object.keys(params).length) setQuery(params);
-    syncStore();
   };
 
   const reset = () => {
     resetQuery();
-    syncStore();
   };
 
   const sortByColumn = ({ id, desc }) => {
     setQuery({ sortBy: id, order: desc ? "desc" : "asc" });
-    syncStore();
   };
 
   const filters = {
-    latest: () => {
-      setQuery({ sortBy: "createdAt", order: "desc" });
-      syncStore();
-    },
-    oldest: () => {
-      setQuery({ sortBy: "createdAt", order: "asc" });
-      syncStore();
-    },
-    ascending: (field) => {
-      setQuery({ sortBy: field, order: "asc" });
-      syncStore();
-    },
-    descending: (field) => {
-      setQuery({ sortBy: field, order: "desc" });
-      syncStore();
-    },
+    latest: () => setQuery({ sortBy: "createdAt", order: "desc" }),
+    oldest: () => setQuery({ sortBy: "createdAt", order: "asc" }),
+    ascending: (field) => setQuery({ sortBy: field, order: "asc" }),
+    descending: (field) => setQuery({ sortBy: field, order: "desc" }),
   };
-
-  if (useProductStore.getState().pagination.total === 0) {
-    syncStore();
-  }
 
   return {
     get state() {
@@ -203,6 +224,7 @@ export const useProductModule = (exported) => {
     get current() {
       return useProductStore.getState().current;
     },
+    set,
     add,
     update,
     remove,
@@ -214,14 +236,12 @@ export const useProductModule = (exported) => {
     openErase,
     openRetrieve,
     openActiveStatus,
+    toggleActive,
     fetch,
     reset,
     sortByColumn,
     filters,
-    setQuery: (q) => {
-      setQuery(q);
-      syncStore();
-    },
+    setQuery: (q) => setQuery(q),
     getQuery: () => useProductStore.getState().query,
   };
-}; 
+};
