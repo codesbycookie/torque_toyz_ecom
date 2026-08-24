@@ -4,9 +4,7 @@ import { useUserStore } from "./user.store";
 import { modals } from "./user.modals";
 import { useUserColumns } from "./user.columns";
 
-// Plain dummy data object — no create/edit here, so this list is fixed
-// aside from delete() flipping deleted/active flags on an item.
-let DUMMY_USERS = [
+const DUMMY_USERS = [
   {
     _id: "1",
     login_id: "U-001",
@@ -64,60 +62,38 @@ let DUMMY_USERS = [
   },
 ];
 
-const sortList = (list, key, order = "asc") =>
-  [...list].sort((a, b) => {
-    if (a[key] === b[key]) return 0;
-    const result = a[key] > b[key] ? 1 : -1;
-    return order === "asc" ? result : -result;
-  });
-
-const paginate = (list, page, limit) => {
-  const total = list.length;
-  const pages = Math.max(Math.ceil(total / limit), 1);
-  const safePage = Math.min(Math.max(page, 1), pages);
-  const start = (safePage - 1) * limit;
-
-  return {
-    pageItems: list.slice(start, start + limit),
-    pagination: {
-      page: safePage,
-      limit,
-      total,
-      pages,
-      hasNext: safePage < pages,
-      hasPrev: safePage > 1,
-    },
-  };
-};
-
 export const useUserModule = (exported) => {
   const { openModal } = useUI();
   const store = useUserStore();
-  const { set, setPagination, setQuery, resetQuery, setCurrent } = store;
+  const {
+    set,
+    update,
+    remove,
+    setCurrent,
+    setQuery,
+    resetQuery,
+    setPagination,
+  } = store;
 
-  const syncStore = () => {
-    const { query } = useUserStore.getState();
-    let list = [...DUMMY_USERS];
+  // Load dummy data once (only using store methods)
+  if (useUserStore.getState().list.length === 0) {
+    set(DUMMY_USERS);
+    setPagination({
+      page: 1,
+      limit: 10,
+      total: DUMMY_USERS.length,
+      pages: 1,
+      hasNext: false,
+      hasPrev: false,
+    });
+  }
 
-    if (query.sortBy) {
-      list = sortList(list, query.sortBy, query.order || "asc");
-    }
-
-    const { pageItems, pagination } = paginate(list, query.page || 1, query.limit || 10);
-    set(pageItems);
-    setPagination(pagination);
-  };
-
-  const update = (id, data) => {
-    DUMMY_USERS = DUMMY_USERS.map((u) => (u._id === id ? { ...u, ...data } : u));
-    syncStore();
-  };
-
+  // Soft delete → item stays in list with deleted: true
   const openDelete = (id, name) => {
     return openModal(modals.delete, {
       id,
       name,
-      onConfirm: (id) => {
+      submitFn: (id) => {
         update(id, { deleted: true, active: false });
         toast.success("User deleted successfully");
       },
@@ -125,35 +101,46 @@ export const useUserModule = (exported) => {
     });
   };
 
+  // Permanent erase → removes item from list
+  const openErase = (id) => {
+    return openModal(modals.erase, {
+      id,
+      submitFn: (id) => {
+        remove(id);
+        toast.success("User deleted permanently");
+      },
+      exported,
+    });
+  };
+
+  // Retrieve a soft-deleted user
+  const openRetrieve = (id) => {
+    return openModal(modals.retrieve, {
+      id,
+      submitFn: (id) => {
+        update(id, { deleted: false, active: true });
+        toast.success("User retrieved successfully");
+      },
+      exported,
+    });
+  };
+
   const fetch = (params = {}) => {
     if (Object.keys(params).length) setQuery(params);
-    syncStore();
   };
 
   const reset = () => {
     resetQuery();
-    syncStore();
   };
 
   const sortByColumn = ({ id, desc }) => {
     setQuery({ sortBy: id, order: desc ? "desc" : "asc" });
-    syncStore();
   };
 
   const filters = {
-    ascending: (field) => {
-      setQuery({ sortBy: field, order: "asc" });
-      syncStore();
-    },
-    descending: (field) => {
-      setQuery({ sortBy: field, order: "desc" });
-      syncStore();
-    },
+    ascending: (field) => setQuery({ sortBy: field, order: "asc" }),
+    descending: (field) => setQuery({ sortBy: field, order: "desc" }),
   };
-
-  if (useUserStore.getState().pagination.total === 0) {
-    syncStore();
-  }
 
   return {
     get state() {
@@ -168,17 +155,19 @@ export const useUserModule = (exported) => {
     get current() {
       return useUserStore.getState().current;
     },
+    set,
+    update,
+    remove,
     setCurrent,
     useUserColumns,
     openDelete,
+    openErase,
+    openRetrieve,
     fetch,
     reset,
     sortByColumn,
     filters,
-    setQuery: (q) => {
-      setQuery(q);
-      syncStore();
-    },
+    setQuery: (q) => setQuery(q),
     getQuery: () => useUserStore.getState().query,
   };
 };
