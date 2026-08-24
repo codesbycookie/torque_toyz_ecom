@@ -8,6 +8,7 @@ import {
   IconCalculator,
 } from "@tabler/icons-react";
 import Product from "../../pages/products/product"
+import Location from "../../pages/location/location"
 
 export const appRoutes = [
   {
@@ -17,5 +18,13 @@ export const appRoutes = [
     description: "Manage your product inventory and details.",
     icon: <IconBoxSeam className="h-5 w-5 shrink-0" />,
     element: <Product />,
+  },
+   {
+    path: "/admin/location",
+    label: "Location",
+    title: "Location",
+    description: "Manage your location details.",
+    icon: <IconBuildingCommunity className="h-5 w-5 shrink-0" />,
+    element: <Location />,
   },
   ];
