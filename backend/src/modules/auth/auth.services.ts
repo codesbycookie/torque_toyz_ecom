@@ -71,9 +71,15 @@ export const changePassword = async (data: {
 }) => {
   ensureFields(data);
 
+  
+
   const user = await User.findById(data.userId);
   if (!user) throw new ApiError(404, ERROR.USER_NOT_FOUND);
-
+   console.log('🔐 CHANGE PASSWORD DEBUG');
+  console.log('userId:', data.userId);
+  console.log('user found:', !!user);
+  console.log('current password:', data.currentPassword);
+  console.log('stored hash:', user?.password);
   const isMatch = await User.comparePassword(data.currentPassword, user.password);
   if (!isMatch) throw new ApiError(401, ERROR.CURRENT_PASSWORD_INVALID);
 

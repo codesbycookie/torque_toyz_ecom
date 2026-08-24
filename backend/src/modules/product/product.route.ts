@@ -21,15 +21,18 @@ import {
 
 const router = Router();
 
-router.use(authMiddleware);
 
 // router.use(accessControl);
 
-router.post('/', zodValidate(createProductSchema, 'body', 'CreateProductSchema'), createProduct);
 
 router.get('/', getAllProducts);
-
 router.get('/:id', getProductById);
+
+
+router.use(authMiddleware);
+router.post('/', zodValidate(createProductSchema, 'body', 'CreateProductSchema'), createProduct);
+
+
 
 router.put('/:id', zodValidate(updateProductSchema, 'body', 'UpdateProductSchema'), updateProduct);
 

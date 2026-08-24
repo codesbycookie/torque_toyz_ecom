@@ -9,10 +9,12 @@ import {
   removeProduct,
   clearWishlist,
 } from './wishlist.controller.js';
+import { accessControl } from '@core/middlewares/access.middleware.ts';
 
 const router = Router();
 
 router.use(authMiddleware);
+router.use(accessControl)
 
 router.get('/', getMyWishlist);
 

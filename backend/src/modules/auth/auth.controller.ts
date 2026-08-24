@@ -1,15 +1,15 @@
 import { NextFunction, Request, Response } from 'express';
 import sendResponse from '@core/constants/responsewrapper.constant.ts';
 import { wrapControllers } from '@core/constants/wrapcontroller.constant.ts';
-import * as service from './auth.services.ts';
+import * as service from './auth.services.js';
 import { log } from '@core/constants/logger.constant.ts';
-import { ENVCONFIG } from '@config/env.config.ts';
+import { ENVCONFIG } from '@config/env.config.js';
 import {
   LoginPayload,
   ChangePasswordPayload,
   AdminResetPasswordPayload,
-} from '@typings/auth.types.ts';
-import { COOKIE, LOG, ENTITY, ERROR, SHORT_AGE, LONG_AGE } from './auth.constants.ts';
+} from '@typings/auth.types.js';
+import { COOKIE, LOG, ENTITY, ERROR, SHORT_AGE, LONG_AGE } from './auth.constants.js';
 import { AccessRequest } from '@core/middlewares/access.middleware.ts';
 
 const IS_PROD = ENVCONFIG.prod;
@@ -44,7 +44,7 @@ const controllers = {
   },
 
   getCurrentUser: async (req: Request, res: Response, next: NextFunction) => {
-    const token = req.cookies?.access_token || req.headers?.authorization?.split(' ')[1];
+    const token = req.cookies?.access_token;
 
     if (!token) {
       log('error', LOG.CURRENT_USER.NO_TOKEN);

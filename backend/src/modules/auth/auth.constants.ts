@@ -24,7 +24,7 @@ export const ERROR = {
   UNAUTHENTICATED: 'Unauthenticated',
   INVALID_TOKEN: 'Invalid token',
   VERIFICATION_FAILED: 'Password verification failed',
-  USER_INACTIVE: 'Your account has been deactivated. Please contact admin.',
+  USER_INACTIVE: 'Forbidden',
 } as const;
 
 export const SUCCESS = {

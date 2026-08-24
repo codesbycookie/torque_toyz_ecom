@@ -21,10 +21,16 @@ import {
   updateSlab,
   findRateForWeight,
 } from './location.controller.js';
+import { accessControl } from '@core/middlewares/access.middleware.ts';
 
 const router = Router();
 
+
+router.get('/', getAllLocations);
+
+
 router.use(authMiddleware);
+router.use(accessControl)
 
 router.post(
   '/',
@@ -32,7 +38,6 @@ router.post(
   createLocation
 );
 
-router.get('/', getAllLocations);
 
 router.get('/:id', getLocationById);
 
