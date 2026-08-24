@@ -13,17 +13,6 @@ import { Hint } from "@/core/utils/tooltip.util";
 export const useProductColumns = (products) => {
   return [
     {
-      accessorKey: "images",
-      header: () => Hint("Image", "Product image"),
-      cell: ({ row }) => (
-        <img
-          src={row.original.images?.[0]}
-          alt={row.original.name}
-          className="size-10 rounded object-cover"
-        />
-      ),
-    },
-    {
       accessorKey: "code",
       header: () => Hint("Code", "Product code"),
       cell: ({ row }) => <span>{row.getValue("code")}</span>,
@@ -31,12 +20,22 @@ export const useProductColumns = (products) => {
     {
       accessorKey: "name",
       header: () => Hint("Name", "Product name"),
-      cell: ({ row }) => <span>{row.getValue("name")}</span>,
+      cell: ({ row }) => <span className="font-medium">{row.getValue("name")}</span>,
     },
     {
       accessorKey: "stock",
       header: () => Hint("Stock", "Units available"),
       cell: ({ row }) => <span>{row.getValue("stock")}</span>,
+    },
+    {
+      accessorKey: "price",
+      header: () => Hint("Price", "Product price"),
+      cell: ({ row }) => <span>${Number(row.getValue("price")).toFixed(2)}</span>,
+    },
+    {
+      accessorKey: "weight",
+      header: () => Hint("Weight", "Product weight (kg)"),
+      cell: ({ row }) => <span>{row.getValue("weight")} kg</span>,
     },
     {
       accessorKey: "active",

@@ -4,6 +4,7 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { MoreHorizontal } from "lucide-react";
@@ -19,7 +20,7 @@ export const useUserColumns = (users) => {
     {
       accessorKey: "name",
       header: () => Hint("Name", "User name"),
-      cell: ({ row }) => <span>{row.getValue("name")}</span>,
+      cell: ({ row }) => <span className="font-medium">{row.getValue("name")}</span>,
     },
     {
       accessorKey: "email",
@@ -32,36 +33,34 @@ export const useUserColumns = (users) => {
       cell: ({ row }) => <span>{row.getValue("phone")}</span>,
     },
     {
-      accessorKey: "role",
-      header: () => Hint("Role", "User role"),
-      cell: ({ row }) => (
-        <Badge variant={row.getValue("role") === "admin" ? "default" : "outline"}>
-          {row.getValue("role")}
-        </Badge>
-      ),
-    },
-    {
       accessorKey: "address",
       header: () => Hint("Location", "City / State"),
       cell: ({ row }) => {
         const address = row.original.address || {};
-        return <span>{[address.city, address.state].filter(Boolean).join(", ") || "-"}</span>;
+        return (
+          <span>
+            {[address.door, address.street, address.city, address.state, address.pincode]
+              .filter(Boolean)
+              .join(", ") || "-"}
+          </span>
+        );
       },
     },
-    // {
-    //   accessorKey: "active",
-    //   header: () => Hint("Status", "Whether the user is active"),
-    //   cell: ({ row }) => (
-    //     <Badge variant={row.getValue("active") ? "default" : "outline"}>
-    //       {row.getValue("active") ? "Active" : "Inactive"}
-    //     </Badge>
-    //   ),
-    // },
+    {
+      accessorKey: "active",
+      header: () => Hint("Status", "Whether the user is active"),
+      cell: ({ row }) => (
+        <Badge variant={row.getValue("active") ? "default" : "outline"}>
+          {row.getValue("active") ? "Active" : "Inactive"}
+        </Badge>
+      ),
+    },
     {
       accessorKey: "actions",
       header: () => Hint("Actions", "More actions"),
       cell: ({ row }) => {
         const user = row.original;
+        const isErased = Boolean(user.deleted);
 
         return (
           <DropdownMenu>
@@ -71,12 +70,27 @@ export const useUserColumns = (users) => {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuItem
-                variant="destructive"
-                onClick={() => users.openDelete(user._id, user.name)}
-              >
-                Delete
-              </DropdownMenuItem>
+              {isErased ? (
+                <DropdownMenuItem onClick={() => users.openRetrieve(user._id)}>
+                  Retrieve
+                </DropdownMenuItem>
+              ) : (
+                <>
+                  <DropdownMenuItem
+                    variant="destructive"
+                    onClick={() => users.openDelete(user._id, user.name)}
+                  >
+                    Delete
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    variant="destructive"
+                    onClick={() => users.openErase(user._id)}
+                  >
+                    Erase Permanently
+                  </DropdownMenuItem>
+                </>
+              )}
             </DropdownMenuContent>
           </DropdownMenu>
         );
