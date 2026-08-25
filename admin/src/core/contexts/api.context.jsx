@@ -2,7 +2,7 @@ import { createContext, useContext } from 'react';
 import { useProductModule } from "../../modules/product/product.module";
 import { useLocationModule } from "../../modules/location/location.module";
 import { useUserModule } from "@/modules/user";
-
+import { useOrderModule } from "../../modules/order";
 const ApiContext = createContext();
 
 // eslint-disable-next-line react-refresh/only-export-components
@@ -20,10 +20,12 @@ export const ApiProvider = ({ children }) => {
   const productModule = useProductModule(exported);
   const locationModule = useLocationModule(exported);
   const userModule = useUserModule(exported);
+  const orderModule = useOrderModule(exported);
   Object.assign(exported, {
     products: productModule,
     locations: locationModule,
     users: userModule,
+    order: orderModule,
   });
 
   return <ApiContext.Provider value={{ ...exported }}>{children}</ApiContext.Provider>;

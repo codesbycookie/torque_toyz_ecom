@@ -37,4 +37,12 @@ export const appRoutes = [
     icon: <IconBuildingCommunity className="h-5 w-5 shrink-0" />,
     element: <User />,
   },
+  {
+  path: "/admin/order",
+  label: "Orders",
+  title: "Orders",
+  description: "View and manage customer orders.",
+  icon: <IconClipboardList className="h-5 w-5 shrink-0" />,
+  element: <Order />,
+  },
   ];
