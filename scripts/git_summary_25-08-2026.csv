@@ -1,0 +1,6 @@
+Author,Additions,Deletions,Net LOC,Commits,Avg Add/Commit,Avg Del/Commit,Avg Total/Commit,Total Changes,Contribution %,Commit %,Churn Ratio (del/add)
+vicky,0,0,0,2,0.0,0.0,0.0,0,0.0,13.33,0
+vickydecodes,53420,1705,51715,9,5935.56,189.44,6125.0,55125,95.41,60.0,0.03
+rkgit-1530,1415,524,891,3,471.67,174.67,646.33,1939,3.36,20.0,0.37
+Kishor A R,713,0,713,1,713.0,0.0,713.0,713,1.23,6.67,0.0
+TOTAL,55548,2229,53319,15,,,,57777,100%,100%,0.04

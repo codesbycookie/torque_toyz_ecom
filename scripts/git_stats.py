@@ -1,5 +1,6 @@
 import subprocess
 import csv
+from datetime import datetime
 
 # Run git log with author and commit hash
 result = subprocess.run(
@@ -48,8 +49,11 @@ total_dels = sum(v[1] for v in stats.values())
 total_commits = sum(v[2] for v in stats.values())
 total_changes = total_adds + total_dels
 
+# Output filename with checkpoint date
+out_filename = 'git_summary_25-08-2026.csv'
+
 # Write CSV
-with open('git_summary.csv', 'w', newline='') as f:
+with open(out_filename, 'w', newline='') as f:
     writer = csv.writer(f)
     writer.writerow([
         'Author', 'Additions', 'Deletions', 'Net LOC',
@@ -83,4 +87,4 @@ with open('git_summary.csv', 'w', newline='') as f:
         round(total_dels/total_adds, 2) if total_adds else 0
     ])
 
-print("Done! Check git_summary.csv")
+print(f"Done! Check {out_filename}")
