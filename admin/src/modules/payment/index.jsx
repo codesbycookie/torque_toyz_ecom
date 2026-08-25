@@ -1,0 +1,1 @@
+export { usePaymentModule } from "./payment.module";
