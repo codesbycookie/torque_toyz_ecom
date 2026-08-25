@@ -4,7 +4,7 @@ import { useLocationStore } from "./location.store";
 import { modals } from "./location.modals";
 import { useLocationColumns } from "./location.coulmns";
 
-let DUMMY_LOCATIONS = [
+const DUMMY_LOCATIONS = [
   {
     _id: "1",
     state: "Tamil Nadu",
@@ -31,116 +31,83 @@ let DUMMY_LOCATIONS = [
   },
 ];
 
-const sortList = (list, key, order = "asc") =>
-  [...list].sort((a, b) => {
-    if (a[key] === b[key]) return 0;
-    const result = a[key] > b[key] ? 1 : -1;
-    return order === "asc" ? result : -result;
-  });
-
-const paginate = (list, page, limit) => {
-  const total = list.length;
-  const pages = Math.max(Math.ceil(total / limit), 1);
-  const safePage = Math.min(Math.max(page, 1), pages);
-  const start = (safePage - 1) * limit;
-
-  return {
-    pageItems: list.slice(start, start + limit),
-    pagination: {
-      page: safePage,
-      limit,
-      total,
-      pages,
-      hasNext: safePage < pages,
-      hasPrev: safePage > 1,
-    },
-  };
-};
-
 export const useLocationModule = (exported) => {
   const { openModal } = useUI();
   const store = useLocationStore();
-  const { set, setPagination, setQuery, resetQuery, setCurrent } = store;
+  const {
+    set,
+    add,
+    update,
+    remove,
+    setCurrent,
+    setQuery,
+    resetQuery,
+    setPagination,
+  } = store;
 
-  const syncStore = () => {
-    const { query } = useLocationStore.getState();
-    let list = [...DUMMY_LOCATIONS];
+  // Load dummy data once (only using store methods)
+  if (useLocationStore.getState().list.length === 0) {
+    set(DUMMY_LOCATIONS);
+    setPagination({
+      page: 1,
+      limit: 10,
+      total: DUMMY_LOCATIONS.length,
+      pages: 1,
+      hasNext: false,
+      hasPrev: false,
+    });
+  }
 
-    if (query.sortBy) {
-      list = sortList(list, query.sortBy, query.order || "asc");
-    }
-
-    const { pageItems, pagination } = paginate(list, query.page || 1, query.limit || 10);
-    set(pageItems);
-    setPagination(pagination);
-  };
-
-  const add = (data) => {
-    const newLocation = {
-      _id: `dummy-location-${Date.now()}`,
-      deliverable: true,
-      ...data,
-      slabs: (data.slabs || []).map((s, i) => ({
-        _id: `dummy-slab-${Date.now()}-${i}`,
-        ...s,
-      })),
-    };
-    DUMMY_LOCATIONS.push(newLocation);
-    syncStore();
-  };
-
-  const update = (id, data) => {
-    const patched = { ...data };
-
-    if (patched.slabs) {
-      const existing = DUMMY_LOCATIONS.find((l) => l._id === id)?.slabs || [];
-      patched.slabs = patched.slabs.map((s, i) => ({
-        _id: existing[i]?._id || `dummy-slab-${Date.now()}-${i}`,
-        ...s,
-      }));
-    }
-
-    DUMMY_LOCATIONS = DUMMY_LOCATIONS.map((l) => (l._id === id ? { ...l, ...patched } : l));
-    syncStore();
-  };
-
-  const remove = (id) => {
-    DUMMY_LOCATIONS = DUMMY_LOCATIONS.filter((l) => l._id !== id);
-    syncStore();
-  };
-
-  const openCreate = () =>
-    openModal(modals.create, {
+  const openCreate = () => {
+    return openModal(modals.create, {
       submitFn: (data) => {
-        add(data);
+        const newLocation = {
+          _id: `dummy-${Date.now()}`,
+          ...data,
+          slabs: (data.slabs || []).map((s, i) => ({
+            _id: `dummy-slab-${Date.now()}-${i}`,
+            ...s,
+          })),
+        };
+        add(newLocation);
         toast.success("Location created successfully");
       },
       exported,
     });
+  };
 
-  const openEdit = (location) =>
-    openModal(modals.edit, {
+  const openEdit = (location) => {
+    return openModal(modals.edit, {
       location,
       submitFn: (data) => {
-        update(location._id, data);
+        const existingSlabs = location?.slabs || [];
+        update(location._id, {
+          ...data,
+          slabs: (data.slabs || []).map((s, i) => ({
+            _id: existingSlabs[i]?._id || `dummy-slab-${Date.now()}-${i}`,
+            ...s,
+          })),
+        });
         toast.success("Location updated successfully");
       },
       exported,
     });
+  };
 
-  const openDelete = (id, name) =>
-    openModal(modals.delete, {
+  const openDelete = (id, name) => {
+    return openModal(modals.delete, {
       id,
       name,
-      onConfirm: (id) => {
+      submitFn: (id) => {
         remove(id);
         toast.success("Location deleted successfully");
       },
       exported,
     });
+  };
 
-  const openDeliverableStatus = (id, status) =>
-    openModal(modals.deliverableStatus, {
+  const openDeliverableStatus = (id, status) => {
+    return openModal(modals.deliverableStatus, {
       id,
       status,
       submitFn: (id, data) => {
@@ -151,48 +118,35 @@ export const useLocationModule = (exported) => {
       },
       exported,
     });
+  };
 
   // Read-only — no submitFn, nothing is written back.
-  const openViewSlabs = (location) =>
-    openModal(modals.viewSlabs, { location, exported });
+  const openViewSlabs = (location) => {
+    return openModal(modals.viewSlabs, { location, exported });
+  };
+
+  const toggleDeliverable = (location) => {
+    update(location._id, { deliverable: !location.deliverable });
+  };
 
   const fetch = (params = {}) => {
     if (Object.keys(params).length) setQuery(params);
-    syncStore();
   };
 
   const reset = () => {
     resetQuery();
-    syncStore();
   };
 
   const sortByColumn = ({ id, desc }) => {
     setQuery({ sortBy: id, order: desc ? "desc" : "asc" });
-    syncStore();
   };
 
   const filters = {
-    latest: () => {
-      setQuery({ sortBy: "createdAt", order: "desc" });
-      syncStore();
-    },
-    oldest: () => {
-      setQuery({ sortBy: "createdAt", order: "asc" });
-      syncStore();
-    },
-    ascending: (field) => {
-      setQuery({ sortBy: field, order: "asc" });
-      syncStore();
-    },
-    descending: (field) => {
-      setQuery({ sortBy: field, order: "desc" });
-      syncStore();
-    },
+    latest: () => setQuery({ sortBy: "createdAt", order: "desc" }),
+    oldest: () => setQuery({ sortBy: "createdAt", order: "asc" }),
+    ascending: (field) => setQuery({ sortBy: field, order: "asc" }),
+    descending: (field) => setQuery({ sortBy: field, order: "desc" }),
   };
-
-  if (useLocationStore.getState().pagination.total === 0) {
-    syncStore();
-  }
 
   return {
     get state() {
@@ -207,6 +161,7 @@ export const useLocationModule = (exported) => {
     get current() {
       return useLocationStore.getState().current;
     },
+    set,
     add,
     update,
     remove,
@@ -217,14 +172,12 @@ export const useLocationModule = (exported) => {
     openDelete,
     openDeliverableStatus,
     openViewSlabs,
+    toggleDeliverable,
     fetch,
     reset,
     sortByColumn,
     filters,
-    setQuery: (q) => {
-      setQuery(q);
-      syncStore();
-    },
+    setQuery: (q) => setQuery(q),
     getQuery: () => useLocationStore.getState().query,
   };
 };

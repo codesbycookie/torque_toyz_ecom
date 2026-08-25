@@ -101,7 +101,7 @@ export const Edit = ({ location, submitFn = () => {}, closeModal = () => {} } = 
   );
 };
 
-export const Delete = ({ id, name, closeModal = () => {}, onConfirm = () => {} }) => (
+export const Delete = ({ id, name, closeModal = () => {}, submitFn = () => {} }) => (
   <DialogContent className="sm:max-w-[425px]">
     <DialogHeader>
       <DialogTitle>Are you sure you want to delete {name}?</DialogTitle>
@@ -117,7 +117,7 @@ export const Delete = ({ id, name, closeModal = () => {}, onConfirm = () => {} }
       <Button
         variant="destructive"
         onClick={() => {
-          onConfirm(id);
+          submitFn(id);
           closeModal();
         }}
       >
@@ -130,7 +130,7 @@ export const Delete = ({ id, name, closeModal = () => {}, onConfirm = () => {} }
 export const DeliverableStatus = ({ id, status, submitFn, closeModal, exported }) => {
   const actionLabel = status ? "Mark Non-Deliverable" : "Mark Deliverable";
 
-  const onConfirm = async () => {
+  const submit = async () => {
     await submitFn(id, { deliverable: !status });
     closeModal();
   };
@@ -165,7 +165,7 @@ export const DeliverableStatus = ({ id, status, submitFn, closeModal, exported }
 
         <Button
           variant={status ? "destructive" : "default"}
-          onClick={onConfirm}
+          onClick={submit}
           disabled={exported?.loading?.edit}
         >
           {exported?.loading?.edit ? "Updating..." : actionLabel}
