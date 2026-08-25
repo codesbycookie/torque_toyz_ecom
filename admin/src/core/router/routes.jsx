@@ -10,7 +10,7 @@ import {
 import Product from "../../pages/products/product"
 import Location from "../../pages/location/location"
 import User from "../../pages/user/user"
-import Order from "../../pages/order/order"
+import Payment from "../../pages/payment/payment"
 
 export const appRoutes = [
   {
