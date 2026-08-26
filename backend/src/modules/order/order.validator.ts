@@ -26,3 +26,7 @@ export const updatePaymentStatusSchema = z.object({
     status: z.enum(['pending', 'paid', 'failed', 'refunded']),
     transaction_id: z.string().trim().optional(),
 });
+
+export const updateDeliveryPartnerUrl = z.object({
+    url: z.string().url()
+})

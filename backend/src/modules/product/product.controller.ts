@@ -29,6 +29,13 @@ const controllers = {
     return sendResponse.paginated(res, 'product', result);
   },
 
+  getProductBySlug: async (req: Request<{ slug: string }>, res: Response) => {
+    const { slug } = req.params;
+    const product = await service.getProductBySlug(slug);
+    if (!product) return sendResponse.notFound(res, 'product');
+    return sendResponse.fetched(res, 'product', product);
+  },
+
   getProductById: async (req: Request<{ id: string }>, res: Response) => {
     const { id } = req.params;
     const product = await service.getProductById(id);
@@ -58,6 +65,7 @@ const controllers = {
 export const {
   createProduct,
   getAllProducts,
+  getProductBySlug,
   getProductById,
   updateProduct,
   deleteProduct,

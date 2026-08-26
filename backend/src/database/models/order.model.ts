@@ -10,6 +10,7 @@ export interface IOrderItem {
   price: number;
   weight: number;
   quantity: number;
+  
 }
 
 export interface IShippingAddress {
@@ -56,6 +57,7 @@ export interface IOrder extends Document {
   pricing: IPricing;
   payment: IPayment;
   status: OrderStatus;
+  delivery_partner_url?: string;
   status_history: IStatusEntry[];
 
   active: boolean;
@@ -146,6 +148,7 @@ const OrderSchema = new Schema<IOrder, IOrderModel>(
       ref: "User",
       required: true,
     },
+    delivery_partner_url: { type: String, trim: true },
     items: {
       type: [OrderItemSchema],
       required: true,
@@ -191,7 +194,7 @@ OrderSchema.index({ status: 1 });
 
 // ── Hooks ────────────────────────────────────────────────────────────
 
-OrderSchema.pre("save", async function () {
+OrderSchema.pre("save", async function (this: IOrder & mongoose.Document) {
   if (!this.isNew) return;
 
   const next_seq = await getNextSequence("order");

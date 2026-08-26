@@ -14,6 +14,13 @@ export const createProduct = async (data: CreateProductPayload) => {
 export const getAllProducts = async (queries: Record<string, unknown>, role?: Role) => {
   return dynamicFilter(Product, productFilterConfig, queries, {
     visibility: getVisibility(role),
+    forcePopulate: [
+      {
+        path: 'reviews',
+        match: { deleted: false, active: true },
+        options: { sort: { createdAt: -1 } },
+      },
+    ],
   });
 };
 
@@ -23,6 +30,11 @@ export const getProductById = async (id: string) => {
   return enhanceProduct(product);
 };
 
+export const getProductBySlug = async(slug: string) => {
+  const product = await Product.getProductBySlug(slug);
+  if(!product) return null;
+  return enhanceProduct(product);
+}
 export const updateProduct = async (id: string, data: UpdateProductPayload) => {
   const updated = await Product.findByIdAndUpdate(id, data, UPDATE_OPTIONS);
   if (!updated) return null;
