@@ -30,7 +30,9 @@ export const usePaymentColumns = (payments) => {
       accessorKey: "razorpay_order_id",
       header: () => Hint("Razorpay Order", "Razorpay Order ID"),
       cell: ({ row }) => (
-        <span className="font-mono text-xs">{row.getValue("razorpay_order_id")}</span>
+        <span className="font-mono text-xs">
+          {row.getValue("razorpay_order_id")}
+        </span>
       ),
     },
     {
@@ -52,9 +54,7 @@ export const usePaymentColumns = (payments) => {
       cell: ({ row }) => {
         const status = row.getValue("status");
         return (
-          <Badge variant={statusVariant[status] || "secondary"}>
-            {status}
-          </Badge>
+          <Badge variant={statusVariant[status] || "secondary"}>{status}</Badge>
         );
       },
     },
@@ -63,6 +63,7 @@ export const usePaymentColumns = (payments) => {
       header: () => Hint("Actions", "More actions"),
       cell: ({ row }) => {
         const payment = row.original;
+        const isPaid = payment.status === "paid";
 
         return (
           <DropdownMenu>
@@ -75,6 +76,14 @@ export const usePaymentColumns = (payments) => {
               <DropdownMenuItem onClick={() => payments.openView(payment)}>
                 View
               </DropdownMenuItem>
+              {isPaid && (
+                <DropdownMenuItem
+                  variant="destructive"
+                  onClick={() => payments.openRefund(payment)}
+                >
+                  Initiate Refund
+                </DropdownMenuItem>
+              )}
             </DropdownMenuContent>
           </DropdownMenu>
         );

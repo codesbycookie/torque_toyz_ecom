@@ -26,7 +26,8 @@ export const View = ({ payment, closeModal = () => {} }) => {
       <DialogHeader>
         <DialogTitle className="text-xl">Payment Details</DialogTitle>
         <DialogDescription>
-          Razorpay Order: <span className="font-mono">{payment.razorpay_order_id}</span>
+          Razorpay Order:{" "}
+          <span className="font-mono">{payment.razorpay_order_id}</span>
         </DialogDescription>
       </DialogHeader>
 
@@ -48,13 +49,22 @@ export const View = ({ payment, closeModal = () => {} }) => {
             <div className="space-y-2">
               <div className="text-lg font-semibold">{order.name || "-"}</div>
               <div className="text-sm text-muted-foreground">
-                Quantity: <span className="font-medium text-foreground">{order.quantity || 1}</span>
+                Quantity:{" "}
+                <span className="font-medium text-foreground">
+                  {order.quantity || 1}
+                </span>
               </div>
               <div className="text-sm text-muted-foreground">
-                Unit Price: <span className="font-medium text-foreground">₹{Number(order.price || 0).toFixed(2)}</span>
+                Unit Price:{" "}
+                <span className="font-medium text-foreground">
+                  ₹{Number(order.price || 0).toFixed(2)}
+                </span>
               </div>
               <div className="text-sm text-muted-foreground">
-                Weight: <span className="font-medium text-foreground">{order.weight || 0} kg</span>
+                Weight:{" "}
+                <span className="font-medium text-foreground">
+                  {order.weight || 0} kg
+                </span>
               </div>
             </div>
           </div>
@@ -69,7 +79,9 @@ export const View = ({ payment, closeModal = () => {} }) => {
           <div className="space-y-3 text-sm">
             <div className="flex justify-between items-center py-2 border-b">
               <span className="text-muted-foreground">Razorpay Order ID</span>
-              <span className="font-mono text-xs">{payment.razorpay_order_id}</span>
+              <span className="font-mono text-xs">
+                {payment.razorpay_order_id}
+              </span>
             </div>
 
             <div className="flex justify-between items-center py-2 border-b">
@@ -88,7 +100,10 @@ export const View = ({ payment, closeModal = () => {} }) => {
 
             <div className="flex justify-between items-center py-2 border-b">
               <span className="text-muted-foreground">Status</span>
-              <Badge variant={statusVariant[payment.status] || "secondary"} className="text-sm px-3 py-1">
+              <Badge
+                variant={statusVariant[payment.status] || "secondary"}
+                className="text-sm px-3 py-1"
+              >
                 {payment.status}
               </Badge>
             </div>
@@ -111,6 +126,49 @@ export const View = ({ payment, closeModal = () => {} }) => {
             Close
           </Button>
         </DialogClose>
+      </DialogFooter>
+    </DialogContent>
+  );
+};
+
+export const Refund = ({
+  payment,
+  closeModal = () => {},
+  submitFn = () => {},
+}) => {
+  if (!payment) return null;
+
+  return (
+    <DialogContent className="sm:max-w-[425px] pe-10">
+      <DialogHeader>
+        <DialogTitle>Initiate Refund?</DialogTitle>
+        <DialogDescription>
+          This will mark the payment for order{" "}
+          <span className="font-mono">{payment.razorpay_order_id}</span> as{" "}
+          <strong>refunded</strong>. Amount to be refunded:{" "}
+          <span className="font-semibold text-foreground">
+            {payment.currency || "INR"} {Number(payment.amount).toFixed(2)}
+          </span>
+          .
+        </DialogDescription>
+      </DialogHeader>
+
+      <DialogFooter>
+        <DialogClose asChild>
+          <Button variant="outline">Cancel</Button>
+        </DialogClose>
+        <Button
+          variant="destructive"
+          onClick={() => {
+            try {
+              onConfirm(payment._id);
+            } finally {
+              closeModal();
+            }
+          }}
+        >
+          Initiate Refund
+        </Button>
       </DialogFooter>
     </DialogContent>
   );

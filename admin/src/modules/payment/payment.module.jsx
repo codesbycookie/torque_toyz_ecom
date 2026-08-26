@@ -83,13 +83,13 @@ export const usePaymentModule = (exported) => {
   const store = usePaymentStore();
   const {
     set,
+    update,
     setCurrent,
     setQuery,
     resetQuery,
     setPagination,
   } = store;
 
-  // Load dummy data once
   if (usePaymentStore.getState().list.length === 0) {
     set(DUMMY_PAYMENTS);
     setPagination({
@@ -106,6 +106,18 @@ export const usePaymentModule = (exported) => {
     setCurrent(payment);
     return openModal(modals.view, {
       payment,
+      exported,
+    });
+  };
+
+  const openRefund = (payment) => {
+    setCurrent(payment);
+    return openModal(modals.refund, {
+      payment,
+      submitFn: (id) => {
+        update(id, { status: "refunded", failure_reason: null });
+        toast.success("Refund initiated successfully");
+      },
       exported,
     });
   };
@@ -144,6 +156,7 @@ export const usePaymentModule = (exported) => {
     setCurrent,
     usePaymentColumns,
     openView,
+    openRefund,
     fetch,
     reset,
     sortByColumn,
