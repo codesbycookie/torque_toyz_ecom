@@ -7,13 +7,18 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Form } from "@/components/ui/form";
+import { FormControl, FormField, FormItem, FormLabel,Form } from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
 import { useAsync } from "@/core/hooks/useAsync";
 import { useClearError } from "@/core/hooks/useClearError";
 import { useSubmit } from "@/core/hooks/useSubmit";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { productCreateSchema, productEditSchema } from "./product.schema";
+import {
+  productCreateSchema,
+  productEditSchema,
+  productStockSchema,
+} from "./product.schema";
 import ProductForm from "./product.form";
 
 export const Create = ({ submitFn = () => {}, closeModal = () => {} } = {}) => {
@@ -45,14 +50,21 @@ export const Create = ({ submitFn = () => {}, closeModal = () => {} } = {}) => {
       </DialogHeader>
 
       <Form {...form}>
-        <form className="grid gap-4 py-2" onSubmit={form.handleSubmit(onSubmit)}>
+        <form
+          className="grid gap-4 py-2"
+          onSubmit={form.handleSubmit(onSubmit)}
+        >
           <ProductForm form={form} />
           {ErrorAlert}
           <DialogFooter>
             <DialogClose asChild>
               <Button variant="outline">Cancel</Button>
             </DialogClose>
-            <Button type="submit" loading={loading} loadingText="Saving the product..">
+            <Button
+              type="submit"
+              loading={loading}
+              loadingText="Saving the product.."
+            >
               Save
             </Button>
           </DialogFooter>
@@ -62,7 +74,79 @@ export const Create = ({ submitFn = () => {}, closeModal = () => {} } = {}) => {
   );
 };
 
-export const Edit = ({ product, submitFn = () => {}, closeModal = () => {} } = {}) => {
+export const UpdateStock = ({
+  product,
+  submitFn = () => {},
+  closeModal = () => {},
+} = {}) => {
+  const form = useForm({
+    resolver: zodResolver(productStockSchema),
+    defaultValues: {
+      stock: product?.stock ?? 0,
+    },
+  });
+
+  const { run, loading, ErrorAlert, clearError } = useAsync(submitFn);
+
+  useClearError(form, clearError);
+
+  const onSubmit = useSubmit({
+    run,
+    form,
+    onSuccess: closeModal,
+  });
+
+  return (
+    <DialogContent className="sm:max-w-[425px]">
+      <DialogHeader>
+        <DialogTitle>Update Stock</DialogTitle>
+        <DialogDescription>
+          Update available stock for {product?.name}. Current stock:{" "}
+          {product?.stock ?? 0}.
+        </DialogDescription>
+      </DialogHeader>
+
+      <Form {...form}>
+        <form
+          className="grid gap-4 py-2"
+          onSubmit={form.handleSubmit(onSubmit)}
+        >
+          <FormField
+            control={form.control}
+            name="stock"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Stock</FormLabel>
+                <FormControl>
+                  <Input type="number" placeholder="Enter stock" {...field} />
+                </FormControl>
+              </FormItem>
+            )}
+          />
+          {ErrorAlert}
+          <DialogFooter>
+            <DialogClose asChild>
+              <Button variant="outline">Cancel</Button>
+            </DialogClose>
+            <Button
+              type="submit"
+              loading={loading}
+              loadingText="Updating stock.."
+            >
+              Save
+            </Button>
+          </DialogFooter>
+        </form>
+      </Form>
+    </DialogContent>
+  );
+};
+
+export const Edit = ({
+  product,
+  submitFn = () => {},
+  closeModal = () => {},
+} = {}) => {
   const form = useForm({
     resolver: zodResolver(productEditSchema),
     defaultValues: {
@@ -93,14 +177,21 @@ export const Edit = ({ product, submitFn = () => {}, closeModal = () => {} } = {
       </DialogHeader>
 
       <Form {...form}>
-        <form className="grid gap-4 py-2" onSubmit={form.handleSubmit(onSubmit)}>
+        <form
+          className="grid gap-4 py-2"
+          onSubmit={form.handleSubmit(onSubmit)}
+        >
           <ProductForm form={form} />
           {ErrorAlert}
           <DialogFooter>
             <DialogClose asChild>
               <Button variant="outline">Cancel</Button>
             </DialogClose>
-            <Button type="submit" loading={loading} loadingText="Saving the product..">
+            <Button
+              type="submit"
+              loading={loading}
+              loadingText="Saving the product.."
+            >
               Save
             </Button>
           </DialogFooter>
@@ -110,12 +201,18 @@ export const Edit = ({ product, submitFn = () => {}, closeModal = () => {} } = {
   );
 };
 
-export const Delete = ({ id, name, closeModal = () => {}, submitFn = () => {} }) => (
+export const Delete = ({
+  id,
+  name,
+  closeModal = () => {},
+  submitFn = () => {},
+}) => (
   <DialogContent className="sm:max-w-[425px]">
     <DialogHeader>
       <DialogTitle>Are you sure you want to delete {name}?</DialogTitle>
       <DialogDescription>
-        This will be stored as deleted, this product record can be retrieved by Admin.
+        This will be stored as deleted, this product record can be retrieved by
+        Admin.
       </DialogDescription>
     </DialogHeader>
 
@@ -141,8 +238,8 @@ export const Erase = ({ id, submitFn, closeModal }) => (
     <DialogHeader>
       <DialogTitle>Are you sure?</DialogTitle>
       <DialogDescription>
-        <strong>Note:</strong> This operation is Permenent Delete. All the data related to this product
-        will be lost.
+        <strong>Note:</strong> This operation is Permenent Delete. All the data
+        related to this product will be lost.
       </DialogDescription>
     </DialogHeader>
 
@@ -168,8 +265,8 @@ export const Retrieve = ({ id, submitFn, closeModal }) => (
     <DialogHeader>
       <DialogTitle>Are you sure?</DialogTitle>
       <DialogDescription>
-        <strong>Note:</strong> this operation is retrieve All the data related to this product will be
-        back.
+        <strong>Note:</strong> this operation is retrieve All the data related
+        to this product will be back.
       </DialogDescription>
     </DialogHeader>
 
@@ -190,7 +287,13 @@ export const Retrieve = ({ id, submitFn, closeModal }) => (
   </DialogContent>
 );
 
-export const ActiveStatus = ({ id, status, submitFn, closeModal, exported }) => {
+export const ActiveStatus = ({
+  id,
+  status,
+  submitFn,
+  closeModal,
+  exported,
+}) => {
   const actionLabel = status ? "Deactivate" : "Activate";
 
   const onConfirm = async () => {

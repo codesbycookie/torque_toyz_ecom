@@ -12,3 +12,6 @@ export const productCreateSchema = z.object({
 export const productEditSchema = productCreateSchema.extend({
   active: z.boolean().optional(),
 });
+export const productStockSchema = z.object({
+  stock: z.coerce.number().min(0, { error: "Stock cannot be negative" }),
+});

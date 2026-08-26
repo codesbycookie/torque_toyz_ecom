@@ -20,7 +20,9 @@ export const useProductColumns = (products) => {
     {
       accessorKey: "name",
       header: () => Hint("Name", "Product name"),
-      cell: ({ row }) => <span className="font-medium">{row.getValue("name")}</span>,
+      cell: ({ row }) => (
+        <span className="font-medium">{row.getValue("name")}</span>
+      ),
     },
     {
       accessorKey: "stock",
@@ -30,7 +32,9 @@ export const useProductColumns = (products) => {
     {
       accessorKey: "price",
       header: () => Hint("Price", "Product price"),
-      cell: ({ row }) => <span>${Number(row.getValue("price")).toFixed(2)}</span>,
+      cell: ({ row }) => (
+        <span>${Number(row.getValue("price")).toFixed(2)}</span>
+      ),
     },
     {
       accessorKey: "weight",
@@ -66,7 +70,15 @@ export const useProductColumns = (products) => {
               </DropdownMenuItem>
 
               <DropdownMenuItem
-                onClick={() => products.openActiveStatus(product._id, product.active)}
+                onClick={() => products.openStockUpdate(product)}
+              >
+                Update Stock
+              </DropdownMenuItem>
+
+              <DropdownMenuItem
+                onClick={() =>
+                  products.openActiveStatus(product._id, product.active)
+                }
               >
                 {product.active ? "Deactivate" : "Activate"}
               </DropdownMenuItem>
@@ -74,14 +86,18 @@ export const useProductColumns = (products) => {
               <DropdownMenuSeparator />
 
               {isErased ? (
-                <DropdownMenuItem onClick={() => products.openRetrieve(product._id)}>
+                <DropdownMenuItem
+                  onClick={() => products.openRetrieve(product._id)}
+                >
                   Retrieve
                 </DropdownMenuItem>
               ) : (
                 <>
                   <DropdownMenuItem
                     variant="destructive"
-                    onClick={() => products.openDelete(product._id, product.name)}
+                    onClick={() =>
+                      products.openDelete(product._id, product.name)
+                    }
                   >
                     Delete
                   </DropdownMenuItem>

@@ -174,6 +174,17 @@ export const useProductModule = (exported) => {
     });
   };
 
+  const openStockUpdate = (product) => {
+  return openModal(modals.stock, {
+    product,
+    submitFn: (data) => {
+      update(product._id, data);
+      toast.success("Stock updated successfully");
+    },
+    exported,
+  });
+};
+
   const openActiveStatus = (id, status) => {
     return openModal(modals.activeStatus, {
       id,
@@ -236,6 +247,7 @@ export const useProductModule = (exported) => {
     openErase,
     openRetrieve,
     openActiveStatus,
+    openStockUpdate,
     toggleActive,
     fetch,
     reset,
