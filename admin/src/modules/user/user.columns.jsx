@@ -20,7 +20,9 @@ export const useUserColumns = (users) => {
     {
       accessorKey: "name",
       header: () => Hint("Name", "User name"),
-      cell: ({ row }) => <span className="font-medium">{row.getValue("name")}</span>,
+      cell: ({ row }) => (
+        <span className="font-medium">{row.getValue("name")}</span>
+      ),
     },
     {
       accessorKey: "email",
@@ -39,7 +41,13 @@ export const useUserColumns = (users) => {
         const address = row.original.address || {};
         return (
           <span>
-            {[address.door, address.street, address.city, address.state, address.pincode]
+            {[
+              address.door,
+              address.street,
+              address.city,
+              address.state,
+              address.pincode,
+            ]
               .filter(Boolean)
               .join(", ") || "-"}
           </span>
@@ -83,6 +91,18 @@ export const useUserColumns = (users) => {
                     Delete
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    onClick={() => users.openResetPassword(user)}
+                  >
+                    Reset Password
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={() =>
+                      users.openDisable(user._id, user.name, user.active)
+                    }
+                  >
+                    {user.active ? "Disable" : "Enable"}
+                  </DropdownMenuItem>
                   <DropdownMenuItem
                     variant="destructive"
                     onClick={() => users.openErase(user._id)}

@@ -12,7 +12,13 @@ const DUMMY_USERS = [
     email: "ravi.kumar@example.com",
     phone: "9876543210",
     role: "user",
-    address: { door: "12", street: "Anna Nagar Main Rd", city: "Chennai", state: "Tamil Nadu", pincode: 600040 },
+    address: {
+      door: "12",
+      street: "Anna Nagar Main Rd",
+      city: "Chennai",
+      state: "Tamil Nadu",
+      pincode: 600040,
+    },
     active: true,
     deleted: false,
   },
@@ -23,7 +29,13 @@ const DUMMY_USERS = [
     email: "priya.sharma@example.com",
     phone: "9876543211",
     role: "user",
-    address: { door: "45", street: "MG Road", city: "Bengaluru", state: "Karnataka", pincode: 560001 },
+    address: {
+      door: "45",
+      street: "MG Road",
+      city: "Bengaluru",
+      state: "Karnataka",
+      pincode: 560001,
+    },
     active: true,
     deleted: false,
   },
@@ -34,7 +46,13 @@ const DUMMY_USERS = [
     email: "arjun.reddy@example.com",
     phone: "9876543212",
     role: "user",
-    address: { door: "7", street: "Jubilee Hills", city: "Hyderabad", state: "Telangana", pincode: 500033 },
+    address: {
+      door: "7",
+      street: "Jubilee Hills",
+      city: "Hyderabad",
+      state: "Telangana",
+      pincode: 500033,
+    },
     active: false,
     deleted: false,
   },
@@ -45,7 +63,13 @@ const DUMMY_USERS = [
     email: "sneha.iyer@example.com",
     phone: "9876543213",
     role: "user",
-    address: { door: "3", street: "T Nagar", city: "Chennai", state: "Tamil Nadu", pincode: 600017 },
+    address: {
+      door: "3",
+      street: "T Nagar",
+      city: "Chennai",
+      state: "Tamil Nadu",
+      pincode: 600017,
+    },
     active: true,
     deleted: false,
   },
@@ -56,7 +80,13 @@ const DUMMY_USERS = [
     email: "karthik.s@example.com",
     phone: "9876543214",
     role: "user",
-    address: { door: "21", street: "Indiranagar", city: "Bengaluru", state: "Karnataka", pincode: 560038 },
+    address: {
+      door: "21",
+      street: "Indiranagar",
+      city: "Bengaluru",
+      state: "Karnataka",
+      pincode: 560038,
+    },
     active: true,
     deleted: false,
   },
@@ -100,7 +130,31 @@ export const useUserModule = (exported) => {
       exported,
     });
   };
+  const openResetPassword = (user) => {
+    return openModal(modals.resetPassword, {
+      user,
+      submitFn: () => {
+        // dummy — no password stored/updated in mock data, just simulate success
+        toast.success("Password reset successfully");
+      },
+      exported,
+    });
+  };
 
+  const openDisable = (id, name, status) => {
+    return openModal(modals.disable, {
+      id,
+      name,
+      status,
+      submitFn: (id, data) => {
+        update(id, data);
+        toast.success(
+          data?.active ? "User enabled successfully" : "User has been disabled",
+        );
+      },
+      exported,
+    });
+  };
   // Permanent erase → removes item from list
   const openErase = (id) => {
     return openModal(modals.erase, {
@@ -161,6 +215,8 @@ export const useUserModule = (exported) => {
     setCurrent,
     useUserColumns,
     openDelete,
+    openResetPassword,
+    openDisable,
     openErase,
     openRetrieve,
     fetch,
