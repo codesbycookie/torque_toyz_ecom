@@ -1,6 +1,6 @@
-import mongoose, { Model, Document, PipelineStage, Types } from 'mongoose';
-import { analyzeSchemaPaths } from '@utils/schemaanalyzer.util.ts';
-import { castObjectIds } from '@core/utils/parseid.util.ts';
+import mongoose, { Model, Document, PipelineStage, Types } from "mongoose";
+import { analyzeSchemaPaths } from "@utils/schemaanalyzer.util.ts";
+import { castObjectIds } from "@core/utils/parseid.util.ts";
 
 export interface SearchableRefConfig {
   field: string; // local field holding the ObjectId, e.g. 'branch'
@@ -45,35 +45,37 @@ export async function dynamicFilter<T extends Document>(
     };
     nestedPopulate?: any[];
     forcePopulate?: any[];
-    visibility?: 'all' | 'active-only';
+    visibility?: "all" | "active-only";
     rawQuery?: Record<string, any>;
-  } = {}
+  } = {},
 ): Promise<PaginatedResult<T>> {
-  mongoose.set('strictPopulate', false);
+  mongoose.set("strictPopulate", false);
   const {
     searchable = [],
     filterable = [],
     sortable = [],
     searchableRefs = [],
-    defaultSort = 'createdAt',
+    defaultSort = "createdAt",
   } = config;
 
-  const { populatePaths, refIdPaths, dynamicRefPaths } = analyzeSchemaPaths(model.schema);
+  const { populatePaths, refIdPaths, dynamicRefPaths } = analyzeSchemaPaths(
+    model.schema,
+  );
   const dynamicRefPathSet = new Set(dynamicRefPaths.map((d) => d.path));
 
   const query: Record<string, any> = {};
 
-  const visibility = options.visibility ?? 'active-only';
-  const SMART_SORT_FIELDS = ['name'];
+  const visibility = options.visibility ?? "active-only";
+  const SMART_SORT_FIELDS = ["name"];
   const BUSINESS_SORT_FIELDS: any = {};
   const DERIVED_SORT_FIELDS: any = {};
 
-  if (visibility === 'active-only') {
-    if (model.schema.path('active')) query.active = true;
-    if (model.schema.path('deleted')) query.deleted = false;
+  if (visibility === "active-only") {
+    if (model.schema.path("active")) query.active = true;
+    if (model.schema.path("deleted")) query.deleted = false;
   }
 
-  const isFullFetch = queryParams.full === 'true' || queryParams.full === true;
+  const isFullFetch = queryParams.full === "true" || queryParams.full === true;
 
   const rawQuery = (options as any).rawQuery ?? {};
   Object.assign(query, rawQuery);
@@ -97,14 +99,14 @@ export async function dynamicFilter<T extends Document>(
       return;
     }
 
-    if (key.toLowerCase().includes('date')) {
+    if (key.toLowerCase().includes("date")) {
       const d = new Date(value);
       if (!isNaN(d.getTime())) query[key] = d;
       return;
     }
 
-    if (value === 'true' || value === 'false') {
-      query[key] = value === 'true';
+    if (value === "true" || value === "false") {
+      query[key] = value === "true";
       return;
     }
 
@@ -114,19 +116,24 @@ export async function dynamicFilter<T extends Document>(
   const lookupStages: PipelineStage[] = [];
   const searchUnsetFields: string[] = [];
 
-  if (queryParams.search && (searchable.length > 0 || searchableRefs.length > 0)) {
-    const r = new RegExp(queryParams.search.trim(), 'i');
-    const orConditions: Record<string, any>[] = searchable.map((f) => ({ [f]: { $regex: r } }));
+  if (
+    queryParams.search &&
+    (searchable.length > 0 || searchableRefs.length > 0)
+  ) {
+    const r = new RegExp(queryParams.search.trim(), "i");
+    const orConditions: Record<string, any>[] = searchable.map((f) => ({
+      [f]: { $regex: r },
+    }));
 
     searchableRefs.forEach(({ field, ref, matchOn }) => {
       const refModel = mongoose.model(ref);
-      const alias = `__search_${field.replace(/\./g, '_')}`;
+      const alias = `__search_${field.replace(/\./g, "_")}`;
 
       lookupStages.push({
         $lookup: {
           from: refModel.collection.name,
           localField: field,
-          foreignField: '_id',
+          foreignField: "_id",
           as: alias,
         },
       });
@@ -142,13 +149,15 @@ export async function dynamicFilter<T extends Document>(
   const sortBy = queryParams.sortBy;
 
   if (sortBy && sortable.includes(sortBy)) {
-    sort[sortBy] = queryParams.order === 'asc' ? 1 : -1;
+    sort[sortBy] = queryParams.order === "asc" ? 1 : -1;
   } else {
     sort[defaultSort as string] = 1;
   }
 
   const page = isFullFetch ? 1 : Math.max(1, Number(queryParams.page) || 1);
-  const limit = isFullFetch ? 0 : Math.min(100, Math.max(1, Number(queryParams.limit) || 10));
+  const limit = isFullFetch
+    ? 0
+    : Math.min(100, Math.max(1, Number(queryParams.limit) || 10));
 
   const sortField = Object.keys(sort)[0];
   const sortOrder = sort[sortField];
@@ -190,7 +199,7 @@ export async function dynamicFilter<T extends Document>(
         $project: {
           __businessOrder: 0,
         },
-      }
+      },
     );
   } else if (SMART_SORT_FIELDS.includes(sortField)) {
     pipeline.push(
@@ -206,7 +215,7 @@ export async function dynamicFilter<T extends Document>(
             $cond: [
               {
                 $regexMatch: {
-                  input: '$__cleanValue',
+                  input: "$__cleanValue",
                   regex: /^[a-z]+$/,
                 },
               },
@@ -220,13 +229,17 @@ export async function dynamicFilter<T extends Document>(
               vars: {
                 match: {
                   $regexFind: {
-                    input: '$__cleanValue',
+                    input: "$__cleanValue",
                     regex: /\d+/,
                   },
                 },
               },
               in: {
-                $cond: [{ $ne: ['$$match', null] }, { $toInt: '$$match.match' }, 999999],
+                $cond: [
+                  { $ne: ["$$match", null] },
+                  { $toInt: "$$match.match" },
+                  999999,
+                ],
               },
             },
           },
@@ -245,7 +258,7 @@ export async function dynamicFilter<T extends Document>(
           __typePriority: 0,
           __numericPart: 0,
         },
-      }
+      },
     );
   } else {
     pipeline.push({ $sort: sort });
@@ -271,7 +284,7 @@ export async function dynamicFilter<T extends Document>(
       {
         $facet: {
           data: [{ $skip: (page - 1) * limit }, { $limit: limit }],
-          total: [{ $count: 'count' }],
+          total: [{ $count: "count" }],
         },
       },
     ]);
@@ -304,7 +317,7 @@ export async function dynamicFilter<T extends Document>(
         if (refModelName) {
           try {
             const refSchema = mongoose.model(refModelName)?.schema;
-            if (refSchema?.path('active') && refSchema?.path('deleted')) {
+            if (refSchema?.path("active") && refSchema?.path("deleted")) {
               match = { active: true, deleted: false };
             }
           } catch {
@@ -312,34 +325,36 @@ export async function dynamicFilter<T extends Document>(
           }
         }
 
-        const baseSelect = ['_id', 'name', 'code'];
+        const baseSelect = ["_id", "name", "code"];
 
         if (options?.extras?.select) {
           const extras = options.extras.select.split(/[\s,]+/).filter(Boolean);
           baseSelect.push(...extras);
         }
 
-        const nestedPopulate = options?.nestedPopulate?.find((p) => p.path === path);
+        const nestedPopulate = options?.nestedPopulate?.find(
+          (p) => p.path === path,
+        );
 
         return {
           path,
           match,
-          select: baseSelect.join(' '),
+          select: baseSelect.join(" "),
           ...(nestedPopulate && { populate: nestedPopulate.populate }),
         };
-      })
+      }),
     );
+  }
 
-    if (options?.forcePopulate && options.forcePopulate.length > 0) {
-      data = await model.populate(data, options.forcePopulate);
-    }
+  if (options?.forcePopulate && options.forcePopulate.length > 0) {
+    data = await model.populate(data, options.forcePopulate);
   }
 
   const pages = limit === 0 ? 1 : Math.ceil(total / limit);
 
   return {
     success: true,
-    message: 'Data fetched successfully',
+    message: "Data fetched successfully",
     data,
     pagination: {
       page,

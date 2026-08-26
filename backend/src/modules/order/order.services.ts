@@ -131,3 +131,9 @@ export const retrieveOrder = async (id: string) => {
     if (!retrieved) return null;
     return enhanceOrder(retrieved);
 };
+
+export const setDeliveryPartnerUrl = async (id: string, url: string) => {
+  const updated = await Order.findByIdAndUpdate(id, { delivery_partner_url: url }, { new: true });
+  if (!updated) return null;
+  return enhanceOrder(updated);
+};

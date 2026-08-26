@@ -7,7 +7,10 @@ import { enhanceUser } from './user.utils.ts';
 import { userFilterConfig } from './user.filterconfig.ts';
 
 export const createUser = async (data: CreateUserPayload) => {
-  const user = await new User(data).save();
+  const user = await new User({
+    ...data,
+    accepted_terms_at: data.acceptTerms ? new Date() : null,
+  }).save();
   return enhanceUser(user);
 };
 

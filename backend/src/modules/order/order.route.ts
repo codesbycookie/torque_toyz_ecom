@@ -1,23 +1,25 @@
-import { Router } from 'express';
-import { authMiddleware } from '@core/middlewares/auth.middleware.js';
+import { Router } from "express";
+import { authMiddleware } from "@core/middlewares/auth.middleware.js";
 // import { accessControl } from '@core/middlewares/access.middleware.js';
-import { zodValidate } from '@core/middlewares/zod.validator.js';
+import { zodValidate } from "@core/middlewares/zod.validator.js";
 import {
-    createOrderSchema,
-    updateStatusSchema,
-    updatePaymentStatusSchema,
-} from './order.validator.js';
+  createOrderSchema,
+  updateStatusSchema,
+  updatePaymentStatusSchema,
+  updateDeliveryPartnerUrl,
+} from "./order.validator.js";
 
 import {
-    createOrder,
-    getAllOrders,
-    getMyOrders,
-    getOrderById,
-    updateOrderStatus,
-    updatePaymentStatus,
-    deleteOrder,
-    retrieveOrder,
-} from './order.controller.js';
+  createOrder,
+  getAllOrders,
+  getMyOrders,
+  getOrderById,
+  updateOrderStatus,
+  updatePaymentStatus,
+  deleteOrder,
+  retrieveOrder,
+  setDeliveryPartnerUrl,
+} from "./order.controller.js";
 
 const router = Router();
 
@@ -25,28 +27,34 @@ router.use(authMiddleware);
 
 // router.use(accessControl);
 
-router.post('/', zodValidate(createOrderSchema, 'body', 'CreateOrderSchema'), createOrder);
+router.post(
+  "/",
+  zodValidate(createOrderSchema, "body", "CreateOrderSchema"),
+  createOrder,
+);
 
-router.get('/', getAllOrders);
+router.get("/", getAllOrders);
 
-router.get('/mine', getMyOrders);
+router.get("/mine", getMyOrders);
 
-router.get('/:id', getOrderById);
+router.get("/:id", getOrderById);
 
 router.patch(
-    '/:id/status',
-    zodValidate(updateStatusSchema, 'body', 'UpdateStatusSchema'),
-    updateOrderStatus
+  "/:id/status",
+  zodValidate(updateStatusSchema, "body", "UpdateStatusSchema"),
+  updateOrderStatus,
 );
 
 router.patch(
-    '/:id/payment-status',
-    zodValidate(updatePaymentStatusSchema, 'body', 'UpdatePaymentStatusSchema'),
-    updatePaymentStatus
+  "/:id/payment-status",
+  zodValidate(updatePaymentStatusSchema, "body", "UpdatePaymentStatusSchema"),
+  updatePaymentStatus,
 );
 
-router.delete('/:id', deleteOrder);
+router.patch("/:id/delivery-partner-url", zodValidate(updateDeliveryPartnerUrl, 'params', "UpdateOrderStatus"), setDeliveryPartnerUrl);
 
-router.put('/:id/retrieve', retrieveOrder);
+router.delete("/:id", deleteOrder);
+
+router.put("/:id/retrieve", retrieveOrder);
 
 export default router;

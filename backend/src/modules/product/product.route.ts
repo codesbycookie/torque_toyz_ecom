@@ -17,6 +17,7 @@ import {
   setProductActiveStatus,
   retrieveProduct,
   eraseProduct,
+  getProductBySlug,
 } from './product.controller.js';
 
 const router = Router();
@@ -27,7 +28,7 @@ const router = Router();
 
 router.get('/', getAllProducts);
 router.get('/:id', getProductById);
-
+router.get('/:slug', getProductBySlug);
 
 router.use(authMiddleware);
 router.post('/', zodValidate(createProductSchema, 'body', 'CreateProductSchema'), createProduct);
