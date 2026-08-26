@@ -4,7 +4,7 @@ import { useUserStore } from "./user.store";
 import { modals } from "./user.modals";
 import { useUserColumns } from "./user.columns";
 
-const DUMMY_USERS = [
+let DUMMY_USERS = [
   {
     _id: "1",
     login_id: "U-001",
@@ -12,15 +12,13 @@ const DUMMY_USERS = [
     email: "ravi.kumar@example.com",
     phone: "9876543210",
     role: "user",
-    address: {
-      door: "12",
-      street: "Anna Nagar Main Rd",
-      city: "Chennai",
-      state: "Tamil Nadu",
-      pincode: 600040,
-    },
+    address: { door: "12", street: "Anna Nagar Main Rd", city: "Chennai", state: "Tamil Nadu", pincode: 600040 },
+    accepted_terms_at: "2025-01-10T09:15:00.000Z",
     active: true,
     deleted: false,
+    deletedAt: null,
+    createdAt: "2025-01-10T09:00:00.000Z",
+    updatedAt: "2025-01-10T09:15:00.000Z",
   },
   {
     _id: "2",
@@ -29,15 +27,13 @@ const DUMMY_USERS = [
     email: "priya.sharma@example.com",
     phone: "9876543211",
     role: "user",
-    address: {
-      door: "45",
-      street: "MG Road",
-      city: "Bengaluru",
-      state: "Karnataka",
-      pincode: 560001,
-    },
+    address: { door: "45", street: "MG Road", city: "Bengaluru", state: "Karnataka", pincode: 560001 },
+    accepted_terms_at: "2025-01-12T10:00:00.000Z",
     active: true,
     deleted: false,
+    deletedAt: null,
+    createdAt: "2025-01-12T09:45:00.000Z",
+    updatedAt: "2025-01-12T10:00:00.000Z",
   },
   {
     _id: "3",
@@ -46,15 +42,13 @@ const DUMMY_USERS = [
     email: "arjun.reddy@example.com",
     phone: "9876543212",
     role: "user",
-    address: {
-      door: "7",
-      street: "Jubilee Hills",
-      city: "Hyderabad",
-      state: "Telangana",
-      pincode: 500033,
-    },
+    address: { door: "7", street: "Jubilee Hills", city: "Hyderabad", state: "Telangana", pincode: 500033 },
+    accepted_terms_at: null,
     active: false,
     deleted: false,
+    deletedAt: null,
+    createdAt: "2025-01-15T08:30:00.000Z",
+    updatedAt: "2025-01-16T11:00:00.000Z",
   },
   {
     _id: "4",
@@ -63,32 +57,28 @@ const DUMMY_USERS = [
     email: "sneha.iyer@example.com",
     phone: "9876543213",
     role: "user",
-    address: {
-      door: "3",
-      street: "T Nagar",
-      city: "Chennai",
-      state: "Tamil Nadu",
-      pincode: 600017,
-    },
+    address: { door: "3", street: "T Nagar", city: "Chennai", state: "Tamil Nadu", pincode: 600017 },
+    accepted_terms_at: "2025-01-18T14:20:00.000Z",
     active: true,
     deleted: false,
+    deletedAt: null,
+    createdAt: "2025-01-18T14:00:00.000Z",
+    updatedAt: "2025-01-18T14:20:00.000Z",
   },
   {
     _id: "5",
-    login_id: "U-005",
+    login_id: "A-005",
     name: "Karthik Subramanian",
     email: "karthik.s@example.com",
     phone: "9876543214",
-    role: "user",
-    address: {
-      door: "21",
-      street: "Indiranagar",
-      city: "Bengaluru",
-      state: "Karnataka",
-      pincode: 560038,
-    },
+    role: "admin",
+    address: { door: "21", street: "Indiranagar", city: "Bengaluru", state: "Karnataka", pincode: 560038 },
+    accepted_terms_at: "2025-01-20T09:00:00.000Z",
     active: true,
-    deleted: false,
+    deleted: true,
+    deletedAt: "2025-02-05T10:00:00.000Z",
+    createdAt: "2025-01-20T08:50:00.000Z",
+    updatedAt: "2025-02-05T10:00:00.000Z",
   },
 ];
 
@@ -117,6 +107,14 @@ export const useUserModule = (exported) => {
       hasPrev: false,
     });
   }
+
+  const openView = (user) => {
+  setCurrent(user);
+  return openModal(modals.view, {
+    user,
+    exported,
+  });
+};
 
   // Soft delete → item stays in list with deleted: true
   const openDelete = (id, name) => {
@@ -215,6 +213,7 @@ export const useUserModule = (exported) => {
     setCurrent,
     useUserColumns,
     openDelete,
+    openView,
     openResetPassword,
     openDisable,
     openErase,

@@ -78,6 +78,9 @@ export const useUserColumns = (users) => {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => users.openView(user)}>
+                View
+              </DropdownMenuItem>
               {isErased ? (
                 <DropdownMenuItem onClick={() => users.openRetrieve(user._id)}>
                   Retrieve
