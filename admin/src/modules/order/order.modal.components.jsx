@@ -15,6 +15,7 @@ export const ViewOrder = ({ order, closeModal = () => {} }) => {
   if (!order) return null;
 
   return (
+    <>
     <DialogContent className="sm:max-w-3xl w-full">
       <DialogHeader>
         <DialogTitle className="text-xl">Order {order.code}</DialogTitle>
@@ -103,6 +104,20 @@ export const ViewOrder = ({ order, closeModal = () => {} }) => {
               </Badge>
             </div>
 
+            {order.delivery_partner_url && (
+              <div className="flex justify-between items-center py-2 border-b">
+                <span className="text-muted-foreground">Delivery Tracking</span>
+                <a
+                  href={order.delivery_partner_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-primary underline underline-offset-2 text-xs truncate max-w-[180px]"
+                >
+                  Track Shipment
+                </a>
+              </div>
+            )}
+
             <div className="flex justify-between items-center py-2 border-b">
               <span className="text-muted-foreground">Subtotal</span>
               <span className="font-medium">₹{order.pricing?.subtotal}</span>
@@ -143,5 +158,6 @@ export const ViewOrder = ({ order, closeModal = () => {} }) => {
         </DialogClose>
       </DialogFooter>
     </DialogContent>
+    </>
   );
 };
