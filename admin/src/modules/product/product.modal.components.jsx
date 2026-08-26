@@ -7,6 +7,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Badge } from "@/components/ui/badge";
 import { FormControl, FormField, FormItem, FormLabel,Form } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { useAsync } from "@/core/hooks/useAsync";
@@ -21,6 +22,101 @@ import {
 } from "./product.schema";
 import ProductForm from "./product.form";
 
+
+export const View = ({ product, closeModal = () => {} }) => {
+  if (!product) return null;
+
+  return (
+    <DialogContent className="sm:max-w-2xl w-full">
+      <DialogHeader>
+        <DialogTitle className="text-xl">{product.name}</DialogTitle>
+        <DialogDescription>
+          Code: <span className="font-mono">{product.code}</span> · Slug:{" "}
+          <span className="font-mono">{product.slug}</span>
+        </DialogDescription>
+      </DialogHeader>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 py-4">
+        <div className="space-y-3">
+          <h4 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+            Images
+          </h4>
+          <div className="grid grid-cols-3 gap-2">
+            {(product.images || []).map((src, i) => (
+              <img
+                key={i}
+                src={src}
+                alt={`${product.name} ${i + 1}`}
+                className="size-full aspect-square rounded-md object-cover border"
+              />
+            ))}
+          </div>
+
+          {product.description && (
+            <>
+              <h4 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground pt-2">
+                Description
+              </h4>
+              <p className="text-sm text-muted-foreground">{product.description}</p>
+            </>
+          )}
+        </div>
+
+        <div className="space-y-3 text-sm">
+          <h4 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+            Details
+          </h4>
+
+          <div className="flex justify-between items-center py-2 border-b">
+            <span className="text-muted-foreground">Price</span>
+            <span className="font-semibold">₹{Number(product.price).toFixed(2)}</span>
+          </div>
+
+          <div className="flex justify-between items-center py-2 border-b">
+            <span className="text-muted-foreground">Stock</span>
+            <span className="font-medium">{product.stock}</span>
+          </div>
+
+          <div className="flex justify-between items-center py-2 border-b">
+            <span className="text-muted-foreground">Weight</span>
+            <span className="font-medium">{product.weight} kg</span>
+          </div>
+
+          <div className="flex justify-between items-center py-2 border-b">
+            <span className="text-muted-foreground">Status</span>
+            <Badge variant={product.active ? "default" : "outline"}>
+              {product.active ? "Active" : "Inactive"}
+            </Badge>
+          </div>
+
+          {product.deleted && (
+            <div className="flex justify-between items-center py-2 border-b">
+              <span className="text-muted-foreground">Deleted At</span>
+              <span className="font-medium">
+                {product.deletedAt ? new Date(product.deletedAt).toLocaleDateString() : "-"}
+              </span>
+            </div>
+          )}
+
+          <div className="flex justify-between items-center py-2">
+            <span className="text-muted-foreground">Created</span>
+            <span className="font-medium">
+              {product.createdAt ? new Date(product.createdAt).toLocaleDateString() : "-"}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <DialogFooter>
+        <DialogClose asChild>
+          <Button variant="outline" onClick={closeModal}>
+            Close
+          </Button>
+        </DialogClose>
+      </DialogFooter>
+    </DialogContent>
+  );
+};
 export const Create = ({ submitFn = () => {}, closeModal = () => {} } = {}) => {
   const form = useForm({
     resolver: zodResolver(productCreateSchema),

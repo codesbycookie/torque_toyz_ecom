@@ -65,6 +65,9 @@ export const useProductColumns = (products) => {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => products.openView(product)}>
+                View
+              </DropdownMenuItem>
               <DropdownMenuItem onClick={() => products.openEdit(product)}>
                 Edit
               </DropdownMenuItem>

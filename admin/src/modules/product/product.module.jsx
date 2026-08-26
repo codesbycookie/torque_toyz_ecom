@@ -4,86 +4,140 @@ import { useProductStore } from "./product.store";
 import { modals } from "./product.modals";
 import { useProductColumns } from "./product.coulmns";
 
-const DUMMY_PRODUCTS = [
+const DUMMY_IMAGES = [
+  "https://placehold.co/600x400?text=Product+1",
+  "https://placehold.co/600x400?text=Product+2",
+  "https://placehold.co/600x400?text=Product+3",
+];
+
+let DUMMY_PRODUCTS = [
   {
     _id: "1",
     code: "P-001",
     name: "Classic Cotton T-Shirt",
+    slug: "classic-cotton-t-shirt",
+    images: DUMMY_IMAGES,
     description: "Soft round-neck cotton t-shirt, everyday wear.",
     stock: 120,
     price: 19.99,
     weight: 0.25,
     active: true,
+    deleted: false,
+    deletedAt: null,
+    createdAt: "2025-01-10T09:00:00.000Z",
+    updatedAt: "2025-01-10T09:00:00.000Z",
   },
   {
     _id: "2",
     code: "P-002",
     name: "Ceramic Coffee Mug",
+    slug: "ceramic-coffee-mug",
+    images: DUMMY_IMAGES,
     description: "350ml ceramic mug, dishwasher safe.",
     stock: 85,
     price: 12.5,
     weight: 0.4,
     active: true,
+    deleted: false,
+    deletedAt: null,
+    createdAt: "2025-01-12T09:00:00.000Z",
+    updatedAt: "2025-01-12T09:00:00.000Z",
   },
   {
     _id: "3",
     code: "P-003",
     name: "Wireless Mouse",
+    slug: "wireless-mouse",
+    images: DUMMY_IMAGES,
     description: "Ergonomic wireless mouse with silent clicks.",
     stock: 40,
     price: 29.99,
     weight: 0.12,
     active: true,
+    deleted: false,
+    deletedAt: null,
+    createdAt: "2025-01-15T09:00:00.000Z",
+    updatedAt: "2025-01-15T09:00:00.000Z",
   },
   {
     _id: "4",
     code: "P-004",
     name: "Leather Wallet",
+    slug: "leather-wallet",
+    images: DUMMY_IMAGES,
     description: "Genuine leather bifold wallet.",
     stock: 0,
     price: 45.0,
     weight: 0.15,
     active: false,
+    deleted: false,
+    deletedAt: null,
+    createdAt: "2025-01-18T09:00:00.000Z",
+    updatedAt: "2025-01-20T09:00:00.000Z",
   },
   {
     _id: "5",
     code: "P-005",
     name: "Notebook A5",
+    slug: "notebook-a5",
+    images: DUMMY_IMAGES,
     description: "Hardcover ruled notebook, 192 pages.",
     stock: 200,
     price: 8.99,
     weight: 0.35,
     active: true,
+    deleted: false,
+    deletedAt: null,
+    createdAt: "2025-01-20T09:00:00.000Z",
+    updatedAt: "2025-01-20T09:00:00.000Z",
   },
   {
     _id: "6",
     code: "P-006",
     name: "Stainless Steel Bottle",
+    slug: "stainless-steel-bottle",
+    images: DUMMY_IMAGES,
     description: "750ml insulated water bottle.",
     stock: 65,
     price: 24.99,
     weight: 0.45,
     active: true,
+    deleted: false,
+    deletedAt: null,
+    createdAt: "2025-01-22T09:00:00.000Z",
+    updatedAt: "2025-01-22T09:00:00.000Z",
   },
   {
     _id: "7",
     code: "P-007",
     name: "Bluetooth Earbuds",
+    slug: "bluetooth-earbuds",
+    images: DUMMY_IMAGES,
     description: "True wireless earbuds with charging case.",
     stock: 28,
     price: 59.99,
     weight: 0.08,
     active: true,
+    deleted: false,
+    deletedAt: null,
+    createdAt: "2025-01-25T09:00:00.000Z",
+    updatedAt: "2025-01-25T09:00:00.000Z",
   },
   {
     _id: "8",
     code: "P-008",
     name: "Desk Lamp LED",
+    slug: "desk-lamp-led",
+    images: DUMMY_IMAGES,
     description: "Adjustable LED desk lamp with USB port.",
     stock: 15,
     price: 34.5,
     weight: 0.9,
     active: false,
+    deleted: true,
+    deletedAt: "2025-02-01T09:00:00.000Z",
+    createdAt: "2025-01-28T09:00:00.000Z",
+    updatedAt: "2025-02-01T09:00:00.000Z",
   },
 ];
 
@@ -113,7 +167,13 @@ export const useProductModule = (exported) => {
       hasPrev: false,
     });
   }
-
+  const openView = (product) => {
+    setCurrent(product);
+    return openModal(modals.view, {
+      product,
+      exported,
+    });
+  };
   const openCreate = () => {
     return openModal(modals.create, {
       submitFn: (data) => {
@@ -175,15 +235,15 @@ export const useProductModule = (exported) => {
   };
 
   const openStockUpdate = (product) => {
-  return openModal(modals.stock, {
-    product,
-    submitFn: (data) => {
-      update(product._id, data);
-      toast.success("Stock updated successfully");
-    },
-    exported,
-  });
-};
+    return openModal(modals.stock, {
+      product,
+      submitFn: (data) => {
+        update(product._id, data);
+        toast.success("Stock updated successfully");
+      },
+      exported,
+    });
+  };
 
   const openActiveStatus = (id, status) => {
     return openModal(modals.activeStatus, {
@@ -192,7 +252,9 @@ export const useProductModule = (exported) => {
       submitFn: (id, data) => {
         update(id, data);
         toast.success(
-          data?.active ? "Product is now active" : "Product has been deactivated"
+          data?.active
+            ? "Product is now active"
+            : "Product has been deactivated",
         );
       },
       exported,
@@ -241,6 +303,7 @@ export const useProductModule = (exported) => {
     remove,
     setCurrent,
     useProductColumns,
+    openView,
     openCreate,
     openEdit,
     openDelete,

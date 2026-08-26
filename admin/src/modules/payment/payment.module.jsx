@@ -114,7 +114,7 @@ export const usePaymentModule = (exported) => {
     setCurrent(payment);
     return openModal(modals.refund, {
       payment,
-      submitFn: (id) => {
+      submitFn: (id) => { 
         update(id, { status: "refunded", failure_reason: null });
         toast.success("Refund initiated successfully");
       },
