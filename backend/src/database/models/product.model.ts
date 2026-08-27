@@ -6,6 +6,7 @@ export interface IProduct extends Document {
   code: string;
   name: string;
   slug: string;
+  category: Types.ObjectId;
   images: string[];
   description?: string;
   weight: number;
@@ -33,6 +34,7 @@ const ProductSchema = new Schema<IProduct>(
   {
     code: { type: String, unique: true },
     name: { type: String, required: true, trim: true },
+    category: { type: Schema.Types.ObjectId, ref: "Category", required: true },
     slug: { type: String, unique: true, trim: true, lowercase: true },
     description: { type: String, trim: true },
     images: [

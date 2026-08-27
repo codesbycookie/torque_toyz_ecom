@@ -5,6 +5,7 @@ import Product from '@db/models/product.model.ts';
 import Order from '@db/models/order.model.ts';
 import Review from '@db/models/review.model.ts';
 import { tester } from '@core/constants/tester.constant.ts';
+import Category from '@db/models/category.model.ts';
 
 const baseRoute = '/api/v1/reviews';
 
@@ -13,6 +14,7 @@ let cleanupAdmin: () => Promise<void>;
 let userId: string;
 let testProductId: string;
 let createdReviewId: string;
+let testCategoryId: string;
 
 beforeAll(async () => {
   await bootstrap();
@@ -22,7 +24,11 @@ beforeAll(async () => {
   userId = setup.user._id.toString(); // fixed — setupAdmin returns `user`, not `userId`
 
   const timestamp = Date.now();
-  const product = await new Product({ name: `Review Product ${timestamp}`, weight: 1 }).save();
+
+  const category = await new Category({ name: `Payment Test Category ${timestamp}` }).save();
+testCategoryId = category._id.toString();
+
+  const product = await new Product({ name: `Review Product ${timestamp}`, weight: 1, category: testCategoryId }).save();
   testProductId = product._id.toString();
 
   // simulate a delivered order so the review purchase-gate passes

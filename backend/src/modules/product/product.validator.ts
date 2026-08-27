@@ -6,6 +6,7 @@ export const createProductSchema = z.object({
   images: z.array(z.string().url()).optional(),
   weight: z.number().positive('Weight must be greater than 0'),
   stock: z.number().nonnegative().optional().default(0),
+  category: z.string().min(1, 'Category is required'),
 });
 
 export const updateProductSchema = createProductSchema.partial();

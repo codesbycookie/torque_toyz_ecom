@@ -5,6 +5,7 @@ import Product from '@db/models/product.model.ts';
 import Location from '@db/models/location.model.ts';
 import Order from '@db/models/order.model.ts';
 import { tester } from '@core/constants/tester.constant.ts';
+import Category from '@db/models/category.model.ts';
 
 const baseRoute = '/api/v1/orders';
 
@@ -13,6 +14,7 @@ let cleanupAdmin: () => Promise<void>;
 let testProductId: string;
 let testLocationId: string;
 let createdOrderId: string;
+let testCategoryId: string;
 
 beforeAll(async () => {
   await bootstrap();
@@ -21,7 +23,12 @@ beforeAll(async () => {
   cleanupAdmin = setup.cleanup;
 
   const timestamp = Date.now();
-  const product = await new Product({ name: `Order Product ${timestamp}`, stock: 10, weight: 1 }).save(); // fixed
+
+  const category = await new Category({ name: `Payment Test Category ${timestamp}` }).save();
+testCategoryId = category._id.toString();
+
+
+  const product = await new Product({ name: `Order Product ${timestamp}`, stock: 10, weight: 1, category: testCategoryId }).save(); // fixed
   testProductId = product._id.toString();
 
   const location = await new Location({
