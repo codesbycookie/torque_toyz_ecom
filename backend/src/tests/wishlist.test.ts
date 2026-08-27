@@ -3,6 +3,7 @@ import { bootstrap } from '../app.ts';
 import Product from '@db/models/product.model.ts';
 import Wishlist from '@db/models/wishlist.model.ts';
 import { tester } from '@core/constants/tester.constant.ts';
+import Category from '@db/models/category.model.ts';
 
 const baseRoute = '/api/v1/wishlists';
 
@@ -11,6 +12,7 @@ let cleanupAdmin: () => Promise<void>;
 let userId: string;
 let testProductId: string;
 let testProductId2: string;
+let testCategoryId: string;
 
 beforeAll(async () => {
   await bootstrap();
@@ -20,8 +22,11 @@ beforeAll(async () => {
   userId = setup.user._id.toString(); // fixed
 
   const timestamp = Date.now();
-  const product1 = await new Product({ name: `Wishlist Product 1 ${timestamp}`, weight: 1 }).save();
-  const product2 = await new Product({ name: `Wishlist Product 2 ${timestamp}`, weight: 1 }).save();
+  const category = await new Category({ name: `Payment Test Category ${timestamp}`,  }).save();
+testCategoryId = category._id.toString();
+
+  const product1 = await new Product({ name: `Wishlist Product 1 ${timestamp}`, weight: 1 ,category: testCategoryId}).save();
+  const product2 = await new Product({ name: `Wishlist Product 2 ${timestamp}`, weight: 1, category: testCategoryId, }).save();
   testProductId = product1._id.toString();
   testProductId2 = product2._id.toString();
 });
