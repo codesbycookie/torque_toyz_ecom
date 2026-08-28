@@ -38,7 +38,17 @@ export default function LocationForm({ form }) {
       />
 
       <div className="flex flex-col gap-2">
-        <FormLabel>Tariff Slabs</FormLabel>
+        <div className="flex justify-between items-center">
+          <FormLabel>Tariff Slabs</FormLabel>
+           <Button
+          type="button"
+          variant="outline"
+          className="w-fit"
+          onClick={() => append({ min: 0, max: 0, rate: 0 })}
+        >
+          <Plus className="size-4" /> Add Slab
+        </Button>
+        </div>
 
         <div className="flex flex-col gap-3 max-h-64 overflow-y-auto pr-1">
           {fields.map((field, index) => (
@@ -92,14 +102,7 @@ export default function LocationForm({ form }) {
           ))}
         </div>
 
-        <Button
-          type="button"
-          variant="outline"
-          className="w-fit"
-          onClick={() => append({ min: 0, max: 0, rate: 0 })}
-        >
-          <Plus className="size-4" /> Add Slab
-        </Button>
+       
       </div>
     </>
   );

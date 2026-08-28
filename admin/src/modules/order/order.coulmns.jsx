@@ -69,7 +69,7 @@ export const useOrderColumns = (orders) => {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => orders.openView(order)}>View Details</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => orders.openView(order)}>View</DropdownMenuItem>
 
               <DropdownMenuSeparator />
 
