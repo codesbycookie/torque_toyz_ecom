@@ -11,7 +11,7 @@ const roleConfig = {
   super_admin: {
     label: 'Page Not Found',
     message: 'This page doesn’t exist in the super admin workspace.',
-    redirect: '/super_admin/',
+    redirect: '/admin/',
     cta: 'Go to Admin Dashboard',
   },
   department_admin: {

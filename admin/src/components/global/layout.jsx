@@ -9,12 +9,14 @@ import {
 import { cn } from '@/lib/utils';
 import { Link, Outlet, useLocation } from 'react-router-dom';
 import { CommandMenu } from './globalcommand';
-import { Search } from 'lucide-react';
+import { LogOut, Search } from 'lucide-react';
 import { useUI } from '@/core/contexts/ui.context';
+import { useAuth } from '@/core/contexts/auth.context';
 import { camelToTitle } from '@/core/utils/helper.utils';
 import { appRoutes } from '@/core/router/routes';
 
 export default function Layout() {
+    const { logout } = useAuth();
     const {
         setCommandOpen,
         sidebarOpen,
@@ -70,6 +72,23 @@ export default function Layout() {
                             ))}
                         </div>
                     </div>
+
+                    <button
+                        type="button"
+                        onClick={logout}
+                        className="flex items-center justify-start gap-2 py-2 text-sm text-neutral-700 transition duration-150 hover:text-destructive dark:text-neutral-200"
+                        aria-label="Logout"
+                    >
+                        <LogOut className="h-5 w-5 shrink-0" />
+                        <span
+                            className={cn(
+                                'whitespace-pre transition duration-150',
+                                sidebarOpen ? 'opacity-100' : 'hidden',
+                            )}
+                        >
+                            Logout
+                        </span>
+                    </button>
                 </SidebarBody>
             </Sidebar>
 

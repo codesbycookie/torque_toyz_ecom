@@ -39,7 +39,7 @@ const DUMMY_USER = {
   _id: "dummy-user-1",
   name: "Admin User",
   email: "admin@torquetoyzz.com",
-  role: "super_admin",
+  role: "admin",
   unifiedPermissions: {
     products: true,
     location: true,
