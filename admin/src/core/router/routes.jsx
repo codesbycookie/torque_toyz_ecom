@@ -1,19 +1,19 @@
+// routes.ts  (or wherever appRoutes lives)
+
 import {
   IconBoxSeam,
   IconBuildingCommunity,
   IconClipboardList,
-  IconReceipt,
-  IconGitBranch,
-  IconLogout2,
-  IconCalculator,
 } from "@tabler/icons-react";
-import Product from "../../pages/products/product"
-import Location from "../../pages/location/location"
-import User from "../../pages/user/user"
-import Payment from "../../pages/payment/payment"
-import Order from "../../pages/order/order"
-import Category from "../../pages/category/category"
 
+import Product from "../../pages/products/product";
+import Location from "../../pages/location/location";
+import User from "../../pages/user/user";
+import Payment from "../../pages/payment/payment";
+import Order from "../../pages/order/order";
+import Category from "../../pages/category/category";
+
+// Login is NOT here
 export const appRoutes = [
   {
     path: "/admin/products",
@@ -23,7 +23,7 @@ export const appRoutes = [
     icon: <IconBoxSeam className="h-5 w-5 shrink-0" />,
     element: <Product />,
   },
-   {
+  {
     path: "/admin/location",
     label: "Location",
     title: "Location",
@@ -31,7 +31,7 @@ export const appRoutes = [
     icon: <IconBuildingCommunity className="h-5 w-5 shrink-0" />,
     element: <Location />,
   },
-   {
+  {
     path: "/admin/users",
     label: "Users",
     title: "Users",
@@ -40,27 +40,27 @@ export const appRoutes = [
     element: <User />,
   },
   {
-  path: "/admin/order",
-  label: "Orders",
-  title: "Orders",
-  description: "View and manage customer orders.",
-  icon: <IconClipboardList className="h-5 w-5 shrink-0" />,
-  element: <Order />,
+    path: "/admin/",
+    label: "Orders",
+    title: "Orders",
+    description: "View and manage customer orders.",
+    icon: <IconClipboardList className="h-5 w-5 shrink-0" />,
+    element: <Order />,
   },
   {
-  path: "/admin/payment",
-  label: "payment",
-  title: "payment",
-  description: "View and manage payment history.",
-  icon: <IconClipboardList className="h-5 w-5 shrink-0" />,
-  element: <Payment />,
+    path: "/admin/payment",
+    label: "Payment",
+    title: "Payment",
+    description: "View and manage payment history.",
+    icon: <IconClipboardList className="h-5 w-5 shrink-0" />,
+    element: <Payment />,
   },
   {
-  path: "/admin/Category",
-  label: "Category",
-  title: "Category",
-  description: "View and manage Category history.",
-  icon: <IconClipboardList className="h-5 w-5 shrink-0" />,
-  element: <Category />,
+    path: "/admin/category",
+    label: "Category",
+    title: "Category",
+    description: "View and manage categories.",
+    icon: <IconClipboardList className="h-5 w-5 shrink-0" />,
+    element: <Category />,
   },
-  ];
+];

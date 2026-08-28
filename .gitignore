@@ -8,5 +8,5 @@ customer/node_modules
 customer/.env
 
 
-gitstats.py
+git_stats.py
 git_summary.csv
