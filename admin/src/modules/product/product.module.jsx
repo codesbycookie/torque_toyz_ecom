@@ -27,6 +27,114 @@ let DUMMY_PRODUCTS = [
     deletedAt: null,
     createdAt: "2025-01-10T09:00:00.000Z",
     updatedAt: "2025-01-10T09:00:00.000Z",
+    reviews: [
+      
+  {
+    _id: "r1",
+    userName: "Aisha K.",
+    rating: 5,
+    comment: "Perfect fit and soft fabric.",
+    createdAt: "2025-02-01T10:00:00.000Z",
+  },
+  {
+    _id: "r2",
+    userName: "Rahul M.",
+    rating: 4,
+    comment: "Good quality, runs a bit large.",
+    createdAt: "2025-02-03T12:30:00.000Z",
+  },
+  {
+    _id: "r3",
+    userName: "Priya S.",
+    rating: 5,
+    comment: "Excellent quality and very comfortable.",
+    createdAt: "2025-02-05T09:15:00.000Z",
+  },
+  {
+    _id: "r4",
+    userName: "Arjun R.",
+    rating: 4,
+    comment: "Looks great and feels durable.",
+    createdAt: "2025-02-07T14:45:00.000Z",
+  },
+  {
+    _id: "r5",
+    userName: "Sneha P.",
+    rating: 5,
+    comment: "Absolutely love it. Worth the price.",
+    createdAt: "2025-02-10T11:20:00.000Z",
+  },
+  {
+    _id: "r6",
+    userName: "Vikram N.",
+    rating: 3,
+    comment: "Decent product, but the color is slightly different.",
+    createdAt: "2025-02-12T16:10:00.000Z",
+  },
+  {
+    _id: "r7",
+    userName: "Meera V.",
+    rating: 5,
+    comment: "Very soft material and fits perfectly.",
+    createdAt: "2025-02-15T08:40:00.000Z",
+  },
+  {
+    _id: "r8",
+    userName: "Karthik S.",
+    rating: 4,
+    comment: "Good product for everyday use.",
+    createdAt: "2025-02-18T13:25:00.000Z",
+  },
+  {
+    _id: "r9",
+    userName: "Divya M.",
+    rating: 5,
+    comment: "Better than expected. Highly recommended.",
+    createdAt: "2025-02-21T10:50:00.000Z",
+  },
+  {
+    _id: "r10",
+    userName: "Aditya K.",
+    rating: 4,
+    comment: "Nice design and comfortable to wear.",
+    createdAt: "2025-02-24T15:35:00.000Z",
+  },
+  {
+    _id: "r11",
+    userName: "Nandhini R.",
+    rating: 5,
+    comment: "Great stitching and premium feel.",
+    createdAt: "2025-02-27T09:05:00.000Z",
+  },
+  {
+    _id: "r12",
+    userName: "Sanjay P.",
+    rating: 3,
+    comment: "The product is good, but delivery took longer than expected.",
+    createdAt: "2025-03-01T17:20:00.000Z",
+  },
+  {
+    _id: "r13",
+    userName: "Keerthi A.",
+    rating: 4,
+    comment: "Comfortable and looks exactly like the pictures.",
+    createdAt: "2025-03-04T12:10:00.000Z",
+  },
+  {
+    _id: "r14",
+    userName: "Manoj T.",
+    rating: 5,
+    comment: "Fantastic quality. Will definitely buy again.",
+    createdAt: "2025-03-07T11:45:00.000Z",
+  },
+  {
+    _id: "r15",
+    userName: "Ananya D.",
+    rating: 4,
+    comment: "Good fit and nice overall finish.",
+    createdAt: "2025-03-10T14:30:00.000Z",
+  },
+    ] 
   },
   {
     _id: "2",
@@ -44,6 +152,15 @@ let DUMMY_PRODUCTS = [
     deletedAt: null,
     createdAt: "2025-01-12T09:00:00.000Z",
     updatedAt: "2025-01-12T09:00:00.000Z",
+    reviews: [
+      {
+        _id: "r3",
+        userName: "Priya S.",
+        rating: 5,
+        comment: "Looks premium, keeps coffee warm.",
+        createdAt: "2025-02-05T09:15:00.000Z",
+      },
+    ],
   },
   {
     _id: "3",
@@ -61,92 +178,9 @@ let DUMMY_PRODUCTS = [
     deletedAt: null,
     createdAt: "2025-01-15T09:00:00.000Z",
     updatedAt: "2025-01-15T09:00:00.000Z",
+    reviews: [],
   },
-  {
-    _id: "4",
-    code: "P-004",
-    name: "Leather Wallet",
-    slug: "leather-wallet",
-    images: DUMMY_IMAGES,
-    description: "Genuine leather bifold wallet.",
-    category: "Apparel",
-    stock: 0,
-    price: 45.0,
-    weight: 0.15,
-    active: false,
-    deleted: false,
-    deletedAt: null,
-    createdAt: "2025-01-18T09:00:00.000Z",
-    updatedAt: "2025-01-20T09:00:00.000Z",
-  },
-  {
-    _id: "5",
-    code: "P-005",
-    name: "Notebook A5",
-    slug: "notebook-a5",
-    images: DUMMY_IMAGES,
-    description: "Hardcover ruled notebook, 192 pages.",
-    category: "Stationery",
-    stock: 200,
-    price: 8.99,
-    weight: 0.35,
-    active: true,
-    deleted: false,
-    deletedAt: null,
-    createdAt: "2025-01-20T09:00:00.000Z",
-    updatedAt: "2025-01-20T09:00:00.000Z",
-  },
-  {
-    _id: "6",
-    code: "P-006",
-    name: "Stainless Steel Bottle",
-    slug: "stainless-steel-bottle",
-    images: DUMMY_IMAGES,
-    description: "750ml insulated water bottle.",
-    category: "Home & Kitchen",
-    stock: 65,
-    price: 24.99,
-    weight: 0.45,
-    active: true,
-    deleted: false,
-    deletedAt: null,
-    createdAt: "2025-01-22T09:00:00.000Z",
-    updatedAt: "2025-01-22T09:00:00.000Z",
-  },
-  {
-    _id: "7",
-    code: "P-007",
-    name: "Bluetooth Earbuds",
-    slug: "bluetooth-earbuds",
-    images: DUMMY_IMAGES,
-    description: "True wireless earbuds with charging case.",
-    category: "Electronics",
-    stock: 28,
-    price: 59.99,
-    weight: 0.08,
-    active: true,
-    deleted: false,
-    deletedAt: null,
-    createdAt: "2025-01-25T09:00:00.000Z",
-    updatedAt: "2025-01-25T09:00:00.000Z",
-  },
-  {
-    _id: "8",
-    code: "P-008",
-    name: "Desk Lamp LED",
-    slug: "desk-lamp-led",
-    images: DUMMY_IMAGES,
-    description: "Adjustable LED desk lamp with USB port.",
-    category: "Electronics",
-    stock: 15,
-    price: 34.5,
-    weight: 0.9,
-    active: false,
-    deleted: true,
-    deletedAt: "2025-02-01T09:00:00.000Z",
-    createdAt: "2025-01-28T09:00:00.000Z",
-    updatedAt: "2025-02-01T09:00:00.000Z",
-  },
+  // ... keep other products, add reviews: [] or a few sample reviews
 ];
 
 export const useProductModule = (exported) => {
@@ -252,6 +286,40 @@ export const useProductModule = (exported) => {
       exported,
     });
   };
+  const openReviews = (product) => {
+  return openModal(modals.reviews, {
+    product,
+    onEditReview: (review) => {
+      openModal(modals.editReview, {
+        product,
+        review,
+        submitFn: (data) => {
+          const nextReviews = (product.reviews || []).map((r) =>
+            r._id === review._id ? { ...r, ...data } : r
+          );
+          update(product._id, { reviews: nextReviews });
+          toast.success("Review updated");
+        },
+        exported,
+      });
+    },
+    onDeleteReview: (review) => {
+      openModal(modals.deleteReview, {
+        product,
+        review,
+        submitFn: () => {
+          const nextReviews = (product.reviews || []).filter(
+            (r) => r._id !== review._id
+          );
+          update(product._id, { reviews: nextReviews });
+          toast.success("Review deleted");
+        },
+        exported,
+      });
+    },
+    exported,
+  });
+};
 
   const openActiveStatus = (id, status) => {
     return openModal(modals.activeStatus, {
@@ -318,6 +386,7 @@ export const useProductModule = (exported) => {
     openErase,
     openRetrieve,
     openActiveStatus,
+    openReviews,
     openStockUpdate,
     toggleActive,
     fetch,

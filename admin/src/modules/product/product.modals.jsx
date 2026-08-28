@@ -1,12 +1,27 @@
-import { Create, Edit, Delete, ActiveStatus, Retrieve, Erase, UpdateStock, View } from "./product.modal.components";
+import {
+  Create,
+  Edit,
+  Delete,
+  Erase,
+  Retrieve,
+  ActiveStatus,
+  View,
+  UpdateStock,
+  ViewReviews,
+  EditReview,
+  DeleteReview,
+} from "./product.modal.components";
 
 export const modals = {
   create: Create,
   edit: Edit,
   delete: Delete,
-  activeStatus: ActiveStatus,
-  retrieve: Retrieve,
   erase: Erase,
-  stock: UpdateStock,
+  retrieve: Retrieve,
+  activeStatus: ActiveStatus,
   view: View,
+  stock: UpdateStock,
+  reviews: ViewReviews,
+  editReview: EditReview,
+  deleteReview: DeleteReview,
 };

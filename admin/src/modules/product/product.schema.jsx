@@ -17,3 +17,9 @@ export const productEditSchema = productCreateSchema.extend({
 export const productStockSchema = z.object({
   stock: z.coerce.number().min(0, { error: "Stock cannot be negative" }),
 });
+
+export const productReviewEditSchema = z.object({
+  userName: z.string().min(1, { error: "Name is required" }),
+  rating: z.coerce.number().min(1).max(5),
+  comment: z.string().min(1, { error: "Comment is required" }),
+});

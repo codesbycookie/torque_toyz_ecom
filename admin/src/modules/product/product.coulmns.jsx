@@ -82,6 +82,9 @@ export const useProductColumns = (products) => {
               >
                 Update Stock
               </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => products.openReviews(product)}>
+                Reviews ({product.reviews?.length || 0})
+              </DropdownMenuItem>
 
               <DropdownMenuItem
                 onClick={() =>

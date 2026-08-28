@@ -28,6 +28,230 @@ import {
 } from "./product.schema";
 import ProductForm from "./product.form";
 
+import { productReviewEditSchema } from "./product.schema";
+import { Textarea } from "@/components/ui/textarea";
+import { Star } from "lucide-react";
+
+// ─── View Reviews ─────────────────────────────────────────────
+export const ViewReviews = ({
+  product,
+  onEditReview,
+  onDeleteReview,
+  closeModal = () => {},
+}) => {
+  const reviews = product?.reviews || [];
+
+  return (
+    <DialogContent className="sm:max-w-lg w-full max-h-[85vh] overflow-y-auto">
+      <DialogHeader>
+        <DialogTitle>Reviews — {product?.name}</DialogTitle>
+        <DialogDescription>
+          {reviews.length} review{reviews.length !== 1 ? "s" : ""}
+        </DialogDescription>
+      </DialogHeader>
+
+      <div className="space-y-3 py-2">
+        {reviews.length === 0 ? (
+          <p className="text-sm text-muted-foreground text-center py-8">
+            No reviews yet.
+          </p>
+        ) : (
+          reviews.map((review) => (
+            <div
+              key={review._id}
+              className="rounded-lg border p-3 space-y-2"
+            >
+              <div className="flex items-start justify-between gap-2">
+                <div>
+                  <p className="font-medium text-sm">{review.userName}</p>
+                  <div className="flex items-center gap-0.5 mt-0.5">
+                    {Array.from({ length: 5 }).map((_, i) => (
+                      <Star
+                        key={i}
+                        className={`size-3.5 ${
+                          i < review.rating
+                            ? "fill-amber-400 text-amber-400"
+                            : "text-muted-foreground/40"
+                        }`}
+                      />
+                    ))}
+                  </div>
+                </div>
+                <span className="text-[10px] text-muted-foreground whitespace-nowrap">
+                  {review.createdAt
+                    ? new Date(review.createdAt).toLocaleDateString()
+                    : "-"}
+                </span>
+              </div>
+
+              <p className="text-sm text-muted-foreground">{review.comment}</p>
+
+              <div className="flex gap-2 pt-1">
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  onClick={() => onEditReview?.(review)}
+                >
+                  Edit
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="destructive"
+                  onClick={() => onDeleteReview?.(review)}
+                >
+                  Delete
+                </Button>
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+
+      <DialogFooter>
+        <DialogClose asChild>
+          <Button variant="outline" onClick={closeModal}>
+            Close
+          </Button>
+        </DialogClose>
+      </DialogFooter>
+    </DialogContent>
+  );
+};
+
+// ─── Edit Review ──────────────────────────────────────────────
+export const EditReview = ({
+  product,
+  review,
+  submitFn = () => {},
+  closeModal = () => {},
+}) => {
+  const form = useForm({
+    resolver: zodResolver(productReviewEditSchema),
+    defaultValues: {
+      userName: review?.userName || "",
+      rating: review?.rating ?? 5,
+      comment: review?.comment || "",
+    },
+  });
+
+  const { run, loading, ErrorAlert, clearError } = useAsync(submitFn);
+  useClearError(form, clearError);
+
+  const onSubmit = useSubmit({
+    run,
+    form,
+    onSuccess: closeModal,
+  });
+
+  return (
+    <DialogContent className="sm:max-w-[425px]">
+      <DialogHeader>
+        <DialogTitle>Edit Review</DialogTitle>
+        <DialogDescription>
+          Update review on {product?.name}
+        </DialogDescription>
+      </DialogHeader>
+
+      <Form {...form}>
+        <form
+          className="grid gap-4 py-2"
+          onSubmit={form.handleSubmit(onSubmit)}
+        >
+          <FormField
+            control={form.control}
+            name="userName"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Name</FormLabel>
+                <FormControl>
+                  <Input placeholder="Reviewer name" {...field} />
+                </FormControl>
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="rating"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Rating (1–5)</FormLabel>
+                <FormControl>
+                  <Input
+                    type="number"
+                    min={1}
+                    max={5}
+                    {...field}
+                    onChange={(e) => field.onChange(Number(e.target.value))}
+                  />
+                </FormControl>
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="comment"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Comment</FormLabel>
+                <FormControl>
+                  <Textarea placeholder="Review comment" {...field} />
+                </FormControl>
+              </FormItem>
+            )}
+          />
+
+          {ErrorAlert}
+          <DialogFooter>
+            <DialogClose asChild>
+              <Button variant="outline">Cancel</Button>
+            </DialogClose>
+            <Button type="submit" loading={loading} loadingText="Saving..">
+              Save
+            </Button>
+          </DialogFooter>
+        </form>
+      </Form>
+    </DialogContent>
+  );
+};
+
+// ─── Delete Review ────────────────────────────────────────────
+export const DeleteReview = ({
+  product,
+  review,
+  submitFn = () => {},
+  closeModal = () => {},
+}) => (
+  <DialogContent className="sm:max-w-[425px]">
+    <DialogHeader>
+      <DialogTitle>Delete this review?</DialogTitle>
+      <DialogDescription>
+        Review by <strong>{review?.userName}</strong> on{" "}
+        <strong>{product?.name}</strong> will be removed permanently.
+      </DialogDescription>
+    </DialogHeader>
+
+    <DialogFooter>
+      <DialogClose asChild>
+        <Button variant="outline">Cancel</Button>
+      </DialogClose>
+      <Button
+        variant="destructive"
+        onClick={() => {
+          submitFn();
+          closeModal();
+        }}
+      >
+        Delete
+      </Button>
+    </DialogFooter>
+  </DialogContent>
+);
+
 export const View = ({ product, closeModal = () => {} }) => {
   if (!product) return null;
 
