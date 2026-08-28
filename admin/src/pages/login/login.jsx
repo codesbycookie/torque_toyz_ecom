@@ -24,25 +24,21 @@ import {
   ArrowRight,
 } from 'lucide-react';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
+import { useAuth } from '@/core/contexts/auth.context';
 
 export default function Login() {
-  const navigate = useNavigate();
+  const { login, loggingIn } = useAuth();
   const [loginId, setLoginId] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
-  const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!loginId.trim() || !password) return;
 
-    setLoading(true);
-    setTimeout(() => {
-      setLoading(false);
-      navigate('/admin');
-    }, 800);
+    await login({ loginId: loginId.trim(), password });
   };
 
   return (
@@ -162,7 +158,7 @@ export default function Login() {
                     placeholder="admin@torquetoyzz.com"
                     value={loginId}
                     onChange={(e) => setLoginId(e.target.value)}
-                    disabled={loading}
+                    disabled={loggingIn}
                     required
                     autoComplete="username"
                     className="h-12 text-sm torque-input"
@@ -184,7 +180,7 @@ export default function Login() {
                       placeholder="••••••••"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
-                      disabled={loading}
+                      disabled={loggingIn}
                       required
                       autoComplete="current-password"
                       className="h-12 pr-11 text-sm torque-input"
@@ -213,7 +209,7 @@ export default function Login() {
                     onCheckedChange={(checked) =>
                       setRememberMe(checked === true)
                     }
-                    disabled={loading}
+                    disabled={loggingIn}
                   />
                   <Label
                     htmlFor="rememberMe"
@@ -227,10 +223,10 @@ export default function Login() {
                 <Button
                   type="submit"
                   size="lg"
-                  disabled={loading || !loginId.trim() || !password}
+                  disabled={loggingIn || !loginId.trim() || !password}
                   className="h-12 w-full text-sm font-semibold torque-button mt-2"
                 >
-                  {loading ? (
+                  {loggingIn ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                       Signing in...
@@ -244,8 +240,6 @@ export default function Login() {
                 </Button>
               </form>
             </CardContent>
-
-            
           </Card>
 
           {/* Extra note */}
