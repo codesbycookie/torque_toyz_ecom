@@ -28,8 +28,6 @@ import {
 } from "./product.schema";
 import ProductForm from "./product.form";
 
-import { productReviewEditSchema } from "./product.schema";
-import { Textarea } from "@/components/ui/textarea";
 import { Star } from "lucide-react";
 
 // ─── View Reviews ─────────────────────────────────────────────
@@ -57,10 +55,7 @@ export const ViewReviews = ({
           </p>
         ) : (
           reviews.map((review) => (
-            <div
-              key={review._id}
-              className="rounded-lg border p-3 space-y-2"
-            >
+            <div key={review._id} className="rounded-lg border p-3 space-y-2">
               <div className="flex items-start justify-between gap-2">
                 <div>
                   <p className="font-medium text-sm">{review.userName}</p>
@@ -90,14 +85,6 @@ export const ViewReviews = ({
                 <Button
                   type="button"
                   size="sm"
-                  variant="outline"
-                  onClick={() => onEditReview?.(review)}
-                >
-                  Edit
-                </Button>
-                <Button
-                  type="button"
-                  size="sm"
                   variant="destructive"
                   onClick={() => onDeleteReview?.(review)}
                 >
@@ -120,104 +107,7 @@ export const ViewReviews = ({
   );
 };
 
-// ─── Edit Review ──────────────────────────────────────────────
-export const EditReview = ({
-  product,
-  review,
-  submitFn = () => {},
-  closeModal = () => {},
-}) => {
-  const form = useForm({
-    resolver: zodResolver(productReviewEditSchema),
-    defaultValues: {
-      userName: review?.userName || "",
-      rating: review?.rating ?? 5,
-      comment: review?.comment || "",
-    },
-  });
 
-  const { run, loading, ErrorAlert, clearError } = useAsync(submitFn);
-  useClearError(form, clearError);
-
-  const onSubmit = useSubmit({
-    run,
-    form,
-    onSuccess: closeModal,
-  });
-
-  return (
-    <DialogContent className="sm:max-w-[425px]">
-      <DialogHeader>
-        <DialogTitle>Edit Review</DialogTitle>
-        <DialogDescription>
-          Update review on {product?.name}
-        </DialogDescription>
-      </DialogHeader>
-
-      <Form {...form}>
-        <form
-          className="grid gap-4 py-2"
-          onSubmit={form.handleSubmit(onSubmit)}
-        >
-          <FormField
-            control={form.control}
-            name="userName"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Name</FormLabel>
-                <FormControl>
-                  <Input placeholder="Reviewer name" {...field} />
-                </FormControl>
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
-            name="rating"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Rating (1–5)</FormLabel>
-                <FormControl>
-                  <Input
-                    type="number"
-                    min={1}
-                    max={5}
-                    {...field}
-                    onChange={(e) => field.onChange(Number(e.target.value))}
-                  />
-                </FormControl>
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
-            name="comment"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Comment</FormLabel>
-                <FormControl>
-                  <Textarea placeholder="Review comment" {...field} />
-                </FormControl>
-              </FormItem>
-            )}
-          />
-
-          {ErrorAlert}
-          <DialogFooter>
-            <DialogClose asChild>
-              <Button variant="outline">Cancel</Button>
-            </DialogClose>
-            <Button type="submit" loading={loading} loadingText="Saving..">
-              Save
-            </Button>
-          </DialogFooter>
-        </form>
-      </Form>
-    </DialogContent>
-  );
-};
 
 // ─── Delete Review ────────────────────────────────────────────
 export const DeleteReview = ({

@@ -8,7 +8,6 @@ import {
   View,
   UpdateStock,
   ViewReviews,
-  EditReview,
   DeleteReview,
 } from "./product.modal.components";
 
@@ -22,6 +21,5 @@ export const modals = {
   view: View,
   stock: UpdateStock,
   reviews: ViewReviews,
-  editReview: EditReview,
   deleteReview: DeleteReview,
 };

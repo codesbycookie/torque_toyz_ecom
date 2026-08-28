@@ -289,20 +289,6 @@ export const useProductModule = (exported) => {
   const openReviews = (product) => {
   return openModal(modals.reviews, {
     product,
-    onEditReview: (review) => {
-      openModal(modals.editReview, {
-        product,
-        review,
-        submitFn: (data) => {
-          const nextReviews = (product.reviews || []).map((r) =>
-            r._id === review._id ? { ...r, ...data } : r
-          );
-          update(product._id, { reviews: nextReviews });
-          toast.success("Review updated");
-        },
-        exported,
-      });
-    },
     onDeleteReview: (review) => {
       openModal(modals.deleteReview, {
         product,
