@@ -10,7 +10,10 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 
+
 export default function ProductForm({ form }) {
+
+
   return (
     <>
       <FormField
@@ -21,6 +24,19 @@ export default function ProductForm({ form }) {
             <FormLabel>Name</FormLabel>
             <FormControl>
               <Input placeholder="Enter product name" {...field} />
+            </FormControl>
+          </FormItem>
+        )}
+      />
+
+      <FormField
+        control={form.control}
+        name="category"
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>Category</FormLabel>
+            <FormControl>
+              <Input placeholder="Enter category" {...field} />
             </FormControl>
           </FormItem>
         )}
@@ -60,7 +76,12 @@ export default function ProductForm({ form }) {
             <FormItem>
               <FormLabel>Price</FormLabel>
               <FormControl>
-                <Input type="number" step="0.01" placeholder="0.00" {...field} />
+                <Input
+                  type="number"
+                  step="0.01"
+                  placeholder="0.00"
+                  {...field}
+                />
               </FormControl>
             </FormItem>
           )}
@@ -73,7 +94,12 @@ export default function ProductForm({ form }) {
             <FormItem>
               <FormLabel>Weight (kg)</FormLabel>
               <FormControl>
-                <Input type="number" step="0.01" placeholder="0.00" {...field} />
+                <Input
+                  type="number"
+                  step="0.01"
+                  placeholder="0.00"
+                  {...field}
+                />
               </FormControl>
             </FormItem>
           )}

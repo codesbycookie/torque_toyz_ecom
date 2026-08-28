@@ -8,7 +8,13 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
-import { FormControl, FormField, FormItem, FormLabel,Form } from "@/components/ui/form";
+import {
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  Form,
+} from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { useAsync } from "@/core/hooks/useAsync";
 import { useClearError } from "@/core/hooks/useClearError";
@@ -21,7 +27,6 @@ import {
   productStockSchema,
 } from "./product.schema";
 import ProductForm from "./product.form";
-
 
 export const View = ({ product, closeModal = () => {} }) => {
   if (!product) return null;
@@ -57,7 +62,9 @@ export const View = ({ product, closeModal = () => {} }) => {
               <h4 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground pt-2">
                 Description
               </h4>
-              <p className="text-sm text-muted-foreground">{product.description}</p>
+              <p className="text-sm text-muted-foreground">
+                {product.description}
+              </p>
             </>
           )}
         </div>
@@ -69,7 +76,9 @@ export const View = ({ product, closeModal = () => {} }) => {
 
           <div className="flex justify-between items-center py-2 border-b">
             <span className="text-muted-foreground">Price</span>
-            <span className="font-semibold">₹{Number(product.price).toFixed(2)}</span>
+            <span className="font-semibold">
+              ₹{Number(product.price).toFixed(2)}
+            </span>
           </div>
 
           <div className="flex justify-between items-center py-2 border-b">
@@ -93,7 +102,9 @@ export const View = ({ product, closeModal = () => {} }) => {
             <div className="flex justify-between items-center py-2 border-b">
               <span className="text-muted-foreground">Deleted At</span>
               <span className="font-medium">
-                {product.deletedAt ? new Date(product.deletedAt).toLocaleDateString() : "-"}
+                {product.deletedAt
+                  ? new Date(product.deletedAt).toLocaleDateString()
+                  : "-"}
               </span>
             </div>
           )}
@@ -101,7 +112,9 @@ export const View = ({ product, closeModal = () => {} }) => {
           <div className="flex justify-between items-center py-2">
             <span className="text-muted-foreground">Created</span>
             <span className="font-medium">
-              {product.createdAt ? new Date(product.createdAt).toLocaleDateString() : "-"}
+              {product.createdAt
+                ? new Date(product.createdAt).toLocaleDateString()
+                : "-"}
             </span>
           </div>
         </div>
@@ -123,7 +136,10 @@ export const Create = ({ submitFn = () => {}, closeModal = () => {} } = {}) => {
     defaultValues: {
       name: "",
       description: "",
+      category: "",
       stock: 0,
+      price: 0,
+      weight: 0,
       active: true,
     },
   });
@@ -248,6 +264,7 @@ export const Edit = ({
     defaultValues: {
       name: product?.name || "",
       description: product?.description || "",
+      category: product?.category?._id || product?.category || "",
       stock: product?.stock ?? 0,
       price: product?.price ?? 0,
       weight: product?.weight ?? 0,

@@ -25,6 +25,11 @@ export const useProductColumns = (products) => {
       ),
     },
     {
+      accessorKey: "category",
+      header: () => Hint("Category", "Product category"),
+      cell: ({ row }) => <span>{row.getValue("category") || "-"}</span>,
+    },
+    {
       accessorKey: "stock",
       header: () => Hint("Stock", "Units available"),
       cell: ({ row }) => <span>{row.getValue("stock")}</span>,
