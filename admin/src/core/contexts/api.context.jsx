@@ -5,7 +5,7 @@ import { useUserModule } from "@/modules/user";
 import { useOrderModule } from "../../modules/order/order.module";
 import { usePaymentModule } from "../../modules/payment/payment.module";
 import { useCategoryModule } from "../../modules/category/category.module";
-
+import { useSettingModule } from "@/modules/setting";
 const ApiContext = createContext();
 
 // eslint-disable-next-line react-refresh/only-export-components
@@ -26,6 +26,7 @@ export const ApiProvider = ({ children }) => {
   const orderModule = useOrderModule(exported);
   const paymentModule = usePaymentModule(exported);
   const categoryModule = useCategoryModule(exported);
+  const settingModule = useSettingModule(exported);
   Object.assign(exported, {
     products: productModule,
     locations: locationModule,
@@ -33,6 +34,7 @@ export const ApiProvider = ({ children }) => {
     order: orderModule,
     payments: paymentModule,
     categories: categoryModule,
+    settings: settingModule,
   });
 
   return (

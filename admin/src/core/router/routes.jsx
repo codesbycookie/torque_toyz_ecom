@@ -1,9 +1,11 @@
-// routes.ts  (or wherever appRoutes lives)
-
 import {
   IconBoxSeam,
   IconBuildingCommunity,
+  IconUsers,
   IconClipboardList,
+  IconCreditCard,
+  IconCategory,
+  IconSettings,
 } from "@tabler/icons-react";
 
 import Product from "../../pages/products/product";
@@ -12,6 +14,7 @@ import User from "../../pages/user/user";
 import Payment from "../../pages/payment/payment";
 import Order from "../../pages/order/order";
 import Category from "../../pages/category/category";
+import Setting from "@/pages/setting/setting";
 
 // Login is NOT here
 export const appRoutes = [
@@ -36,7 +39,7 @@ export const appRoutes = [
     label: "Users",
     title: "Users",
     description: "Manage your user accounts and permissions.",
-    icon: <IconBuildingCommunity className="h-5 w-5 shrink-0" />,
+    icon: <IconUsers className="h-5 w-5 shrink-0" />,
     element: <User />,
   },
   {
@@ -52,7 +55,7 @@ export const appRoutes = [
     label: "Payment",
     title: "Payment",
     description: "View and manage payment history.",
-    icon: <IconClipboardList className="h-5 w-5 shrink-0" />,
+    icon: <IconCreditCard className="h-5 w-5 shrink-0" />,
     element: <Payment />,
   },
   {
@@ -60,7 +63,15 @@ export const appRoutes = [
     label: "Category",
     title: "Category",
     description: "View and manage categories.",
-    icon: <IconClipboardList className="h-5 w-5 shrink-0" />,
+    icon: <IconCategory className="h-5 w-5 shrink-0" />,
     element: <Category />,
+  },
+  {
+    path: "/admin/setting",
+    label: "Settings",
+    title: "Settings",
+    description: "View and manage Settings.",
+    icon: <IconSettings className="h-5 w-5 shrink-0" />,
+    element: <Setting />,
   },
 ];
