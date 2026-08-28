@@ -12,6 +12,7 @@ import Location from "../../pages/location/location"
 import User from "../../pages/user/user"
 import Payment from "../../pages/payment/payment"
 import Order from "../../pages/order/order"
+import Category from "../../pages/category/category"
 
 export const appRoutes = [
   {
@@ -53,5 +54,13 @@ export const appRoutes = [
   description: "View and manage payment history.",
   icon: <IconClipboardList className="h-5 w-5 shrink-0" />,
   element: <Payment />,
+  },
+  {
+  path: "/admin/Category",
+  label: "Category",
+  title: "Category",
+  description: "View and manage Category history.",
+  icon: <IconClipboardList className="h-5 w-5 shrink-0" />,
+  element: <Category />,
   },
   ];
