@@ -2,7 +2,7 @@ import { z } from 'zod';
 import { objectId, passwordSchema } from '@core/utils/validator.util.ts';
 
 export const loginSchema = z.object({
-  login_id: z.string().trim().min(3, 'Login ID is too short'),
+  identifier: z.string({error: 'Identifier is required'}).trim().min(3, 'Login ID is too short'),
   password: z.string().min(1, 'Password is required'),
   rememberMe: z.boolean().optional(),
 });
