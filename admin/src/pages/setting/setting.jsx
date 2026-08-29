@@ -32,8 +32,16 @@ export default function Setting() {
     },
   });
 
+  // Settings no longer auto-seed — fetch once on mount.
   useEffect(() => {
-    form.reset(settings.values);
+    settings.fetch();
+  }, []);
+
+  // Only reset once real data has actually arrived.
+  useEffect(() => {
+    if (settings.values) {
+      form.reset(settings.values);
+    }
   }, [settings.values]);
 
   const { run, loading, ErrorAlert, clearError } = useAsync(settings.save);
