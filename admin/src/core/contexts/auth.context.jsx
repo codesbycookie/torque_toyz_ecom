@@ -24,36 +24,6 @@ export const useAuth = () => {
   return ctx;
 };
 
-// ── DUMMY AUTH (no backend yet) ──────────────────────────────────────
-// Swap the bodies of login/logout/hydrateUser back to the commented
-// crud.* calls once the real /auths endpoints exist. Shape of `user`
-// is kept identical to what the real API is expected to return, so
-// nothing downstream (routes, App404 roleConfig, Layout, etc.) needs
-// to change when this is swapped out.
-const DUMMY_CREDENTIALS = {
-  loginId: "admin@torquetoyzz.com",
-  password: "admin123",
-};
-
-const DUMMY_USER = {
-  _id: "dummy-user-1",
-  name: "Admin User",
-  email: "admin@torquetoyzz.com",
-  role: "admin",
-  unifiedPermissions: {
-    products: true,
-    location: true,
-    users: true,
-    orders: true,
-    payment: true,
-    category: true,
-    setting: true,
-  },
-};
-
-const SESSION_KEY = "dummy_auth_session";
-// ──────────────────────────────────────────────────────────────────────
-
 export const AuthProvider = ({ children }) => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -72,7 +42,8 @@ export const AuthProvider = ({ children }) => {
   const [loggingIn, setLoggingIn] = useState(false);
   const [loading, setLoading] = useState(true);
 
-  // Kept for when the real API is wired in — unused while login/me are dummy.
+  console.log(apiurls);
+
   const crud = useMemo(
     () => createCrud({ entity: "Auth", urls: apiurls.auth, store: null }),
     [],
@@ -97,13 +68,7 @@ export const AuthProvider = ({ children }) => {
     const hydrateUser = async () => {
       try {
         setLoading(true);
-
-        // ── DUMMY: restore from sessionStorage instead of GET /auths/me
-        const stored = sessionStorage.getItem(SESSION_KEY);
-        const res = stored ? JSON.parse(stored) : null;
-
-        // ── REAL API (uncomment once backend exists):
-        // const res = await crud.me();
+        const res = await crud.me();
 
         if (!mounted) return;
 
@@ -136,38 +101,18 @@ export const AuthProvider = ({ children }) => {
     try {
       setLoggingIn(true);
 
-      // ── DUMMY: check against hardcoded credentials, fake a bit of latency
-      await new Promise((resolve) => setTimeout(resolve, 600));
+      const res = await crud.login(data, { __options: { toast: false } });
+      if (!res) return;
 
-      const matches =
-        data?.loginId === DUMMY_CREDENTIALS.loginId &&
-        data?.password === DUMMY_CREDENTIALS.password;
-
-      if (!matches) {
-        toast.error("Invalid login ID or password");
-        return;
-      }
-
-      sessionStorage.setItem(SESSION_KEY, JSON.stringify(DUMMY_USER));
+      const me = await crud.me({ __options: { toast: false } });
 
       flushSync(() => {
-        setUser(DUMMY_USER);
-        setRole(DUMMY_USER.role);
+        setUser(me);
+        setRole(me.role);
       });
 
       toast.success("Login successful");
-      navigate("/admin/products");
-
-      // ── REAL API (uncomment once backend exists):
-      // const res = await crud.login(data, { __options: { toast: false } });
-      // if (!res) return;
-      // const me = await crud.me({ __options: { toast: false } });
-      // flushSync(() => {
-      //   setUser(me);
-      //   setRole(me.role);
-      // });
-      // toast.success("Login successful");
-      // navigate(`/${me.role}/`);
+      navigate(`/${me.role}/`);
     } catch (err) {
       return err;
     } finally {
@@ -176,15 +121,11 @@ export const AuthProvider = ({ children }) => {
   };
 
   const logout = async () => {
-    // ── DUMMY: just clear the local session
-    sessionStorage.removeItem(SESSION_KEY);
-
-    // ── REAL API (uncomment once backend exists):
-    // try {
-    //   await crud.logout();
-    // } catch {
-    //   toast.error("Error during logout");
-    // }
+    try {
+      await crud.logout();
+    } catch {
+      toast.error("Error during logout");
+    }
 
     uiRef.clearModals();
     flushSync(() => {
@@ -197,47 +138,37 @@ export const AuthProvider = ({ children }) => {
   };
 
   const changePassword = async (currentPassword, newPassword) => {
-    // ── DUMMY: not wired to a backend yet
-    toast.error("Password change isn't available yet — backend not connected.");
-    return;
-
-    // ── REAL API (uncomment once backend exists):
-    // try {
-    //   const res = await crud.changePassword({
-    //     userId: user?._id,
-    //     role: user?.role,
-    //     currentPassword,
-    //     newPassword,
-    //   });
-    //   toast.success("Password updated successfully");
-    //   setTimeout(() => {
-    //     logout();
-    //   }, 2000);
-    //   return res;
-    // } catch (err) {
-    //   handleApiError(err);
-    // }
+    try {
+      const res = await crud.changePassword({
+        userId: user?._id,
+        role: user?.role,
+        currentPassword,
+        newPassword,
+      });
+      toast.success("Password updated successfully");
+      setTimeout(() => {
+        logout();
+      }, 2000);
+      return res;
+    } catch (err) {
+      handleApiError(err);
+    }
   };
 
   const adminResetPassword = async (targetId, targetRole, newPassword) => {
-    // ── DUMMY: not wired to a backend yet
-    toast.error("Password reset isn't available yet — backend not connected.");
-    return;
-
-    // ── REAL API (uncomment once backend exists):
-    // try {
-    //   const res = await crud.adminResetPassword({
-    //     adminId: user?._id,
-    //     adminRole: user?.role,
-    //     targetId,
-    //     targetRole,
-    //     newPassword,
-    //   });
-    //   toast.success("Password reset successfully");
-    //   return res;
-    // } catch (err) {
-    //   handleApiError(err);
-    // }
+    try {
+      const res = await crud.adminResetPassword({
+        adminId: user?._id,
+        adminRole: user?.role,
+        targetId,
+        targetRole,
+        newPassword,
+      });
+      toast.success("Password reset successfully");
+      return res;
+    } catch (err) {
+      handleApiError(err);
+    }
   };
 
   return (
