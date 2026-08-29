@@ -1,0 +1,1 @@
+export { useCategoryModule } from "./category.module";

@@ -47,17 +47,21 @@ export default function Layout({ routes, logoutComponent }) {
                                 <SidebarLink key={route.path} link={route} />
                             ))}
 
-                            <SidebarLink
-                                className="hover:text-destructive"
-                                onClick={(e) => {
-                                    e.preventDefault();
-                                    setSidebarOpen(false);
-                                    setOpenLogout(true);
-                                }}
-                                link={logoutComponent}
-                            />
+                            
                         </div>
                     </div>
+
+                     <div className="border-t border-border pt-2">
+            <SidebarLink
+                className="hover:text-destructive"
+                onClick={(e) => {
+                    e.preventDefault();
+                    setSidebarOpen(false);
+                    setOpenLogout(true);
+                }}
+                link={logoutComponent}
+            />
+        </div>
                 </SidebarBody>
             </Sidebar>
 
@@ -95,15 +99,16 @@ export default function Layout({ routes, logoutComponent }) {
                 )}
 
                 {}
-                <div className="m-1 md:m-10 overflow-auto">
-                    <Outlet />
-                </div>
+              
+<div className={cn(currentRoute?.title ? 'm-1 md:m-10 overflow-auto' : 'overflow-hidden')}>
+    <Outlet />
+</div>
             </div>
         </div>
     );
 }
 
-export const Logo = ({role}) => (
+export const Logo = ({ role }) => (
     <SidebarLink
         link={{
             label: `${camelToTitle(role)} Menu`,
@@ -111,9 +116,9 @@ export const Logo = ({role}) => (
             icon: (
                 <img
                     src="/logo.png"
-                    className="h-10 w-10 me-3 transition-all shrink-0 rounded-full object-cover"
-                    width={15}
-                    height={15}
+                    className="h-8 w-8 shrink-0 rounded-full object-cover ring-1 ring-border"
+                    width={32}
+                    height={32}
                     alt="Avatar"
                 />
             ),
@@ -124,13 +129,13 @@ export const Logo = ({role}) => (
 export const LogoIcon = () => (
     <Link
         to="#"
-        className="relative z-20 flex items-center space-x-2 py-1 text-sm font-normal text-black"
+        className="relative z-20 flex items-center space-x-2 py-1 text-sm font-normal text-foreground"
     >
         <img
             src="/logo.png"
-            className="h-6 w-6 shrink-0 rounded-full object-cover"
-            width={6}
-            height={6}
+            className="h-8 w-8 shrink-0 rounded-full object-cover ring-1 ring-border"
+            width={32}
+            height={32}
             alt="Logo"
         />
     </Link>

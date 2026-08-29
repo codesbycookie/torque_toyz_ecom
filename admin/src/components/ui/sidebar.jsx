@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components */
 'use client';
 import { cn } from '@/lib/utils';
 import { useState, createContext, useContext } from 'react';
@@ -89,7 +90,7 @@ export const MobileSidebar = ({ className, children, setcommand, ...props }) => 
   before:animate-[shine_3s_ease-in-out_infinite] my-1
 "
         >
-          SAP {props?.role} Portal
+          Torque toyzz {props?.role} Portal
         </h4>
       </div>
       <div className="flex justify-end z-20 w-full gap-3 items-center">
@@ -134,15 +135,22 @@ export const MobileSidebar = ({ className, children, setcommand, ...props }) => 
   );
 };
 
+import { useLocation } from 'react-router-dom';
+
 export const SidebarLink = ({ link, className, ...props }) => {
   const { open, animate } = useSidebar();
+  const location = useLocation();
+  const isActive = link.path !== '#' && location.pathname === link.path || link.label == 'Logout';
+
   return (
     <Link
       to={link.path}
       className={cn('flex items-center justify-start gap-2 group/sidebar py-2', className)}
       {...props}
     >
-      {link.icon}
+      <span className={isActive ? 'text-primary' : 'text-neutral-700 dark:text-neutral-200'}>
+        {link.icon}
+      </span>
 
       <motion.span
         animate={{
