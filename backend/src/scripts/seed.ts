@@ -277,8 +277,8 @@ const seedOrders = async (users: any[], products: any[], locations: any[]) => {
       location.slabs.find((s: any) => totalWeight > s.min && totalWeight <= s.max) ??
       location.slabs[location.slabs.length - 1];
     const shippingCost = slab.rate;
-    const status = pick(ORDER_STATUSES);
-    const paymentMethod = pick(PAYMENT_METHODS);
+    const status = pick(['placed', 'confirmed', 'shipped', 'delivered', 'cancelled']);
+    const paymentMethod = pick(['cod', 'online']);
 
     const order = await new Order({
       user: user._id,
@@ -400,7 +400,7 @@ const seedOtps = async (users: any[]) => {
 
   for (let i = 0; i < COUNT; i++) {
     const user = pick(users);
-    await Otp.generate(user.email, pick(purposes));
+    await Otp.generate(user.email, pick(['login', 'password_reset', 'phone_verification', 'email_verification']));
     created++;
   }
   console.log(`  created  ${created} otps`);
