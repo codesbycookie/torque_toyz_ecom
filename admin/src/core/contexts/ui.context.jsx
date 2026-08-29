@@ -1,47 +1,69 @@
+/* eslint-disable react-refresh/only-export-components */
+/* eslint-disable react-hooks/immutability */
+
+
+
 import { useContext, createContext, useState, useCallback, useRef } from 'react';
 import { Dialog } from '@/components/ui/dialog';
 import { toast } from 'sonner';
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { uiRef } from '@/core/bridge/ui.ref';
+import { adminRoutes } from '../router/routes';
+import { useAuth } from './auth.context';
 
 const UIContext = createContext();
 
 export const useUI = () => {
     const ctx = useContext(UIContext);
-
     if (!ctx) {
         if (import.meta.env.DEV) {
             console.warn('[useUI] context missing — HMR boundary, ignoring');
-
             return {
-                setCommandOpen: () => {},
+                setCommandOpen: () => { },
                 sidebarOpen: false,
-                setSidebarOpen: () => {},
+                setSidebarOpen: () => { },
                 commandOpen: false,
                 commands: [],
-                openModal: () => {},
-                closeModal: () => {},
-                closeModalById: () => {},
-                clearModals: () => {},
+                setOpenLogout: () => { },
+                openModal: () => { },
+                closeModal: () => { },
             };
         }
-
         throw new Error('useUI must be used inside <UIProvider>');
     }
-
     return ctx;
 };
 
 export const UIProvider = ({ children }) => {
     const [commandOpen, setCommandOpen] = useState(false);
     const [sidebarOpen, setSidebarOpen] = useState(false);
+    const [openLogout, setOpenLogout] = useState(false);
     const [modalStack, setModalStack] = useState([]);
+
+    const { user, logout } = useAuth();
+
+
+    const roleCommands = {
+        admin: adminRoutes.routes,
+
+    };
+
+    const commands = roleCommands[user?.role] || [];
 
     const idCounter = useRef(0);
 
     const openModal = useCallback((type, props = {}) => {
         let component;
-
         if (typeof type === 'function') {
             component = type;
         } else if (typeof type === 'object' && type?.component) {
@@ -50,72 +72,39 @@ export const UIProvider = ({ children }) => {
             toast.error('Invalid modal type: expected a component.');
             return;
         }
-
         const id = ++idCounter.current;
-
-        setModalStack((prev) => [
-            ...prev,
-            {
-                id,
-                component,
-                props,
-            },
-        ]);
-
+        setModalStack((prev) => [...prev, { id, component, props }]);
         return id;
     }, []);
 
     const closeModalById = useCallback((id) => {
         setModalStack((prev) => {
-            const target = prev.find((modal) => modal.id === id);
-
-            if (target?.props?.onClose) {
-                target.props.onClose();
-            }
-
-            return prev.filter((modal) => modal.id !== id);
+            const target = prev.find((m) => m.id === id);
+            if (target?.props?.onClose) target.props.onClose();
+            return prev.filter((m) => m.id !== id);
         });
     }, []);
 
     const closeModal = useCallback(() => {
         setModalStack((prev) => {
             if (!prev.length) return prev;
-
             const top = prev[prev.length - 1];
-
-            if (top.props?.onClose) {
-                top.props.onClose();
-            }
-
+            if (top.props?.onClose) top.props.onClose();
             return prev.slice(0, -1);
         });
     }, []);
 
     const clearModals = useCallback(() => {
-        setModalStack((prev) => {
-            prev.forEach((modal) => {
-                if (modal.props?.onClose) {
-                    modal.props.onClose();
-                }
-            });
-
-            return [];
-        });
+        setModalStack([]);
     }, []);
 
-    // Expose modal controls outside React when needed
     uiRef.clearModals = clearModals;
 
-    const ModalStackRenderer = () => {
-        return modalStack.map((modal) => {
+    const ModalStackRenderer = () =>
+        modalStack.map((modal) => {
             const ModalContent = modal.component;
+            const safeProps = modal.props && typeof modal.props === 'object' ? modal.props : {};
 
-            const safeProps =
-                modal.props && typeof modal.props === 'object'
-                    ? modal.props
-                    : {};
-
-            // Fullscreen modal
             if (ModalContent.fullscreen) {
                 return (
                     <ModalContent
@@ -126,55 +115,67 @@ export const UIProvider = ({ children }) => {
                 );
             }
 
-            // Regular dialog modal
             return (
                 <Dialog
                     key={modal.id}
                     open
                     onOpenChange={(open) => {
-                        if (!open) {
-                            closeModalById(modal.id);
-                        }
+                        if (!open) closeModalById(modal.id);
                     }}
                 >
                     <ScrollArea>
-                        <ModalContent
-                            {...safeProps}
-                            closeModal={() => closeModalById(modal.id)}
-                        />
+                        <ModalContent {...safeProps} closeModal={() => closeModalById(modal.id)} />
                     </ScrollArea>
                 </Dialog>
             );
         });
+
+    const AlertRenderer = () => {
+        return (
+            <AlertDialog open={openLogout} onOpenChange={setOpenLogout}>
+                <AlertDialogContent className="max-w-sm">
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Log out of your account?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            This will securely end your admin session.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction
+                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                            onClick={async () => {
+                                await logout();
+                                setOpenLogout(false);
+                            }}
+                        >
+                            Logout
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
+        );
     };
 
     const value = {
-        // Command menu
-        commandOpen,
         setCommandOpen,
-
-        // Sidebar
         sidebarOpen,
         setSidebarOpen,
-
-        // Commands
-        commands: [],
-
-        // Modals
+        commandOpen,
+        commands,
         openModal,
         closeModal,
-        closeModalById,
-        clearModals,
-
-        // Optional state access
-        modalStack,
+        setOpenLogout,
+        openLogout,
+        role: user?.role
     };
 
     return (
         <UIContext.Provider value={value}>
             {children}
-
-            <ModalStackRenderer />
+            {ModalStackRenderer()}
+            {AlertRenderer()}
         </UIContext.Provider>
     );
 };

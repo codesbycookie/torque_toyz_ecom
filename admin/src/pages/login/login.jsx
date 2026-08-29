@@ -8,7 +8,7 @@ import {
   Card,
   CardContent,
   CardDescription,
-  CardFooter,
+
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
@@ -21,10 +21,9 @@ import {
   Package,
   CreditCard,
   Users,
-  ArrowRight,
+
 } from 'lucide-react';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Link } from 'react-router-dom';
 import { useAuth } from '@/core/contexts/auth.context';
 
 export default function Login() {

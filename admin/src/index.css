@@ -7,78 +7,47 @@
 @import "@fontsource/inter/700.css";
 
 /* =========================================
-   DARK VARIANT
+   Dark variant
 ========================================= */
-
 @custom-variant dark (&:is(.dark *));
 
-
 /* =========================================
-   THEME TOKENS → SHADCN BRIDGE
+   Theme tokens → shadcn bridge
 ========================================= */
-
 @theme inline {
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
 
-  /* Base */
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-
-  /* Cards */
   --color-card: var(--card);
   --color-card-foreground: var(--card-foreground);
-
-  /* Popovers */
   --color-popover: var(--popover);
   --color-popover-foreground: var(--popover-foreground);
 
-  /* Brand */
   --color-primary: var(--primary);
   --color-primary-foreground: var(--primary-foreground);
-
   --color-secondary: var(--secondary);
   --color-secondary-foreground: var(--secondary-foreground);
 
-  /* UX */
   --color-muted: var(--muted);
   --color-muted-foreground: var(--muted-foreground);
-
   --color-accent: var(--accent);
   --color-accent-foreground: var(--accent-foreground);
 
   --color-destructive: var(--destructive);
-
-  /* Inputs */
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
 
-  /* Charts */
   --color-chart-1: var(--chart-1);
   --color-chart-2: var(--chart-2);
   --color-chart-3: var(--chart-3);
   --color-chart-4: var(--chart-4);
   --color-chart-5: var(--chart-5);
-  --color-chart-6: var(--chart-6);
-  --color-chart-7: var(--chart-7);
-  --color-chart-8: var(--chart-8);
-  --color-chart-9: var(--chart-9);
-  --color-chart-10: var(--chart-10);
-  --color-chart-11: var(--chart-11);
-  --color-chart-12: var(--chart-12);
-  --color-chart-13: var(--chart-13);
-  --color-chart-14: var(--chart-14);
-  --color-chart-15: var(--chart-15);
-  --color-chart-16: var(--chart-16);
-  --color-chart-17: var(--chart-17);
-  --color-chart-18: var(--chart-18);
-  --color-chart-19: var(--chart-19);
-  --color-chart-20: var(--chart-20);
 
-  /* Sidebar */
   --color-sidebar: var(--sidebar);
   --color-sidebar-foreground: var(--sidebar-foreground);
   --color-sidebar-primary: var(--sidebar-primary);
@@ -89,487 +58,147 @@
   --color-sidebar-ring: var(--sidebar-ring);
 }
 
-
 /* =========================================
-   TORQUE TOYZZ
-   LIGHT MODE
-
-   Brand:
-   🔴 Soft Racing Red
-   ⚫ Black
-   ◼ Charcoal
-   ⚙ Metallic Gray
-   🤍 Warm Off-White
+   🌞 LIGHT MODE — Torque Toyzz
+   (Soft Racing Red / Black / Charcoal)
 ========================================= */
-
 :root {
   --radius: 0.625rem;
-
-  /* =========================================
-     BASE
-  ========================================= */
-
-  /*
-    Soft warm off-white.
-
-    Not pure white.
-    Keeps the interface softer and easier
-    on the eyes while cards remain white.
-  */
 
   --background: oklch(0.975 0.004 90);
   --foreground: oklch(0.14 0 0);
 
-
-  /* =========================================
-     CARD
-  ========================================= */
-
   --card: oklch(1 0 0);
   --card-foreground: oklch(0.14 0 0);
-
-
-  /* =========================================
-     POPOVER
-  ========================================= */
-
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.14 0 0);
 
-
-  /* =========================================
-     PRIMARY
-     TORQUE TOYZZ RED
-
-     Approx:
-     #D83A42
-
-     Slightly softer than the logo red
-     while retaining the brand identity.
-  ========================================= */
-
+  /* 🔴 PRIMARY — Torque Red */
   --primary: oklch(0.61 0.18 25);
   --primary-foreground: oklch(0.99 0 0);
 
-
-  /* =========================================
-     SECONDARY
-     DEEPER BRAND RED
-
-     Approx:
-     #B92D35
-  ========================================= */
-
+  /* Deeper brand red */
   --secondary: oklch(0.48 0.16 25);
   --secondary-foreground: oklch(0.99 0 0);
-
-
-  /* =========================================
-     MUTED
-  ========================================= */
 
   --muted: oklch(0.945 0.004 90);
   --muted-foreground: oklch(0.46 0 0);
 
-
-  /* =========================================
-     ACCENT
-     SOFT RED
-
-     Used for:
-     - Selected states
-     - Badges
-     - Hover backgrounds
-     - Highlights
-  ========================================= */
-
   --accent: oklch(0.95 0.025 25);
   --accent-foreground: oklch(0.38 0.12 25);
 
-
-  /* =========================================
-     DESTRUCTIVE
-  ========================================= */
-
   --destructive: oklch(0.55 0.19 25);
-
-
-  /* =========================================
-     BORDERS / INPUTS
-  ========================================= */
-
   --border: oklch(0.88 0.005 90);
   --input: oklch(0.88 0.005 90);
-
   --ring: oklch(0.61 0.18 25);
 
-
-  /* =========================================
-     CHARTS
-  ========================================= */
-
-  /* Brand Reds */
   --chart-1: oklch(0.61 0.18 25);
   --chart-2: oklch(0.52 0.17 25);
   --chart-3: oklch(0.70 0.16 25);
   --chart-4: oklch(0.78 0.12 25);
-
-  /* Black / Charcoal */
   --chart-5: oklch(0.20 0 0);
-  --chart-6: oklch(0.30 0 0);
-  --chart-7: oklch(0.42 0 0);
-  --chart-8: oklch(0.55 0 0);
 
-  /* Metallic Gray */
-  --chart-9: oklch(0.65 0 0);
-  --chart-10: oklch(0.76 0 0);
-
-  /* Green */
-  --chart-11: oklch(0.65 0.16 145);
-  --chart-12: oklch(0.58 0.14 160);
-
-  /* Blue */
-  --chart-13: oklch(0.65 0.15 220);
-  --chart-14: oklch(0.58 0.14 235);
-
-  /* Gold */
-  --chart-15: oklch(0.70 0.15 75);
-  --chart-16: oklch(0.62 0.14 55);
-
-  /* Purple */
-  --chart-17: oklch(0.63 0.15 300);
-  --chart-18: oklch(0.55 0.13 320);
-
-  /* Neutral */
-  --chart-19: oklch(0.45 0.02 270);
-  --chart-20: oklch(0.35 0.02 270);
-
-
-  /* =========================================
-     SIDEBAR
-
-     Black/charcoal structure with
-     restrained red active states.
-  ========================================= */
-
+  /* Sidebar — black/charcoal structure, restrained red active states */
   --sidebar: oklch(0.13 0 0);
   --sidebar-foreground: oklch(0.96 0 0);
-
   --sidebar-primary: oklch(0.61 0.18 25);
   --sidebar-primary-foreground: oklch(0.99 0 0);
-
   --sidebar-accent: oklch(0.24 0.055 25);
   --sidebar-accent-foreground: oklch(0.99 0 0);
-
   --sidebar-border: oklch(1 0 0 / 10%);
   --sidebar-ring: oklch(0.61 0.18 25);
 }
 
-
 /* =========================================
-   TORQUE TOYZZ
-   DARK MODE
+   🌙 DARK MODE
 ========================================= */
-
 .dark {
-  /* =========================================
-     BASE
-  ========================================= */
-
   --background: oklch(0.105 0 0);
   --foreground: oklch(0.97 0 0);
 
-
-  /* =========================================
-     CARD
-  ========================================= */
-
   --card: oklch(0.155 0 0);
   --card-foreground: oklch(0.97 0 0);
-
-
-  /* =========================================
-     POPOVER
-  ========================================= */
-
   --popover: oklch(0.155 0 0);
   --popover-foreground: oklch(0.97 0 0);
-
-
-  /* =========================================
-     PRIMARY
-     Slightly brighter in dark mode
-  ========================================= */
 
   --primary: oklch(0.68 0.18 25);
   --primary-foreground: oklch(0.99 0 0);
 
-
-  /* =========================================
-     SECONDARY
-  ========================================= */
-
   --secondary: oklch(0.43 0.15 25);
   --secondary-foreground: oklch(0.99 0 0);
-
-
-  /* =========================================
-     MUTED
-  ========================================= */
 
   --muted: oklch(0.22 0 0);
   --muted-foreground: oklch(0.70 0 0);
 
-
-  /* =========================================
-     ACCENT
-     Soft dark red
-  ========================================= */
-
   --accent: oklch(0.25 0.055 25);
   --accent-foreground: oklch(0.84 0.10 25);
 
-
-  /* =========================================
-     DESTRUCTIVE
-  ========================================= */
-
   --destructive: oklch(0.64 0.19 25);
-
-
-  /* =========================================
-     BORDER / INPUT
-  ========================================= */
-
   --border: oklch(1 0 0 / 10%);
   --input: oklch(1 0 0 / 14%);
-
   --ring: oklch(0.68 0.18 25);
-
-
-  /* =========================================
-     DARK CHARTS
-  ========================================= */
 
   --chart-1: oklch(0.68 0.18 25);
   --chart-2: oklch(0.76 0.16 25);
   --chart-3: oklch(0.54 0.18 25);
   --chart-4: oklch(0.82 0.12 25);
-
   --chart-5: oklch(0.20 0 0);
-  --chart-6: oklch(0.32 0 0);
-  --chart-7: oklch(0.48 0 0);
-  --chart-8: oklch(0.65 0 0);
-
-  --chart-9: oklch(0.65 0.16 145);
-  --chart-10: oklch(0.58 0.14 160);
-
-  --chart-11: oklch(0.65 0.15 220);
-  --chart-12: oklch(0.58 0.14 235);
-
-  --chart-13: oklch(0.70 0.15 75);
-  --chart-14: oklch(0.62 0.14 55);
-
-  --chart-15: oklch(0.63 0.15 300);
-  --chart-16: oklch(0.56 0.13 320);
-
-  --chart-17: oklch(0.45 0.02 270);
-  --chart-18: oklch(0.35 0.02 270);
-
-  --chart-19: oklch(0.28 0.01 270);
-  --chart-20: oklch(0.22 0.01 270);
-
-
-  /* =========================================
-     SIDEBAR
-  ========================================= */
 
   --sidebar: oklch(0.075 0 0);
   --sidebar-foreground: oklch(0.97 0 0);
-
   --sidebar-primary: oklch(0.68 0.18 25);
   --sidebar-primary-foreground: oklch(0.99 0 0);
-
   --sidebar-accent: oklch(0.19 0.055 25);
   --sidebar-accent-foreground: oklch(0.97 0 0);
-
   --sidebar-border: oklch(1 0 0 / 10%);
   --sidebar-ring: oklch(0.68 0.18 25);
 }
 
-
 /* =========================================
-   BASE STYLES
+   Base styles
 ========================================= */
-
 @layer base {
   * {
     @apply border-border outline-ring/50;
   }
 
-  html {
-    scroll-behavior: smooth;
-  }
-
   body {
     @apply bg-background text-foreground;
-
-    min-height: 100vh;
   }
 
-  h1,
-  h2,
-  h3,
-  h4 {
+  h1, h2, h3, h4 {
     @apply font-semibold tracking-tight text-foreground;
   }
 
-  h1 {
-    @apply text-4xl;
-  }
-
-  h2 {
-    @apply text-3xl;
-  }
-
-  h3 {
-    @apply text-2xl;
-  }
-
-  h4 {
-    @apply text-xl;
-  }
+  h1 { @apply text-4xl; }
+  h2 { @apply text-3xl; }
+  h3 { @apply text-2xl; }
 
   a {
     @apply text-primary underline-offset-4 hover:underline;
   }
-
-  button,
-  [role="button"] {
-    cursor: pointer;
-  }
-
-  ::selection {
-    background: #d83a42;
-    color: #ffffff;
-  }
 }
 
-
 /* =========================================
-   FONT
+   Font
 ========================================= */
-
 * {
   font-family: "Inter", sans-serif !important;
 }
 
-
 /* =========================================
-   TORQUE BRAND COLORS
+   Logo animation
 ========================================= */
-
-.torque-red {
-  color: #d83a42;
-}
-
-.torque-red-bg {
-  background-color: #d83a42;
-}
-
-.torque-red-dark {
-  color: #b92d35;
-}
-
-.torque-red-dark-bg {
-  background-color: #b92d35;
-}
-
-.torque-black {
-  color: #171717;
-}
-
-.torque-black-bg {
-  background-color: #171717;
-}
-
-.torque-charcoal {
-  color: #292929;
-}
-
-.torque-charcoal-bg {
-  background-color: #292929;
-
-}
-
-
-/* =========================================
-   TORQUE GRADIENTS
-========================================= */
-
-.torque-gradient {
-  background: linear-gradient(
-    135deg,
-    #d83a42 0%,
-    #b92d35 100%
-  );
-}
-
-.torque-dark-gradient {
-  background: linear-gradient(
-    135deg,
-    #171717 0%,
-    #292929 100%
-  );
-}
-
-.torque-red-black-gradient {
-  background: linear-gradient(
-    135deg,
-    #d83a42 0%,
-    #171717 100%
-  );
-}
-
-
-/* =========================================
-   TORQUE RED GLOW
-========================================= */
-
-.torque-glow {
-  box-shadow:
-    0 0 0 1px rgba(216, 58, 66, 0.07),
-    0 8px 30px rgba(216, 58, 66, 0.10);
-}
-
-.torque-glow-strong {
-  box-shadow:
-    0 0 0 1px rgba(216, 58, 66, 0.12),
-    0 10px 40px rgba(216, 58, 66, 0.18);
-}
-
-
-/* =========================================
-   LOGO ANIMATION
-========================================= */
-
 @keyframes logoRotate {
-  from {
-    transform: rotate(0deg);
-  }
-
-  to {
-    transform: rotate(360deg);
-  }
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
 }
 
 @keyframes logoPulse {
-  0%,
-  100% {
+  0%, 100% {
     transform: scale(0.96);
     opacity: 0.75;
   }
-
   50% {
     transform: scale(1.03);
     opacity: 0.9;
@@ -580,462 +209,4 @@
   animation:
     logoRotate 2.2s linear infinite,
     logoPulse 1.6s ease-in-out infinite;
-}
-
-
-/* =========================================
-   SHINE
-========================================= */
-
-@keyframes shine {
-  0% {
-    transform: translateX(-100%);
-  }
-
-  60% {
-    transform: translateX(100%);
-  }
-
-  100% {
-    transform: translateX(100%);
-  }
-}
-
-.torque-shine {
-  position: relative;
-  overflow: hidden;
-}
-
-.torque-shine::after {
-  content: "";
-
-  position: absolute;
-  inset: 0;
-
-  width: 50%;
-
-  background: linear-gradient(
-    90deg,
-    transparent,
-    rgba(255, 255, 255, 0.18),
-    transparent
-  );
-
-  transform: translateX(-100%);
-
-  animation: shine 3s ease-in-out infinite;
-
-  pointer-events: none;
-}
-
-
-/* =========================================
-   TORQUE HOVER
-========================================= */
-
-.torque-hover {
-  transition:
-    color 0.2s ease,
-    background-color 0.2s ease,
-    border-color 0.2s ease,
-    box-shadow 0.2s ease,
-    transform 0.2s ease;
-}
-
-.torque-hover:hover {
-  color: #d83a42;
-}
-
-
-/* =========================================
-   TORQUE CARD
-========================================= */
-
-.torque-card {
-  background: var(--card);
-
-  border: 1px solid var(--border);
-
-  border-radius: var(--radius-lg);
-
-  transition:
-    transform 0.2s ease,
-    box-shadow 0.2s ease,
-    border-color 0.2s ease;
-}
-
-.torque-card:hover {
-  border-color: rgba(216, 58, 66, 0.25);
-
-  box-shadow:
-    0 8px 30px rgba(0, 0, 0, 0.07),
-    0 0 0 1px rgba(216, 58, 66, 0.03);
-
-  transform: translateY(-2px);
-}
-
-
-/* =========================================
-   TORQUE DIVIDER
-========================================= */
-
-.torque-divider {
-  height: 2px;
-  width: 100%;
-
-  background: linear-gradient(
-    90deg,
-    #d83a42 0%,
-    #d83a42 30%,
-    #292929 30%,
-    #292929 100%
-  );
-}
-
-
-/* =========================================
-   RED STATUS INDICATOR
-========================================= */
-
-.torque-status-active {
-  position: relative;
-
-  color: #c9323a;
-}
-
-.torque-status-active::before {
-  content: "";
-
-  display: inline-block;
-
-  width: 7px;
-  height: 7px;
-
-  margin-right: 6px;
-
-  border-radius: 50%;
-
-  background: #d83a42;
-
-  box-shadow:
-    0 0 7px rgba(216, 58, 66, 0.40);
-}
-
-
-/* =========================================
-   PRICE / IMPORTANT VALUES
-========================================= */
-
-.torque-price {
-  color: #c9323a;
-  font-weight: 700;
-}
-
-
-/* =========================================
-   RED UNDERLINE
-========================================= */
-
-.torque-underline {
-  position: relative;
-
-  display: inline-block;
-}
-
-.torque-underline::after {
-  content: "";
-
-  position: absolute;
-
-  left: 0;
-  bottom: -4px;
-
-  width: 100%;
-  height: 2px;
-
-  background: #d83a42;
-
-  border-radius: 999px;
-}
-
-
-/* =========================================
-   TORQUE BADGE
-========================================= */
-
-.torque-badge {
-  display: inline-flex;
-
-  align-items: center;
-  gap: 0.35rem;
-
-  padding: 0.25rem 0.6rem;
-
-  border-radius: 999px;
-
-  background: #fce8e9;
-
-  color: #b92d35;
-
-  border: 1px solid #f3c9cc;
-
-  font-size: 0.75rem;
-  font-weight: 600;
-}
-
-.dark .torque-badge {
-  background: rgba(216, 58, 66, 0.14);
-
-  color: #ed7278;
-
-  border-color: rgba(216, 58, 66, 0.22);
-}
-
-
-/* =========================================
-   TORQUE BUTTON
-========================================= */
-
-.torque-button {
-  background: #d83a42;
-
-  color: #ffffff;
-
-  transition:
-    background-color 0.2s ease,
-    transform 0.2s ease,
-    box-shadow 0.2s ease;
-}
-
-.torque-button:hover {
-  background: #b92d35;
-
-  box-shadow:
-    0 5px 16px rgba(216, 58, 66, 0.20);
-
-  transform: translateY(-1px);
-}
-
-.torque-button:active {
-  transform: translateY(0);
-}
-
-
-/* =========================================
-   RED BORDER
-========================================= */
-
-.torque-border {
-  border-color: #d83a42 !important;
-}
-
-
-/* =========================================
-   RED LEFT ACCENT
-========================================= */
-
-.torque-left-accent {
-  border-left: 3px solid #d83a42;
-}
-
-
-/* =========================================
-   RED TOP ACCENT
-========================================= */
-
-.torque-top-accent {
-  border-top: 3px solid #d83a42;
-}
-
-
-/* =========================================
-   RED TEXT HOVER
-========================================= */
-
-.torque-text-hover {
-  transition: color 0.2s ease;
-}
-
-.torque-text-hover:hover {
-  color: #d83a42;
-}
-
-
-/* =========================================
-   RED SOFT BACKGROUND
-========================================= */
-
-.torque-soft-red {
-  background-color: #fce8e9;
-  color: #b92d35;
-}
-
-.dark .torque-soft-red {
-  background-color: rgba(216, 58, 66, 0.12);
-  color: #ed7278;
-}
-
-
-/* =========================================
-   RED ICON CONTAINER
-========================================= */
-
-.torque-icon {
-  display: inline-flex;
-
-  align-items: center;
-  justify-content: center;
-
-  width: 2.25rem;
-  height: 2.25rem;
-
-  border-radius: 0.5rem;
-
-  background: #fce8e9;
-
-  color: #c9323a;
-}
-
-.dark .torque-icon {
-  background: rgba(216, 58, 66, 0.12);
-  color: #ed7278;
-}
-
-
-/* =========================================
-   RED PROGRESS
-========================================= */
-
-.torque-progress {
-  overflow: hidden;
-
-  height: 6px;
-
-  border-radius: 999px;
-
-  background: #eeeeec;
-}
-
-.torque-progress > span {
-  display: block;
-
-  height: 100%;
-
-  border-radius: inherit;
-
-  background: #d83a42;
-
-  transition: width 0.3s ease;
-}
-
-.dark .torque-progress {
-  background: #292929;
-}
-
-
-/* =========================================
-   RED ACTIVE TAB
-========================================= */
-
-.torque-tab-active {
-  color: #c9323a;
-
-  border-bottom: 2px solid #d83a42;
-
-  font-weight: 600;
-}
-
-
-/* =========================================
-   TORQUE INPUT FOCUS
-========================================= */
-
-.torque-input:focus {
-  border-color: #d83a42 !important;
-
-  box-shadow:
-    0 0 0 3px rgba(216, 58, 66, 0.10);
-}
-
-
-/* =========================================
-   SCROLLBAR
-========================================= */
-
-::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
-}
-
-::-webkit-scrollbar-track {
-  background: var(--background);
-}
-
-::-webkit-scrollbar-thumb {
-  background: #b8b8b8;
-
-  border-radius: 999px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: #d83a42;
-}
-
-.dark ::-webkit-scrollbar-track {
-  background: #111111;
-}
-
-.dark ::-webkit-scrollbar-thumb {
-  background: #444444;
-}
-
-.dark ::-webkit-scrollbar-thumb:hover {
-  background: #d83a42;
-}
-
-
-/* =========================================
-   FOCUS STATES
-========================================= */
-
-*:focus-visible {
-  outline: 2px solid #d83a42;
-  outline-offset: 2px;
-}
-
-
-/* =========================================
-   RESPONSIVE TYPOGRAPHY
-========================================= */
-
-@media (max-width: 768px) {
-  h1 {
-    @apply text-3xl;
-  }
-
-  h2 {
-    @apply text-2xl;
-  }
-
-  h3 {
-    @apply text-xl;
-  }
-}
-
-
-/* =========================================
-   REDUCED MOTION
-========================================= */
-
-@media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-
-    transition-duration: 0.01ms !important;
-
-    scroll-behavior: auto !important;
-  }
 }

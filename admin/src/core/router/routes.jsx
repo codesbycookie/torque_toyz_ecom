@@ -6,6 +6,7 @@ import {
   IconCreditCard,
   IconCategory,
   IconSettings,
+  IconLogout2,
 } from "@tabler/icons-react";
 
 import Product from "../../pages/products/product";
@@ -17,8 +18,9 @@ import Category from "../../pages/category/category";
 import Setting from "@/pages/setting/setting";
 
 // Login is NOT here
-export const appRoutes = [
-  {
+export const adminRoutes = {
+  role: 'admin',
+  routes: [{
     path: "/admin/products",
     label: "Products",
     title: "Products",
@@ -74,4 +76,12 @@ export const appRoutes = [
     icon: <IconSettings className="h-5 w-5 shrink-0" />,
     element: <Setting />,
   },
-];
+  ],
+  logout: {
+    label: "Logout",
+    title: "Sign Out",
+    description: "Securely sign out of your administrator account.",
+    icon: <IconLogout2 className="h-5 w-5 shrink-0" />,
+    path: "/",
+  },
+};

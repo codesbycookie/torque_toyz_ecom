@@ -1,44 +1,31 @@
-'use client';
 
+'use client';
 import { useEffect } from 'react';
-import {
-    Sidebar,
-    SidebarBody,
-    SidebarLink,
-} from '@/components/ui/sidebar';
+import { Sidebar, SidebarBody, SidebarLink } from '@/components/ui/sidebar';
 import { cn } from '@/lib/utils';
 import { Link, Outlet, useLocation } from 'react-router-dom';
 import { CommandMenu } from './globalcommand';
-import { LogOut, Search } from 'lucide-react';
+import { Search } from 'lucide-react';
 import { useUI } from '@/core/contexts/ui.context';
-import { useAuth } from '@/core/contexts/auth.context';
 import { camelToTitle } from '@/core/utils/helper.utils';
-import { appRoutes } from '@/core/router/routes';
 
-export default function Layout() {
-    const { logout } = useAuth();
+export default function Layout({ routes, logoutComponent }) {
     const {
         setCommandOpen,
+        role,
         sidebarOpen,
+        setOpenLogout,
         setSidebarOpen,
         commandOpen,
         commands,
     } = useUI();
-
     const location = useLocation();
 
-    /*
-     * Use routes directly from your route configuration.
-     * No auth / role required.
-     */
-    const routes = appRoutes;
-
-    const currentRoute =
-        routes.find((route) => route.path === location.pathname) || null;
+    const currentRoute = routes.find((r) => location.pathname === r.path) || null;
 
     useEffect(() => {
         setSidebarOpen(false);
-    }, [location.pathname, setSidebarOpen]);
+    }, [location.pathname]);
 
     return (
         <div
@@ -46,90 +33,63 @@ export default function Layout() {
                 'mx-auto flex w-full flex-1 flex-col overflow-hidden rounded-md border border-neutral-200 bg-gray-100 md:flex-row dark:border-neutral-700 dark:bg-neutral-800 h-[100vh]'
             )}
         >
+            {}
             <Sidebar open={sidebarOpen} setOpen={setSidebarOpen}>
                 <SidebarBody className="justify-between gap-10">
                     <div className="flex flex-1 flex-col overflow-x-hidden overflow-y-auto scrollbar-none">
+                        {sidebarOpen ? <Logo role={role}/> : <LogoIcon />}
 
-                        {/* Logo */}
-                        {sidebarOpen ? <Logo /> : <LogoIcon />}
+                        
 
-                        {/* Navigation */}
                         <div className="mt-8 flex flex-col gap-2">
+                            {}
                             {routes.map((route) => (
-                                <SidebarLink
-                                    key={route.path}
-                                    link={{
-                                        label: route.title || camelToTitle(
-                                            route.path
-                                                ?.replace(/^\/+/, '')
-                                                .split('/')
-                                                .pop() || ''
-                                        ),
-                                        path: route.path,
-                                        icon: route.icon,
-                                    }}
-                                />
+                                <SidebarLink key={route.path} link={route} />
                             ))}
+
+                            
                         </div>
                     </div>
 
-                    <button
-                        type="button"
-                        onClick={logout}
-                        className="flex items-center justify-start gap-2 py-2 text-sm text-neutral-700 transition duration-150 hover:text-destructive dark:text-neutral-200"
-                        aria-label="Logout"
-                    >
-                        <LogOut className="h-5 w-5 shrink-0" />
-                        <span
-                            className={cn(
-                                'whitespace-pre transition duration-150',
-                                sidebarOpen ? 'opacity-100' : 'hidden',
-                            )}
-                        >
-                            Logout
-                        </span>
-                    </button>
+                     <div className="border-t border-border pt-2">
+            <SidebarLink
+                className="hover:text-destructive"
+                onClick={(e) => {
+                    e.preventDefault();
+                    setSidebarOpen(false);
+                    setOpenLogout(true);
+                }}
+                link={logoutComponent}
+            />
+        </div>
                 </SidebarBody>
             </Sidebar>
 
-            {/* Command Menu */}
             <CommandMenu
                 open={commandOpen}
                 setOpen={setCommandOpen}
-                commands={
-                    commands?.length > 0
-                        ? commands
-                        : routes
-                }
+                commands={commands && commands.length > 0 ? commands : routes}
+                role={role}
             />
 
-            {/* Main Content */}
+            {}
             <div
                 className={
                     currentRoute?.title
                         ? 'relative w-full min-h-screen md:p-6 p-4 bg-gray-50 dark:bg-gray-900 overflow-auto scrollbar-none'
-                        : 'relative w-full bg-gray-50 dark:bg-gray-900 overflow-auto scrollbar-none'
+                        : 'relative w-full  bg-gray-50 dark:bg-gray-900 overflow-auto scrollbar-none'
                 }
             >
-                {/* Page Header */}
-                {currentRoute?.title && (
+                {}
+                {currentRoute?.title && currentRoute?.description && (
                     <div className="flex justify-between items-center md:m-[20px] mb-[40px]">
-                        <div>
-                            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
-                                {currentRoute.title}
-                            </h1>
-
-                            {currentRoute.description && (
-                                <p className="text-gray-600 dark:text-gray-400 mt-2">
-                                    {currentRoute.description}
-                                </p>
-                            )}
+                        <div className="">
+                            <h1 className="text-3xl font-bold text-gray-900">{currentRoute.title}</h1>
+                            <p className="text-gray-600 mt-2">{currentRoute.description}</p>
                         </div>
 
                         <button
-                            onClick={() =>
-                                setCommandOpen((prev) => !prev)
-                            }
+                            onClick={() => setCommandOpen((prev) => !prev)}
                             className="hidden lg:flex p-2 rounded-md hover:bg-gray-200 dark:hover:bg-gray-800 transition"
                             aria-label="Open command menu"
                         >
@@ -138,27 +98,28 @@ export default function Layout() {
                     </div>
                 )}
 
-                {/* Page */}
-                <div className="m-1 md:m-10 overflow-auto">
-                    <Outlet />
-                </div>
+                {}
+              
+<div className={cn(currentRoute?.title ? 'm-1 md:m-10 overflow-auto' : 'overflow-hidden')}>
+    <Outlet />
+</div>
             </div>
         </div>
     );
 }
 
-export const Logo = () => (
+export const Logo = ({ role }) => (
     <SidebarLink
         link={{
-            label: 'Menu',
+            label: `${camelToTitle(role)} Menu`,
             path: '#',
             icon: (
                 <img
                     src="/logo.png"
-                    className="h-10 w-10 me-3 transition-all shrink-0 rounded-full object-cover"
-                    width={15}
-                    height={15}
-                    alt="Logo"
+                    className="h-8 w-8 shrink-0 rounded-full object-cover ring-1 ring-border"
+                    width={32}
+                    height={32}
+                    alt="Avatar"
                 />
             ),
         }}
@@ -168,13 +129,13 @@ export const Logo = () => (
 export const LogoIcon = () => (
     <Link
         to="#"
-        className="relative z-20 flex items-center space-x-2 py-1 text-sm font-normal text-black"
+        className="relative z-20 flex items-center space-x-2 py-1 text-sm font-normal text-foreground"
     >
         <img
             src="/logo.png"
-            className="h-6 w-6 shrink-0 rounded-full object-cover"
-            width={6}
-            height={6}
+            className="h-8 w-8 shrink-0 rounded-full object-cover ring-1 ring-border"
+            width={32}
+            height={32}
             alt="Logo"
         />
     </Link>
