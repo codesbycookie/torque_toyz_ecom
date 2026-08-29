@@ -36,6 +36,10 @@ const apiurls = {
     create: { method: "post", url: () => `${base_url}/products` },
     getAll: { method: "get", url: () => `${base_url}/products` },
     getOne: { method: "get", url: (id) => `${base_url}/products/${id}` },
+    getBySlug: {
+      method: "get",
+      url: (slug) => `${base_url}/products/${slug}`,
+    },
     edit: { method: "put", url: (id) => `${base_url}/products/${id}` },
     delete: { method: "delete", url: (id) => `${base_url}/products/${id}` },
     setActiveStatus: {
@@ -49,6 +53,25 @@ const apiurls = {
     erase: {
       method: "delete",
       url: (id) => `${base_url}/products/${id}/erase`,
+    },
+  },
+
+  categories: {
+    create: { method: "post", url: () => `${base_url}/categories` },
+    getAll: { method: "get", url: () => `${base_url}/categories` },
+    getBySlug: {
+      method: "get",
+      url: (slug) => `${base_url}/categories/slug/${slug}`,
+    },
+    getOne: { method: "get", url: (id) => `${base_url}/categories/${id}` },
+    edit: { method: "put", url: (id) => `${base_url}/categories/${id}` },
+    delete: {
+      method: "delete",
+      url: (id) => `${base_url}/categories/${id}`,
+    },
+    setActiveStatus: {
+      method: "patch",
+      url: (id) => `${base_url}/categories/${id}/active-status`,
     },
   },
 
@@ -94,10 +117,23 @@ const apiurls = {
       method: "patch",
       url: (id) => `${base_url}/orders/${id}/payment-status`,
     },
+    updateDeliveryPartnerUrl: {
+      method: "patch",
+      url: (id) => `${base_url}/orders/${id}/delivery-partner-url`,
+    },
     retrieve: {
       method: "put",
       url: (id) => `${base_url}/orders/${id}/retrieve`,
     },
+  },
+
+  payments: {
+    createOrder: {
+      method: "post",
+      url: () => `${base_url}/payments/create-order`,
+    },
+    verify: { method: "post", url: () => `${base_url}/payments/verify` },
+    refund: { method: "post", url: () => `${base_url}/payments/refund` },
   },
 
   reviews: {
