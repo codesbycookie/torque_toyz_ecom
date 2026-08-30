@@ -37,7 +37,7 @@ export default function Login() {
     e.preventDefault();
     if (!loginId.trim() || !password) return;
 
-    await login({ login_id: loginId.trim(), password, rememberMe });
+    await login({ identifier: loginId.trim(), password, rememberMe });
   };
 
   return (

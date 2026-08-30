@@ -1,5 +1,5 @@
-import { toast } from "sonner";
 import { useUI } from "@/core/contexts/ui.context";
+import { useAuth } from "@/core/contexts/auth.context";
 import { useUserStore } from "./user.store";
 import { modals } from "./user.modals";
 import { useUserColumns } from "./user.columns";
@@ -9,6 +9,7 @@ import { createEntityQueryActions } from "@/core/utils/entity.util";
 
 export const useUserModule = (exported) => {
   const { openModal } = useUI();
+  const { adminResetPassword } = useAuth();
   const store = useUserStore();
   const { set, add, update, remove, setCurrent, setQuery } = store;
   const { users } = apiurls;
@@ -40,13 +41,13 @@ export const useUserModule = (exported) => {
     });
   };
 
-  // NOTE: Reset password endpoint skipped for now — dummy no-op until wired.
+  // Reset password now goes through AuthContext's adminResetPassword,
+  // which hits POST /auths/admin/reset-password.
   const openResetPassword = (user) => {
     return openModal(modals.resetPassword, {
       user,
-      submitFn: () => {
-        toast.success("Password reset successfully");
-      },
+      submitFn: (data) =>
+        adminResetPassword(user._id, user.role, data.password),
       exported,
     });
   };
@@ -62,18 +63,20 @@ export const useUserModule = (exported) => {
   };
 
   // Permanent erase → removes item from list
-  const openErase = (id) => {
+  const openErase = (id, name) => {
     return openModal(modals.erase, {
       id,
+      name,
       submitFn: (id) => crud.erase(id),
       exported,
     });
   };
 
   // Retrieve a soft-deleted user
-  const openRetrieve = (id) => {
+  const openRetrieve = (id, name) => {
     return openModal(modals.retrieve, {
       id,
+      name,
       submitFn: (id) => crud.retrieve(id),
       exported,
     });
