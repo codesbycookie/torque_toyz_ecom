@@ -21,6 +21,8 @@ import { useClearError } from "@/core/hooks/useClearError";
 import { useSubmit } from "@/core/hooks/useSubmit";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useLoader } from "@/core/hooks/useLoader";
+import { useEffect } from "react";
 import {
   productCreateSchema,
   productEditSchema,
@@ -244,7 +246,7 @@ export const View = ({ product, closeModal = () => {} }) => {
     </DialogContent>
   );
 };
-export const Create = ({ submitFn = () => {}, closeModal = () => {} } = {}) => {
+export const Create = ({ submitFn = () => {}, closeModal = () => {}, exported } = {}) => {
   const form = useForm({
     resolver: zodResolver(productCreateSchema),
     defaultValues: {
@@ -258,6 +260,9 @@ export const Create = ({ submitFn = () => {}, closeModal = () => {} } = {}) => {
     },
   });
 
+  const { createPreset } = useLoader();
+  const loadCategories = createPreset(exported?.categories);
+
   const { run, loading, ErrorAlert, clearError } = useAsync(submitFn);
 
   useClearError(form, clearError);
@@ -267,6 +272,11 @@ export const Create = ({ submitFn = () => {}, closeModal = () => {} } = {}) => {
     form,
     onSuccess: closeModal,
   });
+
+  useEffect(() => {
+    if (exported?.categories) loadCategories();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return (
     <DialogContent className="w-xl">
@@ -280,7 +290,7 @@ export const Create = ({ submitFn = () => {}, closeModal = () => {} } = {}) => {
           className="grid gap-4 py-2"
           onSubmit={form.handleSubmit(onSubmit)}
         >
-          <ProductForm form={form} />
+          <ProductForm form={form} categories={exported?.categories?.state || []} />
           {ErrorAlert}
           <DialogFooter>
             <DialogClose asChild>
@@ -372,6 +382,7 @@ export const Edit = ({
   product,
   submitFn = () => {},
   closeModal = () => {},
+  exported,
 } = {}) => {
   const form = useForm({
     resolver: zodResolver(productEditSchema),
@@ -386,6 +397,9 @@ export const Edit = ({
     },
   });
 
+  const { createPreset } = useLoader();
+  const loadCategories = createPreset(exported?.categories);
+
   const { run, loading, ErrorAlert, clearError } = useAsync(submitFn);
 
   useClearError(form, clearError);
@@ -395,6 +409,11 @@ export const Edit = ({
     form,
     onSuccess: closeModal,
   });
+
+  useEffect(() => {
+    if (exported?.categories) loadCategories();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return (
     <DialogContent className="w-xl">
@@ -408,7 +427,7 @@ export const Edit = ({
           className="grid gap-4 py-2"
           onSubmit={form.handleSubmit(onSubmit)}
         >
-          <ProductForm form={form} />
+          <ProductForm form={form} categories={exported?.categories?.state || []} />
           {ErrorAlert}
           <DialogFooter>
             <DialogClose asChild>

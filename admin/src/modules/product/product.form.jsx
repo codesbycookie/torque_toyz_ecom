@@ -5,15 +5,20 @@ import {
   FormField,
   FormItem,
   FormLabel,
+  FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
-
-export default function ProductForm({ form }) {
-
-
+export default function ProductForm({ form, categories = [] }) {
   return (
     <>
       <FormField
@@ -25,6 +30,7 @@ export default function ProductForm({ form }) {
             <FormControl>
               <Input placeholder="Enter product name" {...field} />
             </FormControl>
+            <FormMessage />
           </FormItem>
         )}
       />
@@ -35,9 +41,21 @@ export default function ProductForm({ form }) {
         render={({ field }) => (
           <FormItem>
             <FormLabel>Category</FormLabel>
-            <FormControl>
-              <Input placeholder="Enter category" {...field} />
-            </FormControl>
+            <Select onValueChange={field.onChange} value={field.value}>
+              <FormControl>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Select a category" />
+                </SelectTrigger>
+              </FormControl>
+              <SelectContent>
+                {categories.map((cat) => (
+                  <SelectItem key={cat._id} value={cat._id}>
+                    {cat.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <FormMessage />
           </FormItem>
         )}
       />
@@ -51,6 +69,7 @@ export default function ProductForm({ form }) {
             <FormControl>
               <Textarea placeholder="Enter description (optional)" {...field} />
             </FormControl>
+            <FormMessage />
           </FormItem>
         )}
       />
@@ -65,6 +84,7 @@ export default function ProductForm({ form }) {
               <FormControl>
                 <Input type="number" placeholder="0" {...field} />
               </FormControl>
+              <FormMessage />
             </FormItem>
           )}
         />
@@ -83,6 +103,7 @@ export default function ProductForm({ form }) {
                   {...field}
                 />
               </FormControl>
+              <FormMessage />
             </FormItem>
           )}
         />
@@ -101,6 +122,7 @@ export default function ProductForm({ form }) {
                   {...field}
                 />
               </FormControl>
+              <FormMessage />
             </FormItem>
           )}
         />
