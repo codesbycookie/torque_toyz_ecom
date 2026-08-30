@@ -17,7 +17,13 @@ export const applySecurityMiddlewares = (app: Express) => {
 
   app.use(
     cors({
-      origin: '*',
+      origin: (origin, callback) => {
+        if (!origin || origins.includes(origin)) {
+          callback(null, true);
+        } else {
+          callback(new Error('Not allowed by CORS'));
+        }
+      },
       credentials: true,
       exposedHeaders: ['Content-Disposition'],
       methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
