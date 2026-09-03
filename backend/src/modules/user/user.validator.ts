@@ -21,7 +21,8 @@ export const createUserSchema = z.object({
       pincode: z.number().optional(),
     })
     .optional(),
-acceptTerms: z.literal(true, { error: 'You must accept the terms and conditions' }),
+  profile: z.object({ url: z.string().url() }).optional(),
+  acceptTerms: z.literal(true, { error: 'You must accept the terms and conditions' }),
 });
 
 export const updateUserSchema = createUserSchema

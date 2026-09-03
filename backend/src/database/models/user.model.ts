@@ -19,6 +19,9 @@ export interface IUser extends Document {
   password: string;
   role: "admin" | "user";
   accepted_terms_at?: Date;
+  profile?: {
+    url?: string;
+  };
 
   active: boolean;
   deleted: boolean;
@@ -60,6 +63,9 @@ const UserSchema = new Schema<IUser, IUserModel>(
       type: String,
       enum: ["admin", "user"],
       required: true,
+    },
+    profile: {
+      url: { type: String },
     },
     accepted_terms_at: { type: Date, default: null },
     active: { type: Boolean, default: true },

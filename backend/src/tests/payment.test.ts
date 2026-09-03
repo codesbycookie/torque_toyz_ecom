@@ -74,6 +74,7 @@ beforeAll(async () => {
     weight: 1,
     price: 500,
     category: testCategoryId,
+    images: ['http://dummy.url/test.jpg'],
   }).save();
   testProductId = product._id.toString();
 

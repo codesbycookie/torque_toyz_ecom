@@ -40,7 +40,7 @@ export const createOrder = async (userId: string, data: CreateOrderPayload) => {
         return {
             product: p._id,
             name: p.name,
-            image: p.images[0],
+            image: p.images?.[0] || 'https://placehold.co/600x400?text=No+Image',
             price: p.price,
             weight: p.weight,
             quantity: item.quantity,
