@@ -24,12 +24,6 @@ interface IProductModel extends mongoose.Model<IProduct> {
   getProductBySlug(slug: string): Promise<IProduct | null>;
 }
 
-const DEFAULT_PRODUCT_IMAGES = [
-  "https://placehold.co/600x400?text=Product+1",
-  "https://placehold.co/600x400?text=Product+2",
-  "https://placehold.co/600x400?text=Product+3",
-];
-
 const ProductSchema = new Schema<IProduct>(
   {
     code: { type: String, unique: true },
@@ -37,12 +31,18 @@ const ProductSchema = new Schema<IProduct>(
     category: { type: Schema.Types.ObjectId, ref: "Category", required: true },
     slug: { type: String, unique: true, trim: true, lowercase: true },
     description: { type: String, trim: true },
-    images: [
-      {
-        type: String,
-        trim: true,
-      },
-    ],
+    images: {
+      type: [
+        {
+          type: String,
+          trim: true,
+        },
+      ],
+      validate: [
+        (val: string[]) => val.length <= 5,
+        'Cannot have more than 5 images'
+      ]
+    },
     weight: {
       type: Number,
       required: true,
@@ -66,8 +66,6 @@ const ProductSchema = new Schema<IProduct>(
     toObject: { virtuals: true },
   },
 );
-
-ProductSchema.path("images").default(() => [...DEFAULT_PRODUCT_IMAGES]);
 
 ProductSchema.virtual("reviews", {
   ref: "Review",

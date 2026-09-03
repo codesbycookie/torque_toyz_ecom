@@ -10,6 +10,9 @@ type ENVTYPE = {
   CLIENT_URL: string;
   MAINTENANCE_MODE: string | undefined;
   MAINTENANCE_BYPASS_KEY: string | undefined;
+  CLOUDINARY_CLOUD_NAME: string | undefined;
+  CLOUDINARY_API_KEY: string | undefined;
+  CLOUDINARY_API_SECRET: string | undefined;
 };
 
 export const ENV: ENVTYPE = {
@@ -20,6 +23,9 @@ export const ENV: ENVTYPE = {
   CLIENT_URL: process.env.CLIENT_URL || 'http://localhost:3000',
   MAINTENANCE_MODE: process.env.MAINTENANCE_MODE || 'false',
   MAINTENANCE_BYPASS_KEY: process.env.MAINTENANCE_BYPASS_KEY || '',
+  CLOUDINARY_CLOUD_NAME: process.env.CLOUDINARY_CLOUD_NAME,
+  CLOUDINARY_API_KEY: process.env.CLOUDINARY_API_KEY,
+  CLOUDINARY_API_SECRET: process.env.CLOUDINARY_API_SECRET,
 };
 
 export const ENVCONFIG = {

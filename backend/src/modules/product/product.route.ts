@@ -1,4 +1,6 @@
 import { Router } from 'express';
+import { upload } from '@config/cloudinary.config.ts';
+import { parseProductUpload } from '@core/middlewares/uploadparser.middleware.ts';
 import { authMiddleware } from '@core/middlewares/auth.middleware.js';
 // import { accessControl } from '@core/middlewares/access.middleware.js';
 import { zodValidate } from '@core/middlewares/zod.validator.js';
@@ -31,11 +33,22 @@ router.get('/:id', getProductById);
 router.get('/:slug', getProductBySlug);
 
 router.use(authMiddleware);
-router.post('/', zodValidate(createProductSchema, 'body', 'CreateProductSchema'), createProduct);
 
+router.post(
+  '/',
+  upload.array('images', 5),
+  parseProductUpload,
+  zodValidate(createProductSchema, 'body', 'CreateProductSchema'),
+  createProduct
+);
 
-
-router.put('/:id', zodValidate(updateProductSchema, 'body', 'UpdateProductSchema'), updateProduct);
+router.put(
+  '/:id',
+  upload.array('images', 5),
+  parseProductUpload,
+  zodValidate(updateProductSchema, 'body', 'UpdateProductSchema'),
+  updateProduct
+);
 
 router.delete('/:id', deleteProduct);
 
