@@ -74,6 +74,46 @@ export default function ProductForm({ form, categories = [] }) {
         )}
       />
 
+      <FormField
+        control={form.control}
+        name="images"
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>Images (up to 5)</FormLabel>
+            <FormControl>
+              <Input
+                type="file"
+                accept="image/*"
+                multiple
+                onChange={(event) => {
+                  const selectedFiles = Array.from(event.target.files || []);
+                  const existingImages = (field.value || []).filter(
+                    (image) => typeof image === "string"
+                  );
+                  const images = [...existingImages, ...selectedFiles];
+
+                  if (images.length > 5) {
+                    form.setError("images", {
+                      type: "manual",
+                      message: "You can upload up to 5 images",
+                    });
+                    event.target.value = "";
+                    return;
+                  }
+
+                  form.clearErrors("images");
+                  field.onChange(images);
+                }}
+              />
+            </FormControl>
+            <p className="text-sm text-muted-foreground">
+              {(field.value || []).length} of 5 images selected
+            </p>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+
       <div className="grid grid-cols-3 gap-4">
         <FormField
           control={form.control}

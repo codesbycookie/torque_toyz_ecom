@@ -32,6 +32,30 @@ import ProductForm from "./product.form";
 
 import { Star } from "lucide-react";
 
+const toProductFormData = (values) => {
+  const images = values.images || [];
+  const uploadedImages = images.filter((image) => image instanceof File);
+
+  if (uploadedImages.length === 0) {
+    return values;
+  }
+
+  const formData = new FormData();
+
+  Object.entries(values).forEach(([key, value]) => {
+    if (key !== "images" && value !== undefined && value !== null) {
+      formData.append(key, String(value));
+    }
+  });
+
+  images.forEach((image) => {
+    if (image instanceof File) formData.append("images", image);
+    else formData.append("existingImages", image);
+  });
+
+  return formData;
+};
+
 // ─── View Reviews ─────────────────────────────────────────────
 export const ViewReviews = ({
   product,
@@ -252,6 +276,7 @@ export const Create = ({ submitFn = () => {}, closeModal = () => {}, exported } 
     defaultValues: {
       name: "",
       description: "",
+      images: [],
       category: "",
       stock: 0,
       price: 0,
@@ -270,6 +295,7 @@ export const Create = ({ submitFn = () => {}, closeModal = () => {}, exported } 
   const onSubmit = useSubmit({
     run,
     form,
+    transform: toProductFormData,
     onSuccess: closeModal,
   });
 
@@ -389,6 +415,7 @@ export const Edit = ({
     defaultValues: {
       name: product?.name || "",
       description: product?.description || "",
+      images: product?.images || [],
       category: product?.category?._id || product?.category || "",
       stock: product?.stock ?? 0,
       price: product?.price ?? 0,
@@ -407,6 +434,7 @@ export const Edit = ({
   const onSubmit = useSubmit({
     run,
     form,
+    transform: toProductFormData,
     onSuccess: closeModal,
   });
 
