@@ -1,7 +1,7 @@
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { DollarSign, Users, CreditCard, Activity, Calendar as CalendarIcon } from "lucide-react";
+import { DollarSign, IndianRupee, Users, CreditCard, Activity, Calendar as CalendarIcon } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -43,8 +43,8 @@ export function SummaryCards({ data, customerData, loading }) {
     const cards = [
         {
             title: "Total Revenue",
-            value: data?.total_revenue ? `$${data.total_revenue.toLocaleString()}` : "$0",
-            icon: <DollarSign className="h-4 w-4 text-muted-foreground" />,
+            value: data?.total_revenue ? `₹${data.total_revenue.toLocaleString()}` : "₹0",
+            icon: <IndianRupee className="h-4 w-4 text-muted-foreground" />,
             description: "Lifetime revenue",
         },
         {
@@ -61,7 +61,7 @@ export function SummaryCards({ data, customerData, loading }) {
         },
         {
             title: "Avg Order Value",
-            value: data?.avg_order_value ? `$${Math.round(data.avg_order_value).toLocaleString()}` : "$0",
+            value: data?.avg_order_value ? `₹${Math.round(data.avg_order_value).toLocaleString()}` : "₹0",
             icon: <Activity className="h-4 w-4 text-muted-foreground" />,
             description: "Average per order",
         },
@@ -532,6 +532,7 @@ export function RecentOrders({ orders, loading }) {
                     <TableHeader>
                         <TableRow>
                             <TableHead>Customer</TableHead>
+                            <TableHead>Location</TableHead>
                             <TableHead>Status</TableHead>
                             <TableHead className="text-right">Amount</TableHead>
                         </TableRow>
@@ -541,8 +542,11 @@ export function RecentOrders({ orders, loading }) {
                             orders.map((order) => (
                                 <TableRow key={order._id || order.id}>
                                     <TableCell>
-                                        <div className="font-medium">{order.user?.username || order.user?.email || "Guest"}</div>
+                                        <div className="font-medium">{order.user?.name || order.user?.email || "Guest"}</div>
                                         <div className="text-xs text-muted-foreground">{new Date(order.createdAt).toLocaleDateString()}</div>
+                                    </TableCell>
+                                    <TableCell>
+                                        <div className="font-medium">{order.shipping_address.city || "Unknown"}</div>
                                     </TableCell>
                                     <TableCell>
                                         <div className={cn(
@@ -555,7 +559,7 @@ export function RecentOrders({ orders, loading }) {
                                         </div>
                                     </TableCell>
                                     <TableCell className="text-right font-medium">
-                                        ${order.totalPrice?.toFixed(2)}
+                                        ₹{order.pricing.total?.toFixed(2)}
                                     </TableCell>
                                 </TableRow>
                             ))

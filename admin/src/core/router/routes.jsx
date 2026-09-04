@@ -10,14 +10,14 @@ import {
   IconLayoutDashboard,
 } from "@tabler/icons-react";
 
-import Dashboard from "../../pages/dashboard/dashboard";
+import Dashboard from "@/pages/dashboard/dashboard";
 
-import Product from "../../pages/products/product";
-import Location from "../../pages/location/location";
-import User from "../../pages/user/user";
-import Payment from "../../pages/payment/payment";
-import Order from "../../pages/order/order";
-import Category from "../../pages/category/category";
+import Product from "@/pages/products/product";
+import Location from "@/pages/location/location";
+import User from "@/pages/user/user";
+import Payment from "@/pages/payment/payment";
+import Order from "@/pages/order/order";
+import Category from "@/pages/category/category";
 import Setting from "@/pages/setting/setting";
 
 // Login is NOT here
