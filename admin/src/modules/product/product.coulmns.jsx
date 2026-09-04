@@ -9,6 +9,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { MoreHorizontal } from "lucide-react";
 import { Hint } from "@/core/utils/tooltip.util";
+import { safeId } from "@/core/utils/normalize-id";
 
 export const useProductColumns = (products) => {
   return [
@@ -20,16 +21,33 @@ export const useProductColumns = (products) => {
     {
       accessorKey: "name",
       header: () => Hint("Name", "Product name"),
-      cell: ({ row }) => (
-        <span className="font-medium">{row.getValue("name")}</span>
-      ),
+      cell: ({ row }) => {
+        const product = row.original;
+        const firstImage = product.images?.[0];
+        return (
+          <div className="flex items-center gap-3">
+            {firstImage ? (
+              <img
+                src={firstImage}
+                alt={product.name}
+                className="size-8 rounded-md object-cover cursor-pointer border"
+                onClick={() => products.openViewImages(product)}
+              />
+            ) : (
+              <div className="size-8 rounded-md bg-muted border flex items-center justify-center">
+                <span className="text-xs text-muted-foreground">-</span>
+              </div>
+            )}
+            <span className="font-medium">{product.name}</span>
+          </div>
+        );
+      },
     },
     {
       accessorKey: "category",
       header: () => Hint("Category", "Product category"),
       cell: ({ row }) => {
-        const category = row.getValue("category");
-        const name = typeof category === "object" ? category?.name : category;
+        const name = safeId(row.original.category?.name || row.original.category?._id);
         return <span>{name || "-"}</span>;
       },
     },
@@ -76,6 +94,9 @@ export const useProductColumns = (products) => {
             <DropdownMenuContent align="end">
               <DropdownMenuItem onClick={() => products.openView(product)}>
                 View
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => products.openViewImages(product)}>
+                View Images
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => products.openEdit(product)}>
                 Edit

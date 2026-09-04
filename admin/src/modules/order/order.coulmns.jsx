@@ -14,6 +14,7 @@ import {
 import { MoreHorizontal, Check } from "lucide-react";
 import { Hint } from "@/core/utils/tooltip.util";
 import { ORDER_STATUSES, ORDER_STATUS_VARIANT } from "./order.schema";
+import { safeId } from "@/core/utils/normalize-id";
 
 export const useOrderColumns = (orders) => {
   return [
@@ -25,7 +26,7 @@ export const useOrderColumns = (orders) => {
     {
       accessorKey: "user",
       header: () => Hint("Customer", "Customer who placed the order"),
-      cell: ({ row }) => <span>{row.original.customerName || row.original.user}</span>,
+      cell: ({ row }) => <span>{safeId(row.original.user.name || row.original.user?._id)}</span>,
     },
     {
       accessorKey: "items",

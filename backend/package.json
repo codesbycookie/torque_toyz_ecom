@@ -11,6 +11,7 @@
     "test": "tsx src/scripts/run-tests.ts",
     "dev": "npm run check && tsx watch src/server.ts",
     "build": "tsc --incremental false",
+    "fast": "tsx watch src/server.ts",
     "start": "node dist/server.js",
     "seed": "npx tsx src/scripts/seed.ts",
     "dump": "npx tsx src/scripts/dump.ts"

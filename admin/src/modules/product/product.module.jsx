@@ -28,6 +28,11 @@ export const useProductModule = (exported) => {
     });
   };
 
+  const openViewImages = (product) => {
+    return openModal(modals.viewImages, { product });
+  };
+
+
   const openCreate = () => {
     return openModal(modals.create, {
       submitFn: (data) => crud.create(data),
@@ -139,6 +144,7 @@ export const useProductModule = (exported) => {
     setCurrent,
     useProductColumns,
     openView,
+    openViewImages,
     openCreate,
     openEdit,
     openDelete,

@@ -5,7 +5,9 @@ import path from 'path';
 const logsDir = path.join(process.cwd(), 'logs');
 let outputBuffer = '';
 
-const child = spawn('npx', ['vitest', 'run'], {
+const args = process.argv.slice(2);
+
+const child = spawn('npx', ['vitest', 'run', ...args], {
   stdio: ['inherit', 'pipe', 'pipe'],
   shell: true,
   env: { ...process.env, NODE_ENV: 'test' },

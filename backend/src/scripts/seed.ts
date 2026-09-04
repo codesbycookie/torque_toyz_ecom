@@ -169,6 +169,11 @@ const seedProducts = async (categories: any[]) => {
         stock: randInt(0, 99),
         weight: randFloat(0.5, 10),
         price: randInt(20, 500) * 10, // ₹200–5000
+        images: [
+          'https://placehold.co/600x400?text=Product+1',
+          'https://placehold.co/600x400?text=Product+2',
+          'https://placehold.co/600x400?text=Product+3'
+        ],
       });
     }
   } // 20 × 5 = 100

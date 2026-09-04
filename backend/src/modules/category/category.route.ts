@@ -14,6 +14,8 @@ import {
   getCategoryBySlug,
   updateCategory,
   setCategoryActiveStatus,
+  deleteCategory,
+  retrieveCategory,
   eraseCategory,
 } from './category.controller.js';
 
@@ -23,6 +25,7 @@ const router = Router();
 router.get('/', getAllCategories);
 router.get('/slug/:slug', getCategoryBySlug);
 router.get('/:id', getCategoryById);
+
 
 // protected — admin manages categories
 router.use(authMiddleware);
@@ -34,6 +37,9 @@ router.patch(
   zodValidate(setCategoryActiveStatusSchema, 'body', 'SetCategoryActiveStatusSchema'),
   setCategoryActiveStatus
 );
-router.delete('/:id', eraseCategory);
+
+router.delete('/:id', deleteCategory);
+router.put('/:id/retrieve', retrieveCategory);
+router.delete('/:id/erase', eraseCategory);
 
 export default router;

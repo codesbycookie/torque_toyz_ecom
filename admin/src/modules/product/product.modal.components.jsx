@@ -30,7 +30,9 @@ import {
 } from "./product.schema";
 import ProductForm from "./product.form";
 
-import { Star } from "lucide-react";
+import { Pencil, Star, Trash2 } from "lucide-react";
+import { safeId } from "@/core/utils/normalize-id";
+import { Separator } from "@/components/ui/separator";
 
 const toProductFormData = (values) => {
   const images = values.images || [];
@@ -59,70 +61,178 @@ const toProductFormData = (values) => {
 // ─── View Reviews ─────────────────────────────────────────────
 export const ViewReviews = ({
   product,
-  onEditReview,
   onDeleteReview,
-  closeModal = () => {},
+  closeModal = () => { },
 }) => {
   const reviews = product?.reviews || [];
+  const avgRating = reviews.length
+    ? reviews.reduce((sum, r) => sum + (r.rating || 0), 0) / reviews.length
+    : 0;
+
+  const ratingCounts = [5, 4, 3, 2, 1].map(
+    (star) => reviews.filter((r) => r.rating === star).length
+  );
+
+  const getReviewerName = (review) => {
+    if (typeof review.user === "object" && review.user?.name) {
+      return review.user.name;
+    }
+    return "Anonymous";
+  };
+
+  const getInitials = (name = "") =>
+    name
+      .split(" ")
+      .map((part) => part[0])
+      .slice(0, 2)
+      .join("")
+      .toUpperCase();
+
+  const avatarPalette = [
+    "bg-rose-100 text-rose-700",
+    "bg-amber-100 text-amber-700",
+    "bg-emerald-100 text-emerald-700",
+    "bg-sky-100 text-sky-700",
+    "bg-violet-100 text-violet-700",
+    "bg-fuchsia-100 text-fuchsia-700",
+  ];
+  const getAvatarColor = (name = "") => {
+    const sum = name
+      .split("")
+      .reduce((acc, ch) => acc + ch.charCodeAt(0), 0);
+    return avatarPalette[sum % avatarPalette.length];
+  };
 
   return (
-    <DialogContent className="sm:max-w-lg w-full max-h-[85vh] overflow-y-auto">
-      <DialogHeader>
-        <DialogTitle>Reviews — {product?.name}</DialogTitle>
-        <DialogDescription>
-          {reviews.length} review{reviews.length !== 1 ? "s" : ""}
-        </DialogDescription>
+    <DialogContent className="sm:max-w-3xl w-full max-h-[85vh] overflow-y-auto p-0 gap-0">
+      <DialogHeader className="px-6 pt-6 pb-2">
+        <DialogTitle className="text-lg">
+          Reviews — {product?.name}
+        </DialogTitle>
       </DialogHeader>
 
-      <div className="space-y-3 py-2">
-        {reviews.length === 0 ? (
-          <p className="text-sm text-muted-foreground text-center py-8">
-            No reviews yet.
+      {reviews.length === 0 ? (
+        <div className="flex flex-col items-center gap-2 py-16 text-center px-6">
+          <div className="flex size-12 items-center justify-center rounded-full bg-muted mb-1">
+            <Star className="size-5 text-muted-foreground/40" />
+          </div>
+          <p className="text-sm font-medium">No reviews yet</p>
+          <p className="text-xs text-muted-foreground max-w-[220px]">
+            Reviews for this product will show up here once customers leave
+            feedback.
           </p>
-        ) : (
-          reviews.map((review) => (
-            <div key={review._id} className="rounded-lg border p-3 space-y-2">
-              <div className="flex items-start justify-between gap-2">
-                <div>
-                  <p className="font-medium text-sm">{review.userName}</p>
-                  <div className="flex items-center gap-0.5 mt-0.5">
-                    {Array.from({ length: 5 }).map((_, i) => (
-                      <Star
-                        key={i}
-                        className={`size-3.5 ${
-                          i < review.rating
-                            ? "fill-amber-400 text-amber-400"
-                            : "text-muted-foreground/40"
-                        }`}
-                      />
-                    ))}
+        </div>
+      ) : (
+        <>
+          {/* Rating summary */}
+          <div className="flex items-center gap-6 px-6 py-5">
+            <div className="flex flex-col items-center shrink-0">
+              <span className="text-4xl font-semibold tracking-tight">
+                {avgRating.toFixed(1)}
+              </span>
+              <div className="flex items-center gap-0.5 mt-1">
+                {Array.from({ length: 5 }).map((_, i) => (
+                  <Star
+                    key={i}
+                    className={`size-3.5 ${i < Math.round(avgRating)
+                      ? "fill-amber-400 text-amber-400"
+                      : "text-muted-foreground/25"
+                      }`}
+                  />
+                ))}
+              </div>
+              <span className="text-xs text-muted-foreground mt-1.5">
+                {reviews.length} review{reviews.length !== 1 ? "s" : ""}
+              </span>
+            </div>
+
+            <div className="flex-1 space-y-1">
+              {[5, 4, 3, 2, 1].map((star, idx) => (
+                <div key={star} className="flex items-center gap-2">
+                  <span className="text-xs text-muted-foreground w-2.5">
+                    {star}
+                  </span>
+                  <Star className="size-3 fill-amber-400 text-amber-400 shrink-0" />
+                  <div className="flex-1 h-1.5 rounded-full bg-muted overflow-hidden">
+                    <div
+                      className="h-full bg-amber-400 rounded-full"
+                      style={{
+                        width: `${reviews.length
+                          ? (ratingCounts[idx] / reviews.length) * 100
+                          : 0
+                          }%`,
+                      }}
+                    />
+                  </div>
+                  <span className="text-xs text-muted-foreground w-4 text-right">
+                    {ratingCounts[idx]}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <Separator />
+
+          {/* Review list */}
+          <div className="px-6 py-5 space-y-5">
+            {reviews.map((review) => {
+              const name = getReviewerName(review);
+              return (
+                <div
+                  key={review._id}
+                  className="group flex gap-3 -mx-2 px-2 py-3 rounded-lg hover:bg-muted/50 transition-colors"
+                >
+                  <div
+                    className={`flex size-9 shrink-0 items-center justify-center rounded-full text-xs font-medium ${getAvatarColor(
+                      name
+                    )}`}
+                  >
+                    {getInitials(name) || "?"}
+                  </div>
+
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <p className="font-medium text-sm">{name}</p>
+                      <span className="flex items-center gap-0.5 text-xs font-medium text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded">
+                        <Star className="size-2.5 fill-amber-500 text-amber-500" />
+                        {review.rating}
+                      </span>
+                      <span className="text-xs text-muted-foreground ml-auto shrink-0">
+                        {review.createdAt
+                          ? new Date(review.createdAt).toLocaleDateString(undefined, {
+                            month: "short",
+                            day: "numeric",
+                          })
+                          : "-"}
+                      </span>
+                      <Button
+                        type="button"
+                        size="icon"
+                        variant="ghost"
+                        className="size-6 shrink-0 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                        onClick={() => onDeleteReview?.(review)}
+                        aria-label={`Delete review by ${name}`}
+                      >
+                        <Trash2 className="size-3.5" />
+                      </Button>
+                    </div>
+
+                    {review.comment && (
+                      <p className="text-sm text-muted-foreground leading-relaxed mt-1">
+                        {review.comment}
+                      </p>
+                    )}
                   </div>
                 </div>
-                <span className="text-[10px] text-muted-foreground whitespace-nowrap">
-                  {review.createdAt
-                    ? new Date(review.createdAt).toLocaleDateString()
-                    : "-"}
-                </span>
-              </div>
+              );
+            })}
+          </div>
+        </>
+      )}
 
-              <p className="text-sm text-muted-foreground">{review.comment}</p>
 
-              <div className="flex gap-2 pt-1">
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="destructive"
-                  onClick={() => onDeleteReview?.(review)}
-                >
-                  Delete
-                </Button>
-              </div>
-            </div>
-          ))
-        )}
-      </div>
-
-      <DialogFooter>
+      <DialogFooter className="px-6 py-4">
         <DialogClose asChild>
           <Button variant="outline" onClick={closeModal}>
             Close
@@ -139,8 +249,8 @@ export const ViewReviews = ({
 export const DeleteReview = ({
   product,
   review,
-  submitFn = () => {},
-  closeModal = () => {},
+  submitFn = () => { },
+  closeModal = () => { },
 }) => (
   <DialogContent className="sm:max-w-[425px]">
     <DialogHeader>
@@ -168,7 +278,7 @@ export const DeleteReview = ({
   </DialogContent>
 );
 
-export const View = ({ product, closeModal = () => {} }) => {
+export const View = ({ product, closeModal = () => { } }) => {
   if (!product) return null;
 
   return (
@@ -270,7 +380,59 @@ export const View = ({ product, closeModal = () => {} }) => {
     </DialogContent>
   );
 };
-export const Create = ({ submitFn = () => {}, closeModal = () => {}, exported } = {}) => {
+
+
+
+
+export const ViewImages = ({ product, closeModal = () => { } }) => {
+  if (!product) return null;
+  const images = product.images || [];
+
+  return (
+    <DialogContent className="sm:max-w-2xl w-full max-h-[85vh] overflow-y-auto">
+      <DialogHeader>
+        <DialogTitle>Images — {product.name}</DialogTitle>
+        <DialogDescription>
+          {images.length} image{images.length !== 1 ? "s" : ""} available
+        </DialogDescription>
+      </DialogHeader>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 py-4">
+        {images.length === 0 ? (
+          <p className="text-sm text-muted-foreground col-span-full text-center py-8">
+            No images available for this product.
+          </p>
+        ) : (
+          images.map((src, i) => (
+            <a
+              key={i}
+              href={src}
+              target="_blank"
+              rel="noreferrer"
+              className="relative aspect-square rounded-md overflow-hidden border block hover:opacity-90 transition-opacity cursor-pointer"
+            >
+              <img
+                src={src}
+                alt={`${product.name} ${i + 1}`}
+                className="size-full object-cover"
+              />
+            </a>
+          ))
+        )}
+      </div>
+
+      <DialogFooter>
+        <DialogClose asChild>
+          <Button variant="outline" onClick={closeModal}>
+            Close
+          </Button>
+        </DialogClose>
+      </DialogFooter>
+    </DialogContent>
+  );
+};
+
+export const Create = ({ submitFn = () => { }, closeModal = () => { }, exported } = {}) => {
   const form = useForm({
     resolver: zodResolver(productCreateSchema),
     defaultValues: {
@@ -338,8 +500,8 @@ export const Create = ({ submitFn = () => {}, closeModal = () => {}, exported } 
 
 export const UpdateStock = ({
   product,
-  submitFn = () => {},
-  closeModal = () => {},
+  submitFn = () => { },
+  closeModal = () => { },
 } = {}) => {
   const form = useForm({
     resolver: zodResolver(productStockSchema),
@@ -406,8 +568,8 @@ export const UpdateStock = ({
 
 export const Edit = ({
   product,
-  submitFn = () => {},
-  closeModal = () => {},
+  submitFn = () => { },
+  closeModal = () => { },
   exported,
 } = {}) => {
   const form = useForm({
@@ -478,8 +640,8 @@ export const Edit = ({
 export const Delete = ({
   id,
   name,
-  closeModal = () => {},
-  submitFn = () => {},
+  closeModal = () => { },
+  submitFn = () => { },
 }) => (
   <DialogContent className="sm:max-w-[425px]">
     <DialogHeader>
