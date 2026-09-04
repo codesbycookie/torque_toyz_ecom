@@ -1,11 +1,17 @@
 backend/node_modules
 backend/.env
+backend/logs
+backend/dumps
 
 admin/node_modules
 admin/.env
+admin/logs
+admin/dumps
 
 customer/node_modules
 customer/.env
+customer/logs
+customer/dumps
 
 
 git_stats.py

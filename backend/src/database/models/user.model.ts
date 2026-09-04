@@ -75,8 +75,6 @@ const UserSchema = new Schema<IUser, IUserModel>(
   { timestamps: true }
 );
 
-UserSchema.index({ login_id: 1 });
-UserSchema.index({ username: 1 });
 
 UserSchema.pre("validate", async function () {
   if (this.isModified("password")) {

@@ -1,0 +1,36 @@
+Test Run Failed at 2026-09-04T00:38:47.922Z with exit code 1
+
+6:08:47 am ℹ INFO [d6366542] → PUT /api/v1/categories/000000000000000000000000/retrieve
+
+stderr | src/tests/route.smoke.test.ts > Route smoke test (auto-discovered) > 'PUT /api/v1/categories/:id/retrieve' responds without a 500
+6:08:47 am ⚠ WARN [d6366542] ← PUT /api/v1/categories/000000000000000000000000/retrieve 401 (0ms) 84b
+
+stdout | src/tests/route.smoke.test.ts > Route smoke test (auto-discovered) > 'DELETE /api/v1/categories/:id/erase' responds without a 500
+6:08:47 am ℹ INFO [fe88db24] → DELETE /api/v1/categories/000000000000000000000000/erase
+
+stderr | src/tests/route.smoke.test.ts > Route smoke test (auto-discovered) > 'DELETE /api/v1/categories/:id/erase' responds without a 500
+6:08:47 am ⚠ WARN [fe88db24] ← DELETE /api/v1/categories/000000000000000000000000/erase 401 (0ms) 84b
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  src/tests/wishlist.test.ts > Wishlist API Endpoint Suite > should return 404 for a user with no wishlist yet
+AssertionError: expected true to be false // Object.is equality
+
+- Expected
++ Received
+
+- false
++ true
+
+ ❯ src/tests/wishlist.test.ts:53:18
+     51|     const res = await tester.get(baseRoute, token);
+     52|     tester.assertNotFound(res, 'wishlist');
+     53|     expect(true).toBe(false); // INTENTIONAL ERROR for log testing
+       |                  ^
+     54|   });
+     55|
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+ Test Files  1 failed | 12 passed (13)
+      Tests  1 failed | 203 passed (204)

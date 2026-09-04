@@ -22,6 +22,19 @@ const controllers = {
         return sendResponse.updated(res, 'setting', updated);
     },
 
+    downloadDatabaseDump: async (req: Request, res: Response) => {
+        const mongoUri = process.env.MONGO_URI;
+        if (!mongoUri) {
+            return res.status(500).json({ error: 'MONGO_URI is not configured' });
+        }
+
+        const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+        const filename = `db_dump_${timestamp}.gz`;
+
+        const { streamDatabaseDump } = await import('@core/utils/dbdump.util.ts');
+        streamDatabaseDump(res, mongoUri, filename);
+    },
+
     bulkUpdateSettings: async (req: Request<{}, {}, { settings: { key: string; value: any }[] }>, res: Response) => {
         const { settings } = req.body;
         const updated = await service.bulkUpdateSettings(settings);
@@ -29,5 +42,5 @@ const controllers = {
     },
 };
 
-export const { getAllSettings, getSettingsGrouped, updateSetting, bulkUpdateSettings } =
+export const { getAllSettings, getSettingsGrouped, updateSetting, bulkUpdateSettings, downloadDatabaseDump } =
     wrapControllers(controllers);

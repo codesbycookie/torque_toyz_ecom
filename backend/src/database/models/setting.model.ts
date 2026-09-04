@@ -23,7 +23,6 @@ const SettingSchema = new Schema<ISetting, ISettingModel>(
     { timestamps: true }
 );
 
-SettingSchema.index({ key: 1 });
 
 SettingSchema.statics.get = async function (key: string): Promise<any> {
     const setting = await this.findOne({ key });
