@@ -8,11 +8,12 @@
   "main": "server.js",
   "scripts": {
     "check": "tsx src/scripts/bootloader.ts",
-    "test": "vitest run",
+    "test": "tsx src/scripts/run-tests.ts",
     "dev": "npm run check && tsx watch src/server.ts",
     "build": "tsc --incremental false",
     "start": "node dist/server.js",
-    "seed": "npx tsx src/scripts/seed.ts"
+    "seed": "npx tsx src/scripts/seed.ts",
+    "dump": "npx tsx src/scripts/dump.ts"
   },
   "keywords": [],
   "author": "",
@@ -26,6 +27,7 @@
     "@types/jsonwebtoken": "^9.0.10",
     "@types/mongoose": "^5.11.96",
     "@types/pdfkit": "^0.17.6",
+    "archiver": "^8.0.0",
     "bcryptjs": "^3.0.3",
     "cloudinary": "^1.41.3",
     "compression": "^1.8.1",
@@ -50,6 +52,7 @@
     "zod": "^4.4.3"
   },
   "devDependencies": {
+    "@types/archiver": "^8.0.0",
     "@types/axios": "^0.9.36",
     "@types/chalk": "^0.4.31",
     "@types/compression": "^1.8.1",

@@ -24,7 +24,7 @@ beforeAll(async () => {
 
   const timestamp = Date.now();
 
-  const category = await new Category({ name: `Payment Test Category ${timestamp}` }).save();
+  const category = await new Category({ name: `Order Test Category ${timestamp}-${Math.random()}` }).save();
 testCategoryId = category._id.toString();
 
 

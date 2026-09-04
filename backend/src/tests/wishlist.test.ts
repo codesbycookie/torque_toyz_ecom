@@ -22,14 +22,14 @@ beforeAll(async () => {
   userId = setup.user._id.toString(); // fixed
 
   const timestamp = Date.now();
-  const category = await new Category({ name: `Payment Test Category ${timestamp}`,  }).save();
+  const category = await new Category({ name: `Wishlist Test Category ${timestamp}-${Math.random()}`,  }).save();
 testCategoryId = category._id.toString();
 
   const product1 = await new Product({ name: `Wishlist Product 1 ${timestamp}`, weight: 1 ,category: testCategoryId}).save();
   const product2 = await new Product({ name: `Wishlist Product 2 ${timestamp}`, weight: 1, category: testCategoryId, }).save();
   testProductId = product1._id.toString();
   testProductId2 = product2._id.toString();
-});
+}, 30000);
 
 afterAll(async () => {
   if (cleanupAdmin) await cleanupAdmin();

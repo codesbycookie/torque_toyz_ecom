@@ -1,7 +1,6 @@
 import fs from 'fs';
 import { execSync } from 'child_process';
 import dotenv from 'dotenv';
-import { startVitest } from 'vitest/node';
 
 console.log('🔍 Starting environment & setup check...\n');
 
@@ -38,16 +37,9 @@ try {
 
   console.log('\n🧪 Running API route smoke tests...\n');
 
-  const vitest = await startVitest('test', [], {
-    watch: false,
-    reporters: ['default'],
-  });
-
-  await vitest?.close();
-
-  const failed = vitest?.state.getFiles().some((f) => f.result?.state === 'fail');
-
-  if (failed) {
+  try {
+    execSync('npm run test', { stdio: 'inherit' });
+  } catch (error) {
     console.error('\n❌ Route smoke tests failed! Fix them before continuing.\n');
     process.exit(1);
   }

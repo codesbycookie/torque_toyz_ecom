@@ -62,7 +62,6 @@ const LocationSchema = new Schema<ILocation, ILocationModel>(
   { timestamps: true },
 );
 
-LocationSchema.index({ code: 1 });
 
 LocationSchema.statics.findRateForWeight = async function (
   locationId: Types.ObjectId | string,

@@ -30,7 +30,6 @@ const CategorySchema = new Schema<ICategory, ICategoryModel>(
   { timestamps: true },
 );
 
-CategorySchema.index({ slug: 1 });
 
 CategorySchema.pre("save", async function () {
   if (this.isNew || this.isModified("name")) {
