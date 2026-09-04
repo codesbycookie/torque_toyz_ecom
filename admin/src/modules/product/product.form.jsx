@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useMemo } from "react";
 import {
   FormControl,
   FormField,
@@ -10,6 +11,8 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
+import { Button } from "@/components/ui/button";
+import { X } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -17,6 +20,39 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+
+// Renders a thumbnail for either an already-stored image (string/base64 url)
+// or a freshly-picked File — creating and cleaning up an object URL for Files.
+function ImagePreview({ image, onRemove }) {
+  const src = useMemo(() => {
+    if (typeof image === "string") return image;
+    if (image instanceof File) return URL.createObjectURL(image);
+    return null;
+  }, [image]);
+
+  useEffect(() => {
+    return () => {
+      if (image instanceof File && src) URL.revokeObjectURL(src);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [src]);
+
+  if (!src) return null;
+
+  return (
+    <div className="relative size-20 rounded-md border overflow-hidden group">
+      <img src={src} alt="Product" className="size-full object-cover" />
+      <button
+        type="button"
+        onClick={onRemove}
+        className="absolute top-0.5 right-0.5 bg-black/60 text-white rounded-full p-0.5 opacity-0 group-hover:opacity-100 transition-opacity"
+        aria-label="Remove image"
+      >
+        <X className="size-3" />
+      </button>
+    </div>
+  );
+}
 
 export default function ProductForm({ form, categories = [] }) {
   return (
@@ -77,41 +113,69 @@ export default function ProductForm({ form, categories = [] }) {
       <FormField
         control={form.control}
         name="images"
-        render={({ field }) => (
-          <FormItem>
-            <FormLabel>Images (up to 5)</FormLabel>
-            <FormControl>
-              <Input
-                type="file"
-                accept="image/*"
-                multiple
-                onChange={(event) => {
-                  const selectedFiles = Array.from(event.target.files || []);
-                  const existingImages = (field.value || []).filter(
-                    (image) => typeof image === "string"
-                  );
-                  const images = [...existingImages, ...selectedFiles];
+        render={({ field }) => {
+          const images = field.value || [];
 
-                  if (images.length > 5) {
-                    form.setError("images", {
-                      type: "manual",
-                      message: "You can upload up to 5 images",
-                    });
-                    event.target.value = "";
-                    return;
-                  }
+          const removeAt = (index) => {
+            const next = images.filter((_, i) => i !== index);
+            form.clearErrors("images");
+            field.onChange(next);
+          };
 
-                  form.clearErrors("images");
-                  field.onChange(images);
-                }}
-              />
-            </FormControl>
-            <p className="text-sm text-muted-foreground">
-              {(field.value || []).length} of 5 images selected
-            </p>
-            <FormMessage />
-          </FormItem>
-        )}
+          return (
+            <FormItem>
+              <FormLabel>Images (up to 5)</FormLabel>
+
+              {images.length > 0 && (
+                <div className="flex flex-wrap gap-2 mb-2">
+                  {images.map((image, index) => (
+                    <ImagePreview
+                      key={
+                        image instanceof File
+                          ? `${image.name}-${image.lastModified}-${index}`
+                          : `${image}-${index}`
+                      }
+                      image={image}
+                      onRemove={() => removeAt(index)}
+                    />
+                  ))}
+                </div>
+              )}
+
+              {images.length < 5 && (
+                <FormControl>
+                  <Input
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    onChange={(event) => {
+                      const selectedFiles = Array.from(event.target.files || []);
+                      const combined = [...images, ...selectedFiles];
+
+                      if (combined.length > 5) {
+                        form.setError("images", {
+                          type: "manual",
+                          message: "You can upload up to 5 images",
+                        });
+                        event.target.value = "";
+                        return;
+                      }
+
+                      form.clearErrors("images");
+                      field.onChange(combined);
+                      event.target.value = ""; // allow re-selecting the same file later
+                    }}
+                  />
+                </FormControl>
+              )}
+
+              <p className="text-sm text-muted-foreground">
+                {images.length} of 5 images selected
+              </p>
+              <FormMessage />
+            </FormItem>
+          );
+        }}
       />
 
       <div className="grid grid-cols-3 gap-4">
