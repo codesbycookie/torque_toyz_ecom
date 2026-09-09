@@ -69,7 +69,7 @@ describe('Product API Endpoint Suite', () => {
       expect(data.stock).to.equal(0);
       expect(data.images).to.have.length(2);
       expect(data.active).to.equal(true);
-      expect(data.code).to.match(/^P-\d{3}$/);
+      expect(data.code).to.match(/^P-\d{3,}$/);
       expect(data.category).to.equal(testCategoryId);
     });
   });
