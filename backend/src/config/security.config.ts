@@ -17,7 +17,7 @@ export const applySecurityMiddlewares = (app: Express) => {
 
   app.use(
     cors({
-      origin: (origin, callback) => {
+       origin: (origin, callback) => {
         if (!origin || origins.includes(origin)) {
           callback(null, true);
         } else {

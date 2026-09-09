@@ -1,5 +1,7 @@
 import Order, { IOrder } from '@db/models/order.model.ts';
 import productModel from '@db/models/product.model.ts';
+import Wishlist from '@db/models/wishlist.model.ts';
+import Review from '@db/models/review.model.ts';
 import { QueryFilter } from 'mongoose';
 
 interface DateRange {
@@ -295,4 +297,71 @@ export const getPeakTimes = async (range: DateRange) => {
     ]);
 
     return { by_hour: byHour, by_weekday: byWeekday };
+};
+
+export const getMostWishlistedProducts = async (range: DateRange, limit: number = 10) => {
+    const match = buildDateMatch(range);
+    const result = await Wishlist.aggregate([
+        { $match: match },
+        { $unwind: '$products' },
+        {
+            $group: {
+                _id: '$products',
+                count: { $sum: 1 }
+            }
+        },
+        { $sort: { count: -1 } },
+        { $limit: limit },
+        {
+            $lookup: {
+                from: 'products',
+                localField: '_id',
+                foreignField: '_id',
+                as: 'product'
+            }
+        },
+        { $unwind: '$product' },
+        {
+            $project: {
+                _id: 1,
+                name: '$product.name',
+                count: 1
+            }
+        }
+    ]);
+    return result;
+};
+
+export const getMostReviewedProducts = async (range: DateRange, limit: number = 10) => {
+    const match = buildDateMatch(range);
+    const result = await Review.aggregate([
+        { $match: match },
+        {
+            $group: {
+                _id: '$product',
+                count: { $sum: 1 },
+                avgRating: { $avg: '$rating' }
+            }
+        },
+        { $sort: { count: -1 } },
+        { $limit: limit },
+        {
+            $lookup: {
+                from: 'products',
+                localField: '_id',
+                foreignField: '_id',
+                as: 'productDetails'
+            }
+        },
+        { $unwind: '$productDetails' },
+        {
+            $project: {
+                _id: 1,
+                name: '$productDetails.name',
+                count: 1,
+                avgRating: { $round: ['$avgRating', 1] }
+            }
+        }
+    ]);
+    return result;
 };

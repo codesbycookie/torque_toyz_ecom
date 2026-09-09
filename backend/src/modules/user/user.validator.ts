@@ -3,6 +3,12 @@ import { z } from 'zod';
 export const createUserSchema = z.object({
   name: z.string().trim().min(2, 'Name is too short'),
   email: z.string().trim().email(),
+  username: z
+    .string()
+    .trim()
+    .toLowerCase()
+    .min(2, 'Username is too short')
+    .optional(),
   phone: z.string().trim().min(10, 'Phone number is too short'),
   password: z.string().min(6, 'Password must be at least 6 characters'),
   role: z.enum(['admin', 'user']),
@@ -15,7 +21,9 @@ export const createUserSchema = z.object({
       pincode: z.number().optional(),
     })
     .optional(),
-acceptTerms: z.literal(true, { error: 'You must accept the terms and conditions' }),
+  profile: z.object({ url: z.string().url() }).optional(),
+  theme: z.enum(['light', 'dark', 'system']).optional(),
+  acceptTerms: z.literal(true, { error: 'You must accept the terms and conditions' }),
 });
 
 export const updateUserSchema = createUserSchema

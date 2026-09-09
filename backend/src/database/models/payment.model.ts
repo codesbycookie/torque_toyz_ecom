@@ -37,7 +37,6 @@ const PaymentSchema = new Schema<IPayment, IPaymentModel>(
   { timestamps: true },
 );
 
-PaymentSchema.index({ razorpay_order_id: 1 });
 PaymentSchema.index({ order: 1 });
 
 PaymentSchema.statics.findByRazorpayOrderId = async function (

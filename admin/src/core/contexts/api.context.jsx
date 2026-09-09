@@ -6,6 +6,7 @@ import { useOrderModule } from "../../modules/order/order.module";
 import { usePaymentModule } from "../../modules/payment/payment.module";
 import { useCategoryModule } from "../../modules/category/category.module";
 import { useSettingModule } from "@/modules/setting";
+import { useDashboardModule } from "@/modules/dashboard/dashboard.module";
 const ApiContext = createContext();
 
 // eslint-disable-next-line react-refresh/only-export-components
@@ -27,6 +28,8 @@ export const ApiProvider = ({ children }) => {
   const paymentModule = usePaymentModule(exported);
   const categoryModule = useCategoryModule(exported);
   const settingModule = useSettingModule(exported);
+  const dashboardModule = useDashboardModule(exported);
+  
   Object.assign(exported, {
     products: productModule,
     locations: locationModule,

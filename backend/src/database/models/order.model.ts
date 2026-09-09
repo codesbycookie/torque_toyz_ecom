@@ -189,7 +189,6 @@ const OrderSchema = new Schema<IOrder, IOrderModel>(
 // ── Indexes ──────────────────────────────────────────────────────────
 
 OrderSchema.index({ user: 1, createdAt: -1 });
-OrderSchema.index({ code: 1 });
 OrderSchema.index({ status: 1 });
 
 // ── Hooks ────────────────────────────────────────────────────────────

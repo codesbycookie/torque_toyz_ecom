@@ -1,5 +1,6 @@
 import { describe, it, beforeAll, afterAll, expect } from "vitest";
 import mongoose from "mongoose";
+import { randomUUID } from "crypto";
 import { bootstrap } from "../app.ts";
 import Category from "@db/models/category.model.ts";
 import Product from "@db/models/product.model.ts";
@@ -13,6 +14,8 @@ let createdCategoryId: string;
 let createdCategorySlug: string;
 let inUseCategoryId: string;
 let linkedProductId: string;
+
+const uniqueSuffix = () => `${Date.now()}-${randomUUID().slice(0, 8)}`;
 
 beforeAll(async () => {
   await bootstrap();
@@ -40,11 +43,11 @@ describe("Category API Endpoint Suite", () => {
   });
 
   it("should successfully create a category with an auto-generated slug", async () => {
-    const timestamp = Date.now();
+    const suffix = uniqueSuffix();
     const res = await tester.post(
       baseRoute,
       {
-        name: `Waterproof ${timestamp}`,
+        name: `Waterproof ${suffix}`,
         description: "Water-resistant products",
       },
       token,
@@ -86,10 +89,10 @@ describe("Category API Endpoint Suite", () => {
   });
 
   it("should successfully update category name and regenerate slug", async () => {
-    const timestamp = Date.now();
+    const suffix = uniqueSuffix();
     const res = await tester.put(
       `${baseRoute}/${createdCategoryId}`,
-      { name: `Updated Waterproof ${timestamp}` },
+      { name: `Updated Waterproof ${suffix}` },
       token,
     );
     tester.assertUpdated(res, "category", (data) => {
@@ -122,14 +125,14 @@ describe("Category API Endpoint Suite", () => {
 //   });
 
   it("should reject deleting a category that still has products assigned", async () => {
-    const timestamp = Date.now();
+    const suffix = uniqueSuffix();
     const category = await new Category({
-      name: `In Use Category ${timestamp}`,
+      name: `In Use Category ${suffix}`,
     }).save();
     inUseCategoryId = category._id.toString();
 
     const product = await new Product({
-      name: `Linked Product ${timestamp}`,
+      name: `Linked Product ${suffix}`,
       weight: 1,
       price: 100,
       category: category._id,

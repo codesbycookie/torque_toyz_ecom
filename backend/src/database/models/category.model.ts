@@ -5,6 +5,8 @@ export interface ICategory extends Document {
   slug: string;
   description?: string;
   active: boolean;
+  deleted: boolean;
+  deletedAt?: Date;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -26,11 +28,12 @@ const CategorySchema = new Schema<ICategory, ICategoryModel>(
     slug: { type: String, unique: true, trim: true, lowercase: true },
     description: { type: String, trim: true },
     active: { type: Boolean, default: true },
+    deleted: { type: Boolean, default: false },
+    deletedAt: { type: Date },
   },
   { timestamps: true },
 );
 
-CategorySchema.index({ slug: 1 });
 
 CategorySchema.pre("save", async function () {
   if (this.isNew || this.isModified("name")) {
@@ -53,7 +56,7 @@ CategorySchema.pre("save", async function () {
 CategorySchema.statics.findBySlug = async function (
   slug: string,
 ): Promise<ICategory | null> {
-  return this.findOne({ slug, active: true });
+  return this.findOne({ slug, active: true, deleted: false });
 };
 
 export default mongoose.model<ICategory, ICategoryModel>(

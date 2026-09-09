@@ -50,9 +50,9 @@ describe('Product API Endpoint Suite', () => {
     tester.assertValidationError(res);
   });
 
-  it('should successfully create a product with default images and zero stock', async () => {
+  it('should successfully create a product with zero stock', async () => {
     const timestamp = Date.now();
-    const res = await tester.post(
+    const res = await tester.postMultipart(
       baseRoute,
       {
         name: `Test Product ${timestamp}`,
@@ -60,13 +60,14 @@ describe('Product API Endpoint Suite', () => {
         weight: 1,
         category: testCategoryId,
       },
+      { images: ['src/tests/fixtures/dummy.jpg', 'src/tests/fixtures/dummy.jpg'] },
       token
     );
 
     tester.assertCreated(res, 'Product', (data) => {
       createdProductId = data._id;
       expect(data.stock).to.equal(0);
-      expect(data.images).to.have.length(3);
+      expect(data.images).to.have.length(2);
       expect(data.active).to.equal(true);
       expect(data.code).to.match(/^P-\d{3}$/);
       expect(data.category).to.equal(testCategoryId);
@@ -94,10 +95,16 @@ describe('Product API Endpoint Suite', () => {
     expect(found).to.exist;
   });
 
-  it('should successfully update product stock', async () => {
-    const res = await tester.put(`${baseRoute}/${createdProductId}`, { stock: 50 }, token);
+  it('should successfully update product stock and upload image', async () => {
+    const res = await tester.putMultipart(
+      `${baseRoute}/${createdProductId}`,
+      { stock: 50 },
+      { images: 'src/tests/fixtures/dummy.jpg' },
+      token
+    );
     tester.assertUpdated(res, 'product', (data) => {
       expect(data.stock).to.equal(50);
+      expect(data.images).to.include('http://dummy.url/test.jpg');
     });
   });
 

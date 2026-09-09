@@ -30,21 +30,24 @@ describe('User API Endpoint Suite', () => {
 
   it('should successfully create a user with an auto-generated login_id', async () => {
     const timestamp = Date.now();
-    const res = await tester.post(
+    const res = await tester.postMultipart(
       baseRoute,
       {
         name: `Test User ${timestamp}`,
         email: `test${timestamp}@example.com`,
-        phone: '9876543210',
+        phone: `9${Math.floor(100000000 + Math.random() * 900000000)}`,
         password: 'Password@123',
         role: 'user',
+        acceptTerms: true,
       },
+      { image: 'src/tests/fixtures/dummy.jpg' },
       token
     );
 
+    console.log("CREATE USER RESPONSE:", res.body);
     tester.assertCreated(res, 'User', (data) => {
       createdUserId = data._id;
-      expect(data.login_id).to.match(/^U-\d{3}$/);
+      expect(data.login_id).to.match(/^U\d{3,}$/);
       expect(data.password).to.be.undefined; // must never leak in response
     });
   });
@@ -64,10 +67,16 @@ describe('User API Endpoint Suite', () => {
     expect(res.body.data.password).to.be.undefined;
   });
 
-  it('should successfully update user profile fields', async () => {
-    const res = await tester.put(`${baseRoute}/${createdUserId}`, { name: 'Updated Name' }, token);
+  it('should successfully update user profile fields and image', async () => {
+    const res = await tester.putMultipart(
+      `${baseRoute}/${createdUserId}`,
+      { name: 'Updated Name' },
+      { image: 'src/tests/fixtures/dummy.jpg' },
+      token
+    );
     tester.assertUpdated(res, 'user', (data) => {
       expect(data.name).to.equal('Updated Name');
+      expect(data.profile?.url).to.equal('http://dummy.url/test.jpg');
     });
   });
 

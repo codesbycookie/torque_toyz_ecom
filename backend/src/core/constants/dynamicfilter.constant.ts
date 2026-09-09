@@ -318,7 +318,7 @@ export async function dynamicFilter<T extends Document>(
           try {
             const refSchema = mongoose.model(refModelName)?.schema;
             if (refSchema?.path("active") && refSchema?.path("deleted")) {
-              match = { active: true, deleted: false };
+              match = { active: true, deleted: { $ne: true } };
             }
           } catch {
             // Reference model might not be registered yet or not present

@@ -33,7 +33,6 @@ const WishlistSchema = new Schema<IWishlist, IWishlistModel>(
   { timestamps: true }
 );
 
-WishlistSchema.index({ user: 1 });
 
 WishlistSchema.statics.getByUser = async function (
   userId: Types.ObjectId | string

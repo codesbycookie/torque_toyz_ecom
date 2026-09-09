@@ -25,12 +25,46 @@ export const tester = {
   patch: (url: string, body?: any, token?: string) => makeRequest('patch', url, body, token),
   delete: (url: string, token?: string) => makeRequest('delete', url, undefined, token),
 
+  postMultipart: (url: string, fields: any, files: { [key: string]: string | string[] }, token?: string) => {
+    let req = request(app).post(url);
+    if (token) req = req.set('Authorization', `Bearer ${token}`);
+    for (const key of Object.keys(fields)) {
+      if (typeof fields[key] === 'object') req = req.field(key, JSON.stringify(fields[key]));
+      else req = req.field(key, String(fields[key]));
+    }
+    for (const [key, paths] of Object.entries(files)) {
+      if (Array.isArray(paths)) {
+        for (const p of paths) req = req.attach(key, p);
+      } else {
+        req = req.attach(key, paths as string);
+      }
+    }
+    return req;
+  },
+
+  putMultipart: (url: string, fields: any, files: { [key: string]: string | string[] }, token?: string) => {
+    let req = request(app).put(url);
+    if (token) req = req.set('Authorization', `Bearer ${token}`);
+    for (const key of Object.keys(fields)) {
+      if (typeof fields[key] === 'object') req = req.field(key, JSON.stringify(fields[key]));
+      else req = req.field(key, String(fields[key]));
+    }
+    for (const [key, paths] of Object.entries(files)) {
+      if (Array.isArray(paths)) {
+        for (const p of paths) req = req.attach(key, p);
+      } else {
+        req = req.attach(key, paths as string);
+      }
+    }
+    return req;
+  },
+
   // Auth/Setup helper
   setupAdmin: async () => {
   const mockUser = await User.create({
     name: 'Test Admin',
     email: `testadmin_${randomUUID()}@torquetoyz.com`,
-    phone: '9999999999',
+    phone: `9${Math.floor(100000000 + Math.random() * 900000000)}`,
     password: 'Password123',
     role: 'admin', // fixed — was 'super_admin', which doesn't match the User schema enum
     active: true,

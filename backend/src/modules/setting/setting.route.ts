@@ -9,6 +9,7 @@ import {
     getSettingsGrouped,
     updateSetting,
     bulkUpdateSettings,
+    downloadDatabaseDump,
 } from './setting.controller.ts';
 
 const router = Router();
@@ -18,17 +19,18 @@ router.use(authMiddleware);
 
 router.get('/', getSettingsGrouped); // powers the Settings page UI directly
 router.get('/raw', getAllSettings); // flat list, for debugging/admin tools
-
-router.put(
-    '/:key',
-    zodValidate(updateSettingSchema, 'body', 'UpdateSettingSchema'),
-    updateSetting
-);
+router.get('/dump', downloadDatabaseDump); // route to stream a complete database dump
 
 router.put(
     '/bulk',
     zodValidate(bulkUpdateSettingsSchema, 'body', 'BulkUpdateSettingsSchema'),
     bulkUpdateSettings
+);
+
+router.put(
+    '/:key',
+    zodValidate(updateSettingSchema, 'body', 'UpdateSettingSchema'),
+    updateSetting
 );
 
 export default router;

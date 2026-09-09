@@ -52,9 +52,32 @@ export const setCategoryActiveStatus = async (id: string, active: boolean) => {
   return enhanceCategory(updated);
 };
 
+export const deleteCategory = async (id: string) => {
+  const inUse = await Product.exists({ category: id, deleted: false });
+  if (inUse) {
+    throw new ApiError(409, 'Cannot delete a category that still has products assigned to it');
+  }
+
+  const updated = await Category.findByIdAndUpdate(
+    id,
+    { deleted: true, deletedAt: new Date() },
+    { new: true }
+  );
+  if (!updated) return null;
+  return enhanceCategory(updated);
+};
+
+export const retrieveCategory = async (id: string) => {
+  const updated = await Category.findByIdAndUpdate(
+    id,
+    { deleted: false, $unset: { deletedAt: 1 } },
+    { new: true }
+  );
+  if (!updated) return null;
+  return enhanceCategory(updated);
+};
+
 export const eraseCategory = async (id: string) => {
-  // block deletion if any product still references this category —
-  // otherwise those products would end up with a dangling ref
   const inUse = await Product.exists({ category: id, deleted: false });
   if (inUse) {
     throw new ApiError(409, 'Cannot delete a category that still has products assigned to it');

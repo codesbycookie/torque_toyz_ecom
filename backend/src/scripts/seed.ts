@@ -3,6 +3,7 @@ import dotenv from 'dotenv';
 
 import User from '@db/models/user.model.ts';
 import Location from '@db/models/location.model.ts';
+import Category from '@db/models/category.model.ts';
 import Product from '@db/models/product.model.ts';
 import Setting from '@db/models/setting.model.ts';
 import Order from '@db/models/order.model.ts';
@@ -23,8 +24,9 @@ const randFloat = (min: number, max: number, decimals = 1) => {
 const pick = <T>(arr: T[]): T => arr[randInt(0, arr.length - 1)];
 
 // ── Users (1 admin + 100 regular) ───────────────────────────────────────
-// NOTE: one-by-one .save() — password hashing (pre('validate')) and
-// login_id generation (pre('save')) both need real hooks to run.
+// NOTE: one-by-one .save() — password hashing + username generation
+// (pre('validate')) and login_id generation (pre('save')) all need
+// real hooks to run.
 
 const FIRST_NAMES = [
   'Arjun', 'Vikram', 'Rahul', 'Sanjay', 'Karthik', 'Suresh', 'Ganesh', 'Naveen',
@@ -47,7 +49,7 @@ const seedUsers = async () => {
     name: 'Super Admin',
     email: 'admin@torquetoyz.com',
     phone: '9999999999',
-    password: 'ChangeMe@123',
+    password: 'Password@123',
     role: 'admin',
   }).save();
   console.log('  created  1 admin user');
@@ -118,17 +120,37 @@ const seedLocations = async () => {
   return created;
 };
 
-// ── Products (100) ──────────────────────────────────────────────────────
-// NOTE: one-by-one .save() — code generation lives in pre('save'),
-// which insertMany does NOT run, causing every doc to get code: null
-// and collide on the unique index.
+// ── Categories (20) ───────────────────────────────────────────────────
+// NOTE: one-by-one .save() if Category has slug-generation in
+// pre('save'), same reasoning as Product below. If it turns out
+// Category has no such hook, this can safely switch to insertMany.
 
-const CATEGORIES = [
+const CATEGORY_NAMES = [
   'Alloy Wheel', 'Shock Absorber', 'Brake Pad', 'Air Filter', 'Headlight Assembly',
   'Tail Light', 'Seat Cover', 'Floor Mat', 'Side Mirror', 'Bumper Guard',
   'Exhaust Muffler', 'Clutch Plate', 'Radiator', 'Battery', 'Spark Plug',
   'Wiper Blade', 'Horn', 'Fog Lamp', 'Roof Rack', 'Steering Wheel Cover',
 ];
+
+const eraseCategories = async () => {
+  const result = await Category.deleteMany({});
+  console.log(`  erased   ${result.deletedCount} category(ies)`);
+};
+
+const seedCategories = async () => {
+  const created: any[] = [];
+  for (const name of CATEGORY_NAMES) {
+    created.push(await new Category({ name }).save());
+  }
+  console.log(`  created  ${created.length} categories`);
+  return created;
+};
+
+// ── Products (100 = 20 categories × 5 variants) ─────────────────────────
+// NOTE: one-by-one .save() — code + slug generation live in pre('save'),
+// which insertMany does NOT run, causing every doc to get code: null
+// and collide on the unique index.
+
 const VARIANTS = ['Standard', 'Pro', 'Sport', 'Deluxe', 'Off-Road'];
 
 const eraseProducts = async () => {
@@ -136,16 +158,22 @@ const eraseProducts = async () => {
   console.log(`  erased   ${result.deletedCount} product(s)`);
 };
 
-const seedProducts = async () => {
+const seedProducts = async (categories: any[]) => {
   const specs: any[] = [];
-  for (const category of CATEGORIES) {
+  for (const category of categories) {
     for (const variant of VARIANTS) {
       specs.push({
-        name: `${variant} ${category}`,
-        description: `${variant} grade ${category.toLowerCase()} built for durability and performance.`,
+        name: `${variant} ${category.name}`,
+        category: category._id,
+        description: `${variant} grade ${category.name.toLowerCase()} built for durability and performance.`,
         stock: randInt(0, 99),
         weight: randFloat(0.5, 10),
         price: randInt(20, 500) * 10, // ₹200–5000
+        images: [
+          'https://placehold.co/600x400?text=Product+1',
+          'https://placehold.co/600x400?text=Product+2',
+          'https://placehold.co/600x400?text=Product+3'
+        ],
       });
     }
   } // 20 × 5 = 100
@@ -254,8 +282,8 @@ const seedOrders = async (users: any[], products: any[], locations: any[]) => {
       location.slabs.find((s: any) => totalWeight > s.min && totalWeight <= s.max) ??
       location.slabs[location.slabs.length - 1];
     const shippingCost = slab.rate;
-    const status = pick(["placed", "confirmed", "shipped", "delivered", "cancelled"]);
-    const paymentMethod = pick(["cod", "online"]);
+    const status = pick(['placed', 'confirmed', 'shipped', 'delivered', 'cancelled']);
+    const paymentMethod = pick(['cod', 'online']);
 
     const order = await new Order({
       user: user._id,
@@ -279,6 +307,27 @@ const seedOrders = async (users: any[], products: any[], locations: any[]) => {
       },
       status,
     }).save();
+
+    // Spread orders over the last 6 months (approx 180 days)
+    // Bias days towards recent days to simulate revenue growth (more orders recently)
+    const randomDaysAgo = Math.floor(Math.pow(Math.random(), 2) * 180);
+    
+    // Bias hours towards evening (18:00 - 22:00) and late morning (10:00 - 12:00)
+    const hourPool = [
+      18, 18, 18, 19, 19, 19, 19, 20, 20, 20, 21, 21, 21, 22, 22,
+      10, 10, 11, 11, 12, 12,
+      ...Array.from({length: 24}, (_, i) => i) // add baseline of 1 per hour
+    ];
+    const randomHoursAgo = hourPool[randInt(0, hourPool.length - 1)];
+
+    const pastDate = new Date();
+    pastDate.setDate(pastDate.getDate() - randomDaysAgo);
+    pastDate.setHours(randomHoursAgo);
+    // Use raw mongodb collection to bypass ANY mongoose timestamp hooks
+    await Order.collection.updateOne(
+      { _id: order._id }, 
+      { $set: { createdAt: pastDate, updatedAt: pastDate } }
+    );
 
     created.push(order);
   }
@@ -377,7 +426,7 @@ const seedOtps = async (users: any[]) => {
 
   for (let i = 0; i < COUNT; i++) {
     const user = pick(users);
-    await Otp.generate(user.email, pick(["login", "password_reset", "phone_verification", "email_verification"]));
+    await Otp.generate(user.email, pick(['login', 'password_reset', 'phone_verification', 'email_verification']));
     created++;
   }
   console.log(`  created  ${created} otps`);
@@ -403,9 +452,13 @@ const run = async () => {
   await eraseLocations();
   const locations = await seedLocations();
 
+  console.log('\nCategories...');
+  await eraseCategories();
+  const categories = await seedCategories();
+
   console.log('\nProducts...');
   await eraseProducts();
-  const products = await seedProducts();
+  const products = await seedProducts(categories);
 
   console.log('\nSettings...');
   await eraseSettings();

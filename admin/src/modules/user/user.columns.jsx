@@ -82,7 +82,7 @@ export const useUserColumns = (users) => {
                 View
               </DropdownMenuItem>
               {isErased ? (
-                <DropdownMenuItem onClick={() => users.openRetrieve(user._id)}>
+                <DropdownMenuItem onClick={() => users.openRetrieve(user._id, user.name)}>
                   Retrieve
                 </DropdownMenuItem>
               ) : (
@@ -108,7 +108,7 @@ export const useUserColumns = (users) => {
                   </DropdownMenuItem>
                   <DropdownMenuItem
                     variant="destructive"
-                    onClick={() => users.openErase(user._id)}
+                    onClick={() => users.openErase(user._id, user.name)}
                   >
                     Erase Permanently
                   </DropdownMenuItem>

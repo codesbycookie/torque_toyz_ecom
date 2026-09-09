@@ -24,11 +24,11 @@ beforeAll(async () => {
 
   const timestamp = Date.now();
 
-  const category = await new Category({ name: `Payment Test Category ${timestamp}` }).save();
+  const category = await new Category({ name: `Order Test Category ${timestamp}-${Math.random()}` }).save();
 testCategoryId = category._id.toString();
 
 
-  const product = await new Product({ name: `Order Product ${timestamp}`, stock: 10, weight: 1, category: testCategoryId }).save(); // fixed
+  const product = await new Product({ name: `Order Product ${timestamp}`, stock: 10, weight: 1, category: testCategoryId, images: ['http://dummy.url/test.jpg'] }).save(); // fixed
   testProductId = product._id.toString();
 
   const location = await new Location({

@@ -48,7 +48,7 @@ describe('Auth API Endpoint Suite', () => {
 
   it('should reject login with wrong password', async () => {
     const res = await tester.post(`${baseRoute}/login`, {
-      login_id: testLoginId,
+      identifier: testLoginId,
       password: 'WrongPassword',
     });
     tester.assertUnauthorized(res, 'Invalid password');
@@ -56,7 +56,7 @@ describe('Auth API Endpoint Suite', () => {
 
   it('should reject login for a non-existent login_id', async () => {
     const res = await tester.post(`${baseRoute}/login`, {
-      login_id: 'U-999',
+      identifier: 'U-999',
       password: testPassword,
     });
     tester.assertUnauthorized(res, 'User not found');
@@ -64,19 +64,18 @@ describe('Auth API Endpoint Suite', () => {
 
   it('should successfully login with correct credentials', async () => {
     const res = await tester.post(`${baseRoute}/login`, {
-      login_id: testLoginId,
+      identifier: testLoginId,
       password: testPassword,
     });
 
     tester.assertFetched(res, 'session');
-    userToken = res.body.data.token;
   });
 
   it('should reject login for an inactive/deleted account', async () => {
     await User.findOneAndUpdate({ login_id: testLoginId }, { active: false });
 
     const res = await tester.post(`${baseRoute}/login`, {
-      login_id: testLoginId,
+      identifier: testLoginId,
       password: testPassword,
     });
     tester.assertForbidden(res);
@@ -106,7 +105,7 @@ it('should reject change-password with wrong current password', async () => {
     userToken
   );
   console.log(res.data)
-  tester.assertUnauthorized(res, 'Unauthenticated');
+  tester.assertUnauthorized(res, 'Current password incorrect');
 });
 
 it('should successfully change password with correct current password', async () => {
@@ -119,12 +118,12 @@ it('should successfully change password with correct current password', async ()
     userToken
   );
 
-  tester.assertSuccess(res, 'Password changed successfully');
+  tester.assertSuccess(res, 'Password updated successfully');
 });
 
 it('should successfully login with the new password after change', async () => {
   const res = await tester.post(`${baseRoute}/login`, {
-    login_id: testLoginId,
+    identifier: testLoginId,
     password: 'NewPassword@123',
   });
 

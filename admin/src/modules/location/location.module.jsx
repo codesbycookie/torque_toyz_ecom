@@ -3,75 +3,26 @@ import { useUI } from "@/core/contexts/ui.context";
 import { useLocationStore } from "./location.store";
 import { modals } from "./location.modals";
 import { useLocationColumns } from "./location.coulmns";
-
-const DUMMY_LOCATIONS = [
-  {
-    _id: "1",
-    state: "Tamil Nadu",
-    code: "TN",
-    deliverable: true,
-    slabs: [
-      { _id: "s1", min: 0, max: 5, rate: 40 },
-      { _id: "s2", min: 5, max: 10, rate: 65 },
-    ],
-  },
-  {
-    _id: "2",
-    state: "Karnataka",
-    code: "KA",
-    deliverable: true,
-    slabs: [{ _id: "s3", min: 0, max: 5, rate: 45 }],
-  },
-  {
-    _id: "3",
-    state: "Jammu & Kashmir",
-    code: "JK",
-    deliverable: false,
-    slabs: [{ _id: "s4", min: 0, max: 5, rate: 120 }],
-  },
-];
+import { createCrud } from "@/core/factory/entity.crud";
+import { apiurls } from "@/core/api/api.urls";
+import { createEntityQueryActions } from "@/core/utils/entity.util";
 
 export const useLocationModule = (exported) => {
   const { openModal } = useUI();
   const store = useLocationStore();
-  const {
-    set,
-    add,
-    update,
-    remove,
-    setCurrent,
-    setQuery,
-    resetQuery,
-    setPagination,
-  } = store;
+  const { set, add, update, remove, setCurrent, setQuery } = store;
+  const { locations } = apiurls;
 
-  // Load dummy data once (only using store methods)
-  if (useLocationStore.getState().list.length === 0) {
-    set(DUMMY_LOCATIONS);
-    setPagination({
-      page: 1,
-      limit: 10,
-      total: DUMMY_LOCATIONS.length,
-      pages: 1,
-      hasNext: false,
-      hasPrev: false,
-    });
-  }
+  const crud = createCrud({
+    entity: "Location",
+    urls: locations,
+    store: store,
+    getRole: () => "super_admin",
+  });
 
   const openCreate = () => {
     return openModal(modals.create, {
-      submitFn: (data) => {
-        const newLocation = {
-          _id: `dummy-${Date.now()}`,
-          ...data,
-          slabs: (data.slabs || []).map((s, i) => ({
-            _id: `dummy-slab-${Date.now()}-${i}`,
-            ...s,
-          })),
-        };
-        add(newLocation);
-        toast.success("Location created successfully");
-      },
+      submitFn: (data) => crud.create(data),
       exported,
     });
   };
@@ -79,17 +30,7 @@ export const useLocationModule = (exported) => {
   const openEdit = (location) => {
     return openModal(modals.edit, {
       location,
-      submitFn: (data) => {
-        const existingSlabs = location?.slabs || [];
-        update(location._id, {
-          ...data,
-          slabs: (data.slabs || []).map((s, i) => ({
-            _id: existingSlabs[i]?._id || `dummy-slab-${Date.now()}-${i}`,
-            ...s,
-          })),
-        });
-        toast.success("Location updated successfully");
-      },
+      submitFn: (data) => crud.edit(location._id, data),
       exported,
     });
   };
@@ -98,10 +39,7 @@ export const useLocationModule = (exported) => {
     return openModal(modals.delete, {
       id,
       name,
-      submitFn: (id) => {
-        remove(id);
-        toast.success("Location deleted successfully");
-      },
+      submitFn: (id) => crud.delete(id),
       exported,
     });
   };
@@ -110,12 +48,7 @@ export const useLocationModule = (exported) => {
     return openModal(modals.deliverableStatus, {
       id,
       status,
-      submitFn: (id, data) => {
-        update(id, data);
-        toast.success(
-          data?.deliverable ? "Location is now deliverable" : "Location is now non-deliverable"
-        );
-      },
+      submitFn: (id, data) => crud.setDeliverableStatus(id, data),
       exported,
     });
   };
@@ -125,28 +58,43 @@ export const useLocationModule = (exported) => {
     return openModal(modals.viewSlabs, { location, exported });
   };
 
-  const toggleDeliverable = (location) => {
-    update(location._id, { deliverable: !location.deliverable });
+ const toggleDeliverable = (location) => {
+  crud.setDeliverableStatus(location._id, { active: !location.deliverable }); // 👈 key changed
+};
+
+  // --- Slab management ---
+  // No dedicated slab modals exist yet in `modals`, so these are exposed as
+  // direct functions. Wrap them in openModal(...) once you add
+  // modals.addSlab / modals.editSlab / modals.deleteSlab.
+  const addSlab = (locationId, slabData) => {
+    return crud.addSlab(locationId, slabData).then(() => {
+      toast.success("Slab added successfully");
+    });
   };
 
-  const fetch = (params = {}) => {
-    if (Object.keys(params).length) setQuery(params);
+  const updateSlab = (locationId, slabId, slabData) => {
+    return crud.updateSlab(locationId, slabId, slabData).then(() => {
+      toast.success("Slab updated successfully");
+    });
   };
 
-  const reset = () => {
-    resetQuery();
+  const removeSlab = (locationId, slabId) => {
+    return crud.removeSlab(locationId, slabId).then(() => {
+      toast.success("Slab removed successfully");
+    });
   };
 
-  const sortByColumn = ({ id, desc }) => {
-    setQuery({ sortBy: id, order: desc ? "desc" : "asc" });
+  // Rate lookup — read-only, no store mutation.
+  const getRate = (locationId, kgs) => {
+    return crud.getRate(locationId, kgs);
   };
 
-  const filters = {
-    latest: () => setQuery({ sortBy: "createdAt", order: "desc" }),
-    oldest: () => setQuery({ sortBy: "createdAt", order: "asc" }),
-    ascending: (field) => setQuery({ sortBy: field, order: "asc" }),
-    descending: (field) => setQuery({ sortBy: field, order: "desc" }),
-  };
+  const { fetch, reset, sortByColumn, presets, csv, xlsx, pdf, getQuery } =
+    createEntityQueryActions({
+      crud,
+      getQuery: () => useLocationStore.getState().query,
+      setQuery,
+    });
 
   return {
     get state() {
@@ -173,11 +121,18 @@ export const useLocationModule = (exported) => {
     openDeliverableStatus,
     openViewSlabs,
     toggleDeliverable,
+    addSlab,
+    updateSlab,
+    removeSlab,
+    getRate,
+    crud,
     fetch,
     reset,
     sortByColumn,
-    filters,
-    setQuery: (q) => setQuery(q),
-    getQuery: () => useLocationStore.getState().query,
+    filters: presets,
+    csv,
+    xlsx,
+    pdf,
+    getQuery,
   };
 };

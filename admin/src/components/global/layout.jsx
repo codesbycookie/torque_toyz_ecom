@@ -30,7 +30,7 @@ export default function Layout({ routes, logoutComponent }) {
     return (
         <div
             className={cn(
-                'mx-auto flex w-full flex-1 flex-col overflow-hidden rounded-md border border-neutral-200 bg-gray-100 md:flex-row dark:border-neutral-700 dark:bg-neutral-800 h-[100vh]'
+                'mx-auto flex w-full flex-1 flex-col overflow-hidden rounded-md border border-border bg-background md:flex-row h-[100vh]'
             )}
         >
             {}
@@ -76,21 +76,21 @@ export default function Layout({ routes, logoutComponent }) {
             <div
                 className={
                     currentRoute?.title
-                        ? 'relative w-full min-h-screen md:p-6 p-4 bg-gray-50 dark:bg-gray-900 overflow-auto scrollbar-none'
-                        : 'relative w-full  bg-gray-50 dark:bg-gray-900 overflow-auto scrollbar-none'
+                        ? 'relative w-full min-h-screen md:p-6 p-4 bg-background overflow-auto scrollbar-none'
+                        : 'relative w-full bg-background overflow-auto scrollbar-none'
                 }
             >
                 {}
                 {currentRoute?.title && currentRoute?.description && (
                     <div className="flex justify-between items-center md:m-[20px] mb-[40px]">
                         <div className="">
-                            <h1 className="text-3xl font-bold text-gray-900">{currentRoute.title}</h1>
-                            <p className="text-gray-600 mt-2">{currentRoute.description}</p>
+                            <h1 className="text-3xl font-bold text-foreground">{currentRoute.title}</h1>
+                            <p className="text-muted-foreground mt-2">{currentRoute.description}</p>
                         </div>
 
                         <button
                             onClick={() => setCommandOpen((prev) => !prev)}
-                            className="hidden lg:flex p-2 rounded-md hover:bg-gray-200 dark:hover:bg-gray-800 transition"
+                            className="hidden lg:flex p-2 rounded-md hover:bg-accent transition"
                             aria-label="Open command menu"
                         >
                             <Search className="w-5 h-5" />

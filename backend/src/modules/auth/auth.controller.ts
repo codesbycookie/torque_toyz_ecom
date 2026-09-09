@@ -22,18 +22,16 @@ const cookieOptions = {
 
 const controllers = {
   loginUser: async (req: Request<{}, {}, LoginPayload>, res: Response, next: NextFunction) => {
-    const { login_id, password, rememberMe } = req.body;
+    const { identifier, password, rememberMe } = req.body;
 
-    const result = await service.login(login_id, password);
+    const result = await service.login(identifier, password);
 
     if (!result) {
-      log('error', LOG.LOGIN.FAILED, { login_id });
       return sendResponse.notFound(res, ENTITY.USER);
     }
 
     const { user, token } = result;
 
-    log('info', LOG.LOGIN.SUCCESS, { login_id });
 
     res.cookie(COOKIE.NAME, token, {
       ...cookieOptions,
@@ -47,18 +45,15 @@ const controllers = {
     const token = req.cookies?.access_token;
 
     if (!token) {
-      log('error', LOG.CURRENT_USER.NO_TOKEN);
       return sendResponse.unauthorized(res, ERROR.UNAUTHENTICATED);
     }
 
     const user = await service.getCurrentUser(token);
 
     if (!user) {
-      log('error', LOG.CURRENT_USER.INVALID_TOKEN);
       return sendResponse.unauthorized(res, ERROR.INVALID_TOKEN);
     }
 
-    log('info', LOG.CURRENT_USER.SUCCESS, { userId: user._id });
 
     return sendResponse.fetched(res, ENTITY.USER, user);
   },
@@ -74,7 +69,6 @@ const controllers = {
 
     const { currentPassword, newPassword } = req.body;
 
-    log('info', LOG.CHANGE_PASSWORD.REQUEST, { userId: user.id });
 
     const result = await service.changePassword({
       userId: user.id,
@@ -96,7 +90,6 @@ const controllers = {
 
     const { targetId, newPassword } = req.body;
 
-    log('info', LOG.ADMIN_RESET.INITIATED, { adminId: admin.id, targetId });
 
     const result = await service.adminResetPassword({
       adminId: admin.id,
@@ -105,19 +98,16 @@ const controllers = {
       newPassword,
     });
 
-    log('success', LOG.ADMIN_RESET.SUCCESS, { adminId: admin.id, targetId });
 
     return sendResponse.success(res, result.message);
   },
 
   logoutUser: async (req: Request, res: Response, next: NextFunction) => {
-    log('info', LOG.LOGOUT.REQUEST);
 
     res.clearCookie(COOKIE.NAME, cookieOptions);
 
     const result = await service.logout();
 
-    log('success', LOG.LOGOUT.SUCCESS);
 
     return sendResponse.success(res, result.message);
   },

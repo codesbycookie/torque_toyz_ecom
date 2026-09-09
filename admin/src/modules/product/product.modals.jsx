@@ -9,6 +9,7 @@ import {
   UpdateStock,
   ViewReviews,
   DeleteReview,
+  ViewImages,
 } from "./product.modal.components";
 
 export const modals = {
@@ -22,4 +23,5 @@ export const modals = {
   stock: UpdateStock,
   reviews: ViewReviews,
   deleteReview: DeleteReview,
+  viewImages: ViewImages,
 };

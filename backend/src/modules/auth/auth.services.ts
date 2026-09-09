@@ -1,12 +1,12 @@
-import { Types } from 'mongoose';
+import { Types } from "mongoose";
 
-import User from '@db/models/user.model.ts';
+import User from "@db/models/user.model.ts";
 
-import { generateToken, verifyToken } from '@lib/jwt.ts';
-import { ApiError } from '@core/errors/api.error.ts';
+import { generateToken, verifyToken } from "@lib/jwt.ts";
+import { ApiError } from "@core/errors/api.error.ts";
 
-import { ROLE, ERROR, SUCCESS } from './auth.constants.ts';
-import { buildPayload, ensureFields } from './auth.utils.ts';
+import { ROLE, ERROR, SUCCESS } from "./auth.constants.ts";
+import { buildPayload } from "./auth.utils.ts";
 
 type Role = (typeof ROLE)[keyof typeof ROLE];
 
@@ -24,10 +24,17 @@ interface ReturnedUser {
   [key: string]: any;
 }
 
-export const login = async (loginId: string, password?: string) => {
-  ensureFields({ loginId, password });
+export const login = async (identifier: string, password?: string) => {
 
-  const user = await User.findByLoginId(loginId);
+  const normalized = identifier.toLowerCase();
+  const user = await User.findOne({
+    $or: [
+      { login_id: identifier },
+      { username: normalized },
+      { email: normalized },
+    ],
+  });
+
   if (!user) throw new ApiError(404, ERROR.USER_NOT_FOUND);
 
   if (!user.active) throw new ApiError(403, ERROR.USER_INACTIVE);
@@ -36,7 +43,7 @@ export const login = async (loginId: string, password?: string) => {
   if (!isMatch) throw new ApiError(401, ERROR.INVALID_PASSWORD);
 
   const role: Role = user.role;
-  const payload = buildPayload(user, role, loginId);
+  const payload = buildPayload(user, role, user.login_id);
 
   return {
     user: {
@@ -53,7 +60,7 @@ export const adminResetPassword = async (data: {
   targetId: string;
   newPassword: string;
 }) => {
-  ensureFields(data);
+
 
   const user = await User.findById(data.targetId);
   if (!user) throw new ApiError(404, ERROR.TARGET_NOT_FOUND);
@@ -69,18 +76,18 @@ export const changePassword = async (data: {
   currentPassword: string;
   newPassword: string;
 }) => {
-  ensureFields(data);
-
-  
 
   const user = await User.findById(data.userId);
   if (!user) throw new ApiError(404, ERROR.USER_NOT_FOUND);
-   console.log('🔐 CHANGE PASSWORD DEBUG');
-  console.log('userId:', data.userId);
-  console.log('user found:', !!user);
-  console.log('current password:', data.currentPassword);
-  console.log('stored hash:', user?.password);
-  const isMatch = await User.comparePassword(data.currentPassword, user.password);
+  console.log("🔐 CHANGE PASSWORD DEBUG");
+  console.log("userId:", data.userId);
+  console.log("user found:", !!user);
+  console.log("current password:", data.currentPassword);
+  console.log("stored hash:", user?.password);
+  const isMatch = await User.comparePassword(
+    data.currentPassword,
+    user.password,
+  );
   if (!isMatch) throw new ApiError(401, ERROR.CURRENT_PASSWORD_INVALID);
 
   user.password = data.newPassword;
@@ -101,7 +108,7 @@ export const getCurrentUser = async (token: string): Promise<ReturnedUser> => {
 
   const { id, role } = decoded;
 
-  const user = await User.findById(id).select('-password').lean();
+  const user = await User.findById(id).select("-password").lean();
   if (!user) throw new ApiError(404, ERROR.USER_NOT_FOUND);
 
   return {

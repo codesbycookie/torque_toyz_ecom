@@ -13,7 +13,10 @@ import {
     getCustomerInsights,
     getDeliveryPerformance,
     getCancellationRefundRate,
-    getPeakTimes, getInventoryVelocity
+    getPeakTimes,
+    getInventoryVelocity,
+    getMostWishlistedProducts,
+    getMostReviewedProducts,
 } from './analytics.controller.js';
 
 const router = Router();
@@ -80,6 +83,18 @@ router.get(
     '/peak-times',
     zodValidate(dateRangeQuerySchema, 'query', 'DateRangeQuerySchema'),
     getPeakTimes
+);
+
+router.get(
+    '/most-wishlisted',
+    zodValidate(dateRangeQuerySchema, 'query', 'DateRangeQuerySchema'),
+    getMostWishlistedProducts
+);
+
+router.get(
+    '/most-reviewed',
+    zodValidate(dateRangeQuerySchema, 'query', 'DateRangeQuerySchema'),
+    getMostReviewedProducts
 );
 
 export default router;

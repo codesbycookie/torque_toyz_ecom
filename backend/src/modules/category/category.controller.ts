@@ -48,6 +48,20 @@ const controllers = {
     return sendResponse.updated(res, 'category', category);
   },
 
+  deleteCategory: async (req: Request<{ id: string }>, res: Response) => {
+    const { id } = req.params;
+    const category = await service.deleteCategory(id);
+    if (!category) return sendResponse.notFound(res, 'category');
+    return sendResponse.deleted(res, 'category');
+  },
+
+  retrieveCategory: async (req: Request<{ id: string }>, res: Response) => {
+    const { id } = req.params;
+    const category = await service.retrieveCategory(id);
+    if (!category) return sendResponse.notFound(res, 'category');
+    return sendResponse.updated(res, 'category', category);
+  },
+
   eraseCategory: async (req: Request<{ id: string }>, res: Response) => {
     const { id } = req.params;
     const category = await service.eraseCategory(id);
@@ -63,5 +77,7 @@ export const {
   getCategoryBySlug,
   updateCategory,
   setCategoryActiveStatus,
+  deleteCategory,
+  retrieveCategory,
   eraseCategory,
 } = wrapControllers(controllers);
