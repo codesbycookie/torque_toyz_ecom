@@ -91,6 +91,15 @@ export const useSettingModule = (exported) => {
     }
   };
 
+  const downloadDump = async () => {
+    try {
+      await apiRequest(settings.downloadDump.method, settings.downloadDump.url());
+      toast.success("Backup downloaded successfully");
+    } catch (err) {
+      handleApiError(err, "Failed to download backup");
+    }
+  };
+
   return {
     get values() {
       return useSettingStore.getState().current;
@@ -103,5 +112,6 @@ export const useSettingModule = (exported) => {
     fetchRaw,
     updateKey,
     save,
+    downloadDump,
   };
 };

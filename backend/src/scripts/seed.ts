@@ -308,6 +308,27 @@ const seedOrders = async (users: any[], products: any[], locations: any[]) => {
       status,
     }).save();
 
+    // Spread orders over the last 6 months (approx 180 days)
+    // Bias days towards recent days to simulate revenue growth (more orders recently)
+    const randomDaysAgo = Math.floor(Math.pow(Math.random(), 2) * 180);
+    
+    // Bias hours towards evening (18:00 - 22:00) and late morning (10:00 - 12:00)
+    const hourPool = [
+      18, 18, 18, 19, 19, 19, 19, 20, 20, 20, 21, 21, 21, 22, 22,
+      10, 10, 11, 11, 12, 12,
+      ...Array.from({length: 24}, (_, i) => i) // add baseline of 1 per hour
+    ];
+    const randomHoursAgo = hourPool[randInt(0, hourPool.length - 1)];
+
+    const pastDate = new Date();
+    pastDate.setDate(pastDate.getDate() - randomDaysAgo);
+    pastDate.setHours(randomHoursAgo);
+    // Use raw mongodb collection to bypass ANY mongoose timestamp hooks
+    await Order.collection.updateOne(
+      { _id: order._id }, 
+      { $set: { createdAt: pastDate, updatedAt: pastDate } }
+    );
+
     created.push(order);
   }
 

@@ -12,9 +12,11 @@ export const useDashboardStore = create((set) => ({
     revenueByLocation: null,
     deliveryPerformance: null,
     cancellationRefundRate: null,
+    mostWishlisted: null,
+    mostReviewed: null,
   },
   dateRange: {
-    from: new Date(new Date().setMonth(new Date().getMonth() - 1)),
+    from: new Date(new Date().setMonth(new Date().getMonth() - 6)),
     to: new Date(),
   },
   loading: true,

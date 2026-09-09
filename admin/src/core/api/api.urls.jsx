@@ -173,6 +173,7 @@ const apiurls = {
   settings: {
     get: { method: "get", url: () => `${base_url}/settings` },
     getRaw: { method: "get", url: () => `${base_url}/settings/raw` },
+    downloadDump: { method: "download", url: () => `${base_url}/settings/dump` },
     update: { method: "put", url: (key) => `${base_url}/settings/${key}` },
     bulkUpdate: { method: "put", url: () => `${base_url}/settings/bulk` },
   },
@@ -222,6 +223,14 @@ const apiurls = {
     peakTimes: {
       method: "get",
       url: () => `${base_url}/analytics/peak-times`,
+    },
+    mostWishlisted: {
+      method: "get",
+      url: () => `${base_url}/analytics/most-wishlisted`,
+    },
+    mostReviewed: {
+      method: "get",
+      url: () => `${base_url}/analytics/most-reviewed`,
     },
   },
 };

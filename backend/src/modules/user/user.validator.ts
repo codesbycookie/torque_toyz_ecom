@@ -22,6 +22,7 @@ export const createUserSchema = z.object({
     })
     .optional(),
   profile: z.object({ url: z.string().url() }).optional(),
+  theme: z.enum(['light', 'dark', 'system']).optional(),
   acceptTerms: z.literal(true, { error: 'You must accept the terms and conditions' }),
 });
 

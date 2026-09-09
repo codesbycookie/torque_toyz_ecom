@@ -61,6 +61,18 @@ const controllers = {
         return sendResponse.fetched(res, 'peak order times', data);
     },
 
+    getMostWishlistedProducts: async (req: Request, res: Response) => {
+        const limit = req.query.limit ? Number(req.query.limit) : 10;
+        const data = await service.getMostWishlistedProducts(getRange(req), limit);
+        return sendResponse.fetched(res, 'most wishlisted products', data);
+    },
+
+    getMostReviewedProducts: async (req: Request, res: Response) => {
+        const limit = req.query.limit ? Number(req.query.limit) : 10;
+        const data = await service.getMostReviewedProducts(getRange(req), limit);
+        return sendResponse.fetched(res, 'most reviewed products', data);
+    },
+
 };
 
 export const {
@@ -74,4 +86,6 @@ export const {
     getDeliveryPerformance,
     getCancellationRefundRate,
     getPeakTimes,
+    getMostWishlistedProducts,
+    getMostReviewedProducts,
 } = wrapControllers(controllers);

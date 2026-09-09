@@ -1,7 +1,7 @@
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { DollarSign, IndianRupee, Users, CreditCard, Activity, Calendar as CalendarIcon } from "lucide-react";
+import { DollarSign, IndianRupee, Users, CreditCard, Activity, Calendar as CalendarIcon, TrendingUp } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -31,7 +31,15 @@ import {
     AreaChart,
     Area,
     LineChart,
-    Line
+    Line,
+    LabelList,
+    PolarAngleAxis,
+    PolarGrid,
+    Radar,
+    RadarChart,
+    RadialBarChart,
+    RadialBar,
+    Label
 } from "recharts";
 import {
     ChartContainer,
@@ -89,16 +97,16 @@ export function SummaryCards({ data, customerData, loading }) {
     return (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
             {cards.map((card, idx) => (
-                <Card key={idx}>
+                <Card key={idx} className="shadow-sm border-border/40">
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">
+                        <CardTitle className="text-sm font-medium text-muted-foreground">
                             {card.title}
                         </CardTitle>
                         {card.icon}
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold">{card.value}</div>
-                        <p className="text-xs text-muted-foreground">
+                        <div className="text-2xl font-semibold tracking-tight">{card.value}</div>
+                        <p className="text-xs text-muted-foreground mt-1">
                             {card.description}
                         </p>
                     </CardContent>
@@ -111,92 +119,110 @@ export function SummaryCards({ data, customerData, loading }) {
 export function RevenueChart({ data, loading }) {
     if (loading) {
         return (
-            <Card>
-                <CardHeader>
-                    <CardTitle>Revenue By Month</CardTitle>
-                    <CardDescription>Visualizing revenue trends</CardDescription>
+            <Card className="flex flex-col h-full shadow-sm border-border/40">
+                <CardHeader className="flex flex-col items-stretch border-b border-border/40 p-0 sm:flex-row">
+                    <div className="flex flex-1 flex-col justify-center gap-1 px-6 py-4">
+                        <CardTitle>Revenue Overview</CardTitle>
+                        <CardDescription>Monthly revenue generated</CardDescription>
+                    </div>
                 </CardHeader>
-                <CardContent className="h-[250px]">
-                    <Skeleton className="h-full w-full" />
+                <CardContent className="flex-1 p-6">
+                    <Skeleton className="h-[250px] w-full" />
                 </CardContent>
             </Card>
         );
     }
 
-    // Ensure we have at least 6 months of data for a flowing chart
-    const defaultMonths = Array.from({ length: 6 }).map((_, i) => {
-        const d = new Date();
-        d.setMonth(d.getMonth() - (5 - i));
-        const monthStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
-        return { month: monthStr, revenue: 0 };
-    });
-
-    let chartData = defaultMonths;
+    let chartData = [];
     if (data && data.length > 0) {
-        // Merge API data into the 6-month timeline
-        const dataMap = new Map(data.map(d => [d.month, d.revenue]));
-        chartData = defaultMonths.map(dm => ({
-            month: dm.month,
-            revenue: dataMap.get(dm.month) || 0
-        }));
-
-        // If the API returns months outside our default 6 months, we should include them too 
-        // by just using the API data directly if it has multiple points.
-        if (data.length > 1) {
-            chartData = data;
-        }
+        chartData = [...data];
+    } else {
+        // Fallback for empty data
+        const d = new Date();
+        const monthStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+        chartData = [{ month: monthStr, revenue: 0 }];
     }
 
-    // Format month for display
     const formattedData = chartData.map(d => {
         const [year, month] = d.month.split('-');
         const date = new Date(year, parseInt(month) - 1);
         return {
             ...d,
-            monthFormatted: date.toLocaleString('default', { month: 'short' })
+            monthFormatted: date.toLocaleString('default', { month: 'short', year: 'numeric' })
         };
     });
+
+    const totalRevenue = chartData.reduce((acc, curr) => acc + (curr.revenue || 0), 0);
 
     const config = {
         revenue: {
             label: "Revenue",
-            color: "var(--chart-1)",
+            color: "var(--primary)",
         },
     };
 
     return (
-        <Card>
+        <Card className="shadow-sm border-border/40 flex flex-col h-full">
             <CardHeader>
-                <CardTitle>Revenue Overview</CardTitle>
+                <CardTitle className="text-lg font-semibold tracking-tight">Revenue Overview</CardTitle>
                 <CardDescription>Monthly revenue generated</CardDescription>
             </CardHeader>
-            <CardContent>
-                <ChartContainer config={config} className="h-[250px] w-full">
-                    <AreaChart data={formattedData} margin={{ left: 12, right: 12 }}>
+            <CardContent className="flex-1 pb-2">
+                <ChartContainer config={config} className="h-full min-h-[200px] w-full">
+                    <AreaChart
+                        accessibilityLayer
+                        data={formattedData}
+                        margin={{
+                            top: 20,
+                            left: 12,
+                            right: 12,
+                        }}
+                    >
                         <defs>
-                            <linearGradient id="fillRevenue" x1="0" y1="0" x2="0" y2="1">
-                                <stop offset="5%" stopColor="var(--color-revenue)" stopOpacity={0.8} />
-                                <stop offset="95%" stopColor="var(--color-revenue)" stopOpacity={0.1} />
+                            <linearGradient id="fillRevenueOverview" x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="5%" stopColor="var(--color-revenue)" stopOpacity={0.8}/>
+                                <stop offset="95%" stopColor="var(--color-revenue)" stopOpacity={0.1}/>
                             </linearGradient>
                         </defs>
-                        <CartesianGrid vertical={false} />
+                        <CartesianGrid vertical={false} stroke="var(--border)" strokeDasharray="3 3" />
                         <XAxis
                             dataKey="monthFormatted"
                             tickLine={false}
                             axisLine={false}
                             tickMargin={8}
+                            fontSize={12}
+                            tick={{ fill: "var(--muted-foreground)" }}
                         />
-                        <ChartTooltip cursor={false} content={<ChartTooltipContent />} />
+                        <YAxis
+                            tickLine={false}
+                            axisLine={false}
+                            tickMargin={10}
+                            fontSize={12}
+                            tick={{ fill: "var(--muted-foreground)" }}
+                            tickFormatter={(value) => `₹${value}`}
+                        />
+                        <ChartTooltip
+                            cursor={{ stroke: "var(--border)", strokeWidth: 1, strokeDasharray: "3 3" }}
+                            content={<ChartTooltipContent indicator="line" className="w-[150px]" />}
+                        />
                         <Area
                             dataKey="revenue"
                             type="natural"
-                            fill="url(#fillRevenue)"
-                            fillOpacity={0.4}
+                            fill="url(#fillRevenueOverview)"
                             stroke="var(--color-revenue)"
+                            strokeWidth={2}
+                            activeDot={{
+                                r: 6,
+                            }}
                         />
                     </AreaChart>
                 </ChartContainer>
             </CardContent>
+            <CardFooter className="flex-col items-start gap-2 text-sm mt-4 pb-4">
+                <div className="flex gap-2 leading-none font-medium text-muted-foreground">
+                    Total Period Revenue: ₹{totalRevenue.toLocaleString()}
+                </div>
+            </CardFooter>
         </Card>
     );
 }
@@ -215,44 +241,46 @@ export function OrderStatusChart({ data, loading }) {
         );
     }
 
-    const chartData = data && data.length > 0 ? data.map((d, i) => ({
-        ...d,
-        fill: `var(--chart-${(i % 5) + 1})`
-    })) : [
-        { status: "pending", count: 0, fill: "var(--chart-1)" },
-        { status: "delivered", count: 0, fill: "var(--chart-2)" },
-    ];
+    const getPrimaryShade = (index) => {
+        return `var(--chart-${(index % 5) + 1})`;
+    };
 
-    const config = chartData.reduce((acc, curr) => {
-        acc[curr.status] = { label: curr.status.charAt(0).toUpperCase() + curr.status.slice(1), color: curr.fill };
+    const config = (data && data.length > 0 ? data : [{ status: "pending" }, { status: "delivered" }]).reduce((acc, curr, i) => {
+        acc[curr.status] = { 
+            label: curr.status.charAt(0).toUpperCase() + curr.status.slice(1), 
+            color: getPrimaryShade(i) 
+        };
         return acc;
     }, {});
 
+    const chartData = data && data.length > 0 ? data.map((d) => ({
+        ...d,
+        fill: `var(--color-${d.status})`
+    })) : [
+        { status: "pending", count: 0, fill: "var(--color-pending)" },
+        { status: "delivered", count: 0, fill: "var(--color-delivered)" },
+    ];
+
     return (
-        <Card className="flex flex-col">
+        <Card className="flex flex-col h-full shadow-sm border-border/40">
             <CardHeader className="items-center pb-0">
-                <CardTitle>Order Status Breakdown</CardTitle>
+                <CardTitle className="text-lg font-semibold tracking-tight">Order Status Breakdown</CardTitle>
                 <CardDescription>Current state of all orders</CardDescription>
             </CardHeader>
             <CardContent className="flex-1 pb-0">
-                <ChartContainer config={config} className="mx-auto aspect-square max-h-[250px]">
+                <ChartContainer config={config} className="mx-auto aspect-square max-h-[200px] pb-0 [&_.recharts-pie-label-text]:fill-foreground">
                     <PieChart>
-                        <ChartTooltip cursor={false} content={<ChartTooltipContent hideLabel />} />
+                        <ChartTooltip content={<ChartTooltipContent hideLabel />} />
                         <Pie
                             data={chartData}
                             dataKey="count"
                             nameKey="status"
-                            innerRadius={60}
-                            strokeWidth={5}
-                        >
-                            {chartData.map((entry, index) => (
-                                <Cell key={`cell-${index}`} fill={entry.fill} />
-                            ))}
-                        </Pie>
+                            label
+                        />
                     </PieChart>
                 </ChartContainer>
             </CardContent>
-            <CardFooter className="flex-col gap-2 text-sm mt-4">
+            <CardFooter className="flex-col gap-2 text-sm mt-4 pb-4 text-center">
                 <div className="leading-none text-muted-foreground">
                     Showing distribution of order statuses
                 </div>
@@ -264,13 +292,13 @@ export function OrderStatusChart({ data, loading }) {
 export function TopProductsChart({ data, loading }) {
     if (loading) {
         return (
-            <Card>
+            <Card className="flex flex-col h-full shadow-sm border-border/40">
                 <CardHeader>
                     <CardTitle>Top Performing Products</CardTitle>
                     <CardDescription>By revenue generated</CardDescription>
                 </CardHeader>
-                <CardContent className="h-[250px]">
-                    <Skeleton className="h-full w-full" />
+                <CardContent className="flex-1 pb-2">
+                    <Skeleton className="h-[250px] w-full" />
                 </CardContent>
             </Card>
         );
@@ -278,55 +306,79 @@ export function TopProductsChart({ data, loading }) {
 
     const truncatedData = (data && data.length > 0 ? data : [
         { name: "Product A", revenue: 0 },
-    ]).map(d => ({
+    ])
+    .slice(0, 10) // Limit to top 10 products
+    .map(d => ({
         ...d,
-        shortName: d.name.length > 15 ? d.name.substring(0, 15) + '...' : d.name
+        shortName: d.name.length > 25 ? d.name.substring(0, 25) + '...' : d.name
     }));
 
     const config = {
         revenue: {
             label: "Revenue",
-            color: "var(--chart-3)",
+            color: "var(--primary)",
         },
     };
 
     return (
-        <Card>
+        <Card className="shadow-sm border-border/40 flex flex-col h-full">
             <CardHeader>
-                <CardTitle>Top Performing Products</CardTitle>
+                <CardTitle className="text-lg font-semibold tracking-tight">Top Performing Products</CardTitle>
                 <CardDescription>Highest grossing items</CardDescription>
             </CardHeader>
-            <CardContent>
-                <ChartContainer config={config} className="h-[250px] w-full">
+            <CardContent className="flex-1 pb-2">
+                <ChartContainer config={config} className="h-full min-h-[220px] max-h-[250px] w-full">
                     <BarChart
+                        accessibilityLayer
                         data={truncatedData}
-                        margin={{ top: 20, right: 0, left: 0, bottom: 0 }}
+                        layout="vertical"
+                        margin={{ left: 0 }}
                     >
-                        <CartesianGrid vertical={false} />
-                        <XAxis
+                        <YAxis
                             dataKey="shortName"
+                            type="category"
+                            tickLine={false}
+                            tickMargin={10}
+                            axisLine={false}
+                            fontSize={12}
+                            width={150}
+                            tick={{ fill: "var(--muted-foreground)" }}
+                        />
+                        <XAxis 
+                            dataKey="revenue" 
+                            type="number" 
                             tickLine={false}
                             axisLine={false}
                             tickMargin={10}
                             fontSize={12}
-                        />
-                        <YAxis
-                            type="number"
-                            hide
+                            tick={{ fill: "var(--muted-foreground)" }}
+                            tickFormatter={(value) => `₹${value}`}
                         />
                         <ChartTooltip
-                            cursor={{ fill: 'var(--muted)', opacity: 0.4 }}
+                            cursor={{ fill: 'var(--muted)', opacity: 0.1 }}
                             content={<ChartTooltipContent />}
                         />
                         <Bar
                             dataKey="revenue"
-                            fill="var(--color-revenue)"
-                            radius={[4, 4, 0, 0]}
-                            barSize={40}
-                        />
+                            radius={4}
+                            barSize={32}
+                        >
+                            {truncatedData.map((entry, index) => (
+                                <Cell
+                                    key={`cell-${index}`}
+                                    fill="var(--primary)"
+                                    fillOpacity={1 - (index * 0.08)}
+                                />
+                            ))}
+                        </Bar>
                     </BarChart>
                 </ChartContainer>
             </CardContent>
+            <CardFooter className="flex-col items-start gap-2 text-sm mt-4 pb-4">
+                <div className="leading-none text-muted-foreground">
+                    Showing top 10 products by revenue
+                </div>
+            </CardFooter>
         </Card>
     );
 }
@@ -334,12 +386,13 @@ export function TopProductsChart({ data, loading }) {
 export function PeakTimesChart({ data, loading }) {
     if (loading) {
         return (
-            <Card>
-                <CardHeader>
+            <Card className="flex flex-col h-full shadow-sm border-border/40">
+                <CardHeader className="pb-4">
                     <CardTitle>Peak Order Hours</CardTitle>
+                    <CardDescription>When do customers buy the most?</CardDescription>
                 </CardHeader>
-                <CardContent className="h-[250px]">
-                    <Skeleton className="h-full w-full" />
+                <CardContent className="flex-1 pb-0">
+                    <Skeleton className="h-[250px] w-full" />
                 </CardContent>
             </Card>
         );
@@ -363,99 +416,106 @@ export function PeakTimesChart({ data, loading }) {
     const config = {
         orders: {
             label: "Orders",
-            color: "var(--chart-4)",
+            color: "var(--chart-2)",
         },
     };
 
     return (
-        <Card>
-            <CardHeader>
-                <CardTitle>Peak Order Hours</CardTitle>
-                <CardDescription>When do customers buy the most?</CardDescription>
+        <Card className="shadow-sm border-border/40 flex flex-col h-full pt-0">
+            <CardHeader className="flex flex-col items-start gap-1 space-y-0 border-b border-border/40 py-5 sm:flex-row">
+                <div className="grid flex-1 gap-1">
+                    <CardTitle className="text-lg font-semibold tracking-tight">Peak Order Hours</CardTitle>
+                    <CardDescription>When do customers buy the most?</CardDescription>
+                </div>
             </CardHeader>
-            <CardContent>
-                <ChartContainer config={config} className="h-[250px] w-full">
-                    <LineChart data={chartData} margin={{ left: 12, right: 12 }}>
-                        <CartesianGrid vertical={false} />
+            <CardContent className="flex-1 px-2 pt-4 sm:px-6 sm:pt-6 pb-2">
+                <ChartContainer config={config} className="h-full min-h-[200px] w-full aspect-auto">
+                    <AreaChart data={chartData} margin={{ left: 12, right: 12 }}>
+                        <defs>
+                            <linearGradient id="fillOrders" x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="5%" stopColor="var(--color-orders)" stopOpacity={0.8} />
+                                <stop offset="95%" stopColor="var(--color-orders)" stopOpacity={0.1} />
+                            </linearGradient>
+                        </defs>
+                        <CartesianGrid vertical={false} stroke="var(--border)" strokeDasharray="3 3" />
                         <XAxis
                             dataKey="hour"
                             tickLine={false}
                             axisLine={false}
                             tickMargin={8}
+                            minTickGap={32}
+                            fontSize={12}
+                            tick={{ fill: "var(--muted-foreground)" }}
                         />
-                        <ChartTooltip cursor={false} content={<ChartTooltipContent />} />
-                        <Line
+                        <ChartTooltip cursor={false} content={<ChartTooltipContent indicator="dot" />} />
+                        <Area
                             dataKey="orders"
                             type="natural"
+                            fill="url(#fillOrders)"
                             stroke="var(--color-orders)"
                             strokeWidth={2}
-                            dot={{ fill: "var(--color-orders)" }}
-                            activeDot={{ r: 6 }}
+                            stackId="a"
                         />
-                    </LineChart>
+                    </AreaChart>
                 </ChartContainer>
             </CardContent>
+            <CardFooter className="flex-col items-start gap-2 text-sm pb-4">
+                <div className="flex items-center gap-2 leading-none text-muted-foreground">
+                    Based on 24-hour distribution
+                </div>
+            </CardFooter>
         </Card>
     );
 }
 
-// export function InventoryVelocityChart({ data, loading }) {
-//     if (loading) {
-//         return (
-//             <Card className="flex flex-col">
-//                 <CardHeader className="items-center pb-4">
-//                     <CardTitle>Inventory Velocity</CardTitle>
-//                 </CardHeader>
-//                 <CardContent className="flex-1 pb-0">
-//                     <Skeleton className="h-[250px] w-full rounded-full" />
-//                 </CardContent>
-//             </Card>
-//         );
-//     }
+export function InventoryVelocityChart({ data, loading }) {
+    if (loading) {
+        return (
+            <Card className="flex flex-col h-full shadow-sm border-border/40">
+                <CardHeader className="items-center pb-4">
+                    <CardTitle>Inventory Velocity</CardTitle>
+                </CardHeader>
+                <CardContent className="flex-1 pb-0">
+                    <Skeleton className="h-[250px] w-full rounded-full" />
+                </CardContent>
+            </Card>
+        );
+    }
 
-//     // Use fastest moving products for the radar chart
-//     const chartData = data?.fastest_moving && data.fastest_moving.length > 0 ? data.fastest_moving.slice(0, 5).map(d => ({
-//         name: d.name.substring(0, 10), // truncate for radar
-//         sold: d.units_sold
-//     })) : [
-//         { name: "Prod A", sold: 0 },
-//     ];
+    const chartData = data?.fastest_moving && data.fastest_moving.length > 0 ? data.fastest_moving.slice(0, 5).map((d, index) => ({
+        name: d.name.substring(0, 10),
+        sold: d.units_sold,
+        fill: `var(--chart-${(index % 5) + 1})`
+    })) : [
+        { name: "Prod A", sold: 0, fill: "var(--chart-1)" },
+    ];
 
-//     const config = {
-//         sold: {
-//             label: "Units Sold",
-//             color: "var(--chart-5)",
-//         },
-//     };
+    const config = {
+        sold: { label: "Units Sold" },
+    };
 
-//     return (
-//         <Card className="flex flex-col">
-//             <CardHeader className="items-center pb-4">
-//                 <CardTitle>Inventory Velocity</CardTitle>
-//                 <CardDescription>Fastest moving products this month</CardDescription>
-//             </CardHeader>
-//             <CardContent className="pb-0">
-//                 <ChartContainer config={config} className="mx-auto aspect-square max-h-[250px]">
-//                     <RadarChart data={chartData}>
-//                         <ChartTooltip cursor={false} content={<ChartTooltipContent />} />
-//                         <PolarAngleAxis dataKey="name" />
-//                         <PolarGrid />
-//                         <Radar
-//                             dataKey="sold"
-//                             fill="var(--color-sold)"
-//                             fillOpacity={0.6}
-//                         />
-//                     </RadarChart>
-//                 </ChartContainer>
-//             </CardContent>
-//             <CardFooter className="flex-col gap-2 text-sm mt-4">
-//                 <div className="flex items-center gap-2 leading-none font-medium">
-//                     Fastest moving inventory <TrendingUp className="h-4 w-4" />
-//                 </div>
-//             </CardFooter>
-//         </Card>
-//     );
-// }
+    return (
+        <Card className="flex flex-col h-full shadow-sm border-border/40">
+            <CardHeader className="items-center pb-4">
+                <CardTitle className="text-lg font-semibold tracking-tight">Inventory Velocity</CardTitle>
+                <CardDescription>Fastest moving products</CardDescription>
+            </CardHeader>
+            <CardContent className="flex-1 pb-0">
+                <ChartContainer config={config} className="mx-auto aspect-square max-h-[200px]">
+                    <RadialBarChart data={chartData} innerRadius={30} outerRadius={100}>
+                        <ChartTooltip cursor={false} content={<ChartTooltipContent hideLabel nameKey="name" />} />
+                        <RadialBar dataKey="sold" background cornerRadius={10} />
+                    </RadialBarChart>
+                </ChartContainer>
+            </CardContent>
+            <CardFooter className="flex-col gap-2 text-sm mt-4 pb-4">
+                <div className="flex items-center gap-2 leading-none font-medium">
+                    Fastest moving inventory <TrendingUp className="h-4 w-4" />
+                </div>
+            </CardFooter>
+        </Card>
+    );
+}
 
 export function DatePickerWithRange({ dateRange, setDateRange, className }) {
     return (
@@ -520,9 +580,9 @@ export function RecentOrders({ orders, loading }) {
     }
 
     return (
-        <Card className="col-span-3">
+        <Card className="col-span-3 shadow-sm border-border/40 flex flex-col h-full">
             <CardHeader>
-                <CardTitle>Recent Orders</CardTitle>
+                <CardTitle className="text-lg font-semibold tracking-tight">Recent Orders</CardTitle>
                 <CardDescription>
                     You have {orders?.length || 0} orders in this period.
                 </CardDescription>
@@ -540,32 +600,32 @@ export function RecentOrders({ orders, loading }) {
                     <TableBody>
                         {orders && orders.length > 0 ? (
                             orders.map((order) => (
-                                <TableRow key={order._id || order.id}>
+                                <TableRow key={order._id || order.id} className="border-b border-border/40 hover:bg-muted/50 transition-colors">
                                     <TableCell>
-                                        <div className="font-medium">{order.user?.name || order.user?.email || "Guest"}</div>
-                                        <div className="text-xs text-muted-foreground">{new Date(order.createdAt).toLocaleDateString()}</div>
+                                        <div className="font-medium text-sm">{order.user?.name || order.user?.email || "Guest"}</div>
+                                        <div className="text-[11px] text-muted-foreground">{new Date(order.createdAt).toLocaleDateString()}</div>
                                     </TableCell>
                                     <TableCell>
-                                        <div className="font-medium">{order.shipping_address.city || "Unknown"}</div>
+                                        <div className="text-sm">{order.shipping_address.city || "Unknown"}</div>
                                     </TableCell>
                                     <TableCell>
                                         <div className={cn(
-                                            "inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2",
-                                            order.status === "delivered" ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400" :
-                                                order.status === "cancelled" ? "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400" :
-                                                    "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400"
+                                            "inline-flex items-center rounded-md px-2 py-0.5 text-xs font-medium transition-colors border",
+                                            order.status === "delivered" ? "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-400 dark:border-emerald-500/20" :
+                                                order.status === "cancelled" ? "bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-500/10 dark:text-rose-400 dark:border-rose-500/20" :
+                                                    "bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-500/10 dark:text-blue-400 dark:border-blue-500/20"
                                         )}>
-                                            {order.status}
+                                            {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
                                         </div>
                                     </TableCell>
-                                    <TableCell className="text-right font-medium">
+                                    <TableCell className="text-right font-medium text-sm">
                                         ₹{order.pricing.total?.toFixed(2)}
                                     </TableCell>
                                 </TableRow>
                             ))
                         ) : (
                             <TableRow>
-                                <TableCell colSpan={3} className="text-center h-24 text-muted-foreground">
+                                <TableCell colSpan={4} className="text-center h-24 text-muted-foreground text-sm">
                                     No recent orders found.
                                 </TableCell>
                             </TableRow>
@@ -580,66 +640,90 @@ export function RecentOrders({ orders, loading }) {
 export function RevenueByLocationChart({ data, loading }) {
     if (loading) {
         return (
-            <Card>
+            <Card className="flex flex-col h-full shadow-sm border-border/40">
                 <CardHeader>
                     <CardTitle>Revenue by Location</CardTitle>
-                    <CardDescription>Top regions by sales</CardDescription>
+                    <CardDescription>Top 10 regions by sales</CardDescription>
                 </CardHeader>
-                <CardContent className="h-[250px]">
-                    <Skeleton className="h-full w-full" />
+                <CardContent className="flex-1 pb-2">
+                    <Skeleton className="h-[250px] w-full" />
                 </CardContent>
             </Card>
         );
     }
 
-    const chartData = data && data.length > 0 ? data.map(d => ({
-        location: d.state || "Unknown",
-        revenue: d.revenue
-    })) : [
+    const chartData = data && data.length > 0 ? data
+        .sort((a, b) => b.revenue - a.revenue)
+        .slice(0, 10)
+        .map((d) => ({
+            location: d.state || "Unknown",
+            revenue: d.revenue,
+        })) : [
         { location: "New York", revenue: 0 },
     ];
 
     const config = {
         revenue: {
             label: "Revenue",
-            color: "var(--chart-1)",
         },
     };
 
     return (
-        <Card>
+        <Card className="shadow-sm border-border/40 flex flex-col h-full">
             <CardHeader>
-                <CardTitle>Revenue by Location</CardTitle>
-                <CardDescription>Top regions by sales</CardDescription>
+                <CardTitle className="text-lg font-semibold tracking-tight">Revenue by Location</CardTitle>
+                <CardDescription>Top 10 regions by sales</CardDescription>
             </CardHeader>
-            <CardContent>
-                <ChartContainer config={config} className="h-[250px] w-full">
+            <CardContent className="flex-1 pb-2">
+                <ChartContainer config={config} className="h-full min-h-[220px] w-full">
                     <BarChart
+                        accessibilityLayer
                         data={chartData}
-                        margin={{ top: 20, right: 0, left: 0, bottom: 0 }}
+                        layout="vertical"
+                        margin={{ left: 0 }}
                     >
-                        <CartesianGrid vertical={false} />
-                        <XAxis
+                        <YAxis
                             dataKey="location"
+                            type="category"
+                            tickLine={false}
+                            tickMargin={10}
+                            axisLine={false}
+                            fontSize={12}
+                            width={150}
+                            tick={{ fill: "var(--muted-foreground)" }}
+                            tickFormatter={(value) => value.length > 25 ? value.substring(0, 25) + '...' : value}
+                        />
+                        <XAxis 
+                            dataKey="revenue" 
+                            type="number" 
                             tickLine={false}
                             axisLine={false}
                             tickMargin={10}
                             fontSize={12}
+                            tick={{ fill: "var(--muted-foreground)" }}
+                            tickFormatter={(value) => `₹${value}`}
                         />
-                        <YAxis type="number" hide />
                         <ChartTooltip
-                            cursor={{ fill: 'var(--muted)', opacity: 0.4 }}
+                            cursor={{ fill: 'var(--muted)', opacity: 0.1 }}
                             content={<ChartTooltipContent />}
                         />
-                        <Bar
-                            dataKey="revenue"
-                            fill="var(--color-revenue)"
-                            radius={[4, 4, 0, 0]}
-                            barSize={40}
-                        />
+                        <Bar dataKey="revenue" radius={5}>
+                            {chartData.map((entry, index) => (
+                                <Cell
+                                    key={`cell-${index}`}
+                                    fill="var(--primary)"
+                                    fillOpacity={1 - (index * 0.08)}
+                                />
+                            ))}
+                        </Bar>
                     </BarChart>
                 </ChartContainer>
             </CardContent>
+            <CardFooter className="flex-col items-start gap-2 text-sm mt-4 pb-4">
+                <div className="leading-none text-muted-foreground">
+                    Showing top 10 locations by revenue
+                </div>
+            </CardFooter>
         </Card>
     );
 }
@@ -647,7 +731,7 @@ export function RevenueByLocationChart({ data, loading }) {
 export function CancellationRefundChart({ data, loading }) {
     if (loading) {
         return (
-            <Card className="flex flex-col">
+            <Card className="flex flex-col h-full shadow-sm border-border/40">
                 <CardHeader className="items-center pb-0">
                     <CardTitle>Cancellations & Refunds</CardTitle>
                 </CardHeader>
@@ -658,26 +742,28 @@ export function CancellationRefundChart({ data, loading }) {
         );
     }
 
+    const totalSuccessful = (data?.total || 0) - (data?.cancelled || 0);
+
     const chartData = [
-        { name: "Successful", value: (data?.total || 0) - (data?.cancelled || 0), fill: "var(--chart-2)" },
-        { name: "Cancelled", value: data?.cancelled || 0, fill: "var(--chart-5)" },
-        { name: "Refunded", value: data?.refunded || 0, fill: "var(--chart-4)" },
+        { name: "Successful", value: totalSuccessful, fill: "var(--color-successful)" },
+        { name: "Cancelled", value: data?.cancelled || 0, fill: "var(--color-cancelled)" },
+        { name: "Refunded", value: data?.refunded || 0, fill: "var(--color-refunded)" },
     ];
 
     const config = {
-        Successful: { label: "Successful", color: "var(--chart-2)" },
-        Cancelled: { label: "Cancelled", color: "var(--chart-5)" },
-        Refunded: { label: "Refunded", color: "var(--chart-4)" },
+        successful: { label: "Successful", color: "var(--chart-1)" },
+        cancelled: { label: "Cancelled", color: "var(--chart-3)" },
+        refunded: { label: "Refunded", color: "var(--chart-4)" },
     };
 
     return (
-        <Card className="flex flex-col">
+        <Card className="flex flex-col h-full shadow-sm border-border/40">
             <CardHeader className="items-center pb-0">
-                <CardTitle>Order Outcomes</CardTitle>
+                <CardTitle className="text-lg font-semibold tracking-tight">Order Outcomes</CardTitle>
                 <CardDescription>Success vs Cancellations</CardDescription>
             </CardHeader>
             <CardContent className="flex-1 pb-0">
-                <ChartContainer config={config} className="mx-auto aspect-square max-h-[250px]">
+                <ChartContainer config={config} className="mx-auto aspect-square max-h-[200px]">
                     <PieChart>
                         <ChartTooltip cursor={false} content={<ChartTooltipContent hideLabel />} />
                         <Pie
@@ -685,8 +771,26 @@ export function CancellationRefundChart({ data, loading }) {
                             dataKey="value"
                             nameKey="name"
                             innerRadius={60}
-                            strokeWidth={5}
+                            outerRadius={80}
+                            strokeWidth={2}
+                            stroke="var(--background)"
                         >
+                            <Label
+                                content={({ viewBox }) => {
+                                    if (viewBox && "cx" in viewBox && "cy" in viewBox) {
+                                        return (
+                                            <text x={viewBox.cx} y={viewBox.cy} textAnchor="middle" dominantBaseline="middle">
+                                                <tspan x={viewBox.cx} y={viewBox.cy} className="fill-foreground text-3xl font-bold">
+                                                    {totalSuccessful.toLocaleString()}
+                                                </tspan>
+                                                <tspan x={viewBox.cx} y={(viewBox.cy || 0) + 24} className="fill-muted-foreground">
+                                                    Successful
+                                                </tspan>
+                                            </text>
+                                        );
+                                    }
+                                }}
+                            />
                             {chartData.map((entry, index) => (
                                 <Cell key={`cell-${index}`} fill={entry.fill} />
                             ))}
@@ -694,8 +798,8 @@ export function CancellationRefundChart({ data, loading }) {
                     </PieChart>
                 </ChartContainer>
             </CardContent>
-            <CardFooter className="flex-col gap-2 text-sm mt-4">
-                <div className="leading-none text-muted-foreground">
+            <CardFooter className="flex-col gap-2 text-sm mt-4 pb-4">
+                <div className="leading-none text-muted-foreground text-center">
                     Total orders: {data?.total || 0}
                 </div>
             </CardFooter>
@@ -718,79 +822,171 @@ export function DeliveryPerformanceCard({ data, loading }) {
     }
 
     return (
-        <Card>
+        <Card className="shadow-sm border-border/40">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Avg Delivery Time</CardTitle>
+                <CardTitle className="text-sm font-medium text-muted-foreground">Avg Delivery Time</CardTitle>
                 <Activity className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-                <div className="text-2xl font-bold">{data?.averageHours || 0} hrs</div>
-                <p className="text-xs text-muted-foreground">From placed to delivered</p>
+                <div className="text-2xl font-semibold tracking-tight">{data?.averageHours || 0} hrs</div>
+                <p className="text-xs text-muted-foreground mt-1">From placed to delivered</p>
             </CardContent>
         </Card>
     );
 }
 
-export function InventoryVelocityChart({ data, loading }) {
+export function MostWishlistedChart({ data, loading }) {
     if (loading) {
         return (
-            <Card>
+            <Card className="flex flex-col h-full shadow-sm border-border/40">
                 <CardHeader>
-                    <CardTitle>Fastest Moving Inventory</CardTitle>
+                    <CardTitle>Most Wishlisted</CardTitle>
+                    <CardDescription>Products customers want</CardDescription>
                 </CardHeader>
-                <CardContent className="h-[250px]">
-                    <Skeleton className="h-full w-full" />
+                <CardContent className="flex-1 pb-2">
+                    <Skeleton className="h-[250px] w-full" />
                 </CardContent>
             </Card>
         );
     }
 
-    const chartData = data?.fastest_moving && data.fastest_moving.length > 0
-        ? data.fastest_moving.slice(0, 5).map(d => ({
-            name: d.name.length > 15 ? d.name.substring(0, 15) + '...' : d.name,
-            sold: d.units_sold
-        }))
-        : [
-            { name: "Product A", sold: 0 },
-        ];
+    const truncatedData = (data && data.length > 0 ? data : [
+        { name: "No data", count: 0 },
+    ])
+    .slice(0, 10)
+    .map(d => ({
+        ...d,
+        shortName: d.name.length > 25 ? d.name.substring(0, 25) + '...' : d.name
+    }));
 
     const config = {
-        sold: {
-            label: "Units Sold",
-            color: "var(--chart-3)",
+        count: {
+            label: "Wishlists",
+            color: "var(--primary)",
         },
     };
 
     return (
-        <Card>
+        <Card className="shadow-sm border-border/40 flex flex-col h-full">
             <CardHeader>
-                <CardTitle>Inventory Velocity</CardTitle>
-                <CardDescription>Highest volume products</CardDescription>
+                <CardTitle className="text-lg font-semibold tracking-tight">Most Wishlisted</CardTitle>
+                <CardDescription>Most frequently saved items</CardDescription>
             </CardHeader>
-            <CardContent>
-                <ChartContainer config={config} className="h-[250px] w-full">
+            <CardContent className="flex-1 pb-2">
+                <ChartContainer config={config} className="h-full min-h-[220px] max-h-[250px] w-full">
                     <BarChart
-                        data={chartData}
-                        margin={{ top: 20, right: 0, left: 0, bottom: 0 }}
+                        accessibilityLayer
+                        data={truncatedData}
+                        layout="vertical"
+                        margin={{ left: 0 }}
                     >
-                        <CartesianGrid vertical={false} />
-                        <XAxis
-                            dataKey="name"
+                        <YAxis
+                            dataKey="shortName"
+                            type="category"
+                            tickLine={false}
+                            tickMargin={10}
+                            axisLine={false}
+                            fontSize={12}
+                            width={150}
+                            tick={{ fill: "var(--muted-foreground)" }}
+                        />
+                        <XAxis 
+                            dataKey="count" 
+                            type="number" 
                             tickLine={false}
                             axisLine={false}
-                            tickMargin={10}
-                            fontSize={12}
+                            tick={{ fill: "var(--muted-foreground)" }}
                         />
-                        <YAxis type="number" hide />
                         <ChartTooltip
-                            cursor={{ fill: 'var(--muted)', opacity: 0.4 }}
-                            content={<ChartTooltipContent />}
+                            cursor={false}
+                            content={<ChartTooltipContent hideLabel />}
                         />
                         <Bar
-                            dataKey="sold"
-                            fill="var(--color-sold)"
-                            radius={[4, 4, 0, 0]}
-                            barSize={40}
+                            dataKey="count"
+                            layout="vertical"
+                            fill="var(--color-count)"
+                            radius={4}
+                            barSize={20}
+                        />
+                    </BarChart>
+                </ChartContainer>
+            </CardContent>
+        </Card>
+    );
+}
+
+export function MostReviewedChart({ data, loading }) {
+    if (loading) {
+        return (
+            <Card className="flex flex-col h-full shadow-sm border-border/40">
+                <CardHeader>
+                    <CardTitle>Most Reviewed</CardTitle>
+                    <CardDescription>Products with highest engagement</CardDescription>
+                </CardHeader>
+                <CardContent className="flex-1 pb-2">
+                    <Skeleton className="h-[250px] w-full" />
+                </CardContent>
+            </Card>
+        );
+    }
+
+    const truncatedData = (data && data.length > 0 ? data : [
+        { name: "No data", count: 0, avgRating: 0 },
+    ])
+    .slice(0, 10)
+    .map(d => ({
+        ...d,
+        shortName: d.name.length > 25 ? d.name.substring(0, 25) + '...' : d.name
+    }));
+
+    const config = {
+        count: {
+            label: "Reviews",
+            color: "var(--primary)",
+        },
+    };
+
+    return (
+        <Card className="shadow-sm border-border/40 flex flex-col h-full">
+            <CardHeader>
+                <CardTitle className="text-lg font-semibold tracking-tight">Most Reviewed</CardTitle>
+                <CardDescription>Products generating the most feedback</CardDescription>
+            </CardHeader>
+            <CardContent className="flex-1 pb-2">
+                <ChartContainer config={config} className="h-full min-h-[220px] max-h-[250px] w-full">
+                    <BarChart
+                        accessibilityLayer
+                        data={truncatedData}
+                        layout="vertical"
+                        margin={{ left: 0 }}
+                    >
+                        <YAxis
+                            dataKey="shortName"
+                            type="category"
+                            tickLine={false}
+                            tickMargin={10}
+                            axisLine={false}
+                            fontSize={12}
+                            width={150}
+                            tick={{ fill: "var(--muted-foreground)" }}
+                        />
+                        <XAxis 
+                            dataKey="count" 
+                            type="number" 
+                            tickLine={false}
+                            axisLine={false}
+                            tick={{ fill: "var(--muted-foreground)" }}
+                        />
+                        <ChartTooltip
+                            cursor={false}
+                            content={<ChartTooltipContent hideLabel formatter={(val, name, props) => [`${val} reviews (Avg: ${props.payload.avgRating}★)`, "Feedback"]} />}
+                        />
+                        <Bar
+                            dataKey="count"
+                            layout="vertical"
+                            fill="var(--color-count)"
+                            radius={4}
+                            barSize={20}
                         />
                     </BarChart>
                 </ChartContainer>

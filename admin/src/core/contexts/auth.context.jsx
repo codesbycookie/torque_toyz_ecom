@@ -7,6 +7,7 @@ import {
   useState,
 } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
+import { useTheme } from "next-themes";
 import { apiurls } from "../api/api.urls";
 import { createCrud } from "../factory/entity.crud";
 import { setupInterceptors } from "../api/api.service";
@@ -29,6 +30,7 @@ export const AuthProvider = ({ children }) => {
   const location = useLocation();
   const navigateRef = useRef(navigate);
   const locationRef = useRef(location);
+  const { setTheme } = useTheme();
 
   useEffect(() => {
     navigateRef.current = navigate;
@@ -75,6 +77,9 @@ export const AuthProvider = ({ children }) => {
         if (res) {
           setUser(res);
           setRole(res.role);
+          if (res.theme) {
+            setTheme(res.theme);
+          }
         } else {
           setUser(null);
           setRole(null);
@@ -109,6 +114,9 @@ export const AuthProvider = ({ children }) => {
       flushSync(() => {
         setUser(me);
         setRole(me.role);
+        if (me.theme) {
+          setTheme(me.theme);
+        }
       });
 
       toast.success("Login successful");

@@ -20,7 +20,9 @@ export const useDashboardModule = (exported) => {
       getRevenueByLocation: { method: "get", url: (qs) => apiurls.analytics.revenueByLocation.url() + qs },
       getDeliveryPerformance: { method: "get", url: (qs) => apiurls.analytics.deliveryPerformance.url() + qs },
       getCancellationRefundRate: { method: "get", url: (qs) => apiurls.analytics.cancellationRefundRate.url() + qs },
-      getRecentOrders: { method: "get", url: (qs) => apiurls.orders.getAll.url() + qs + `&limit=5&sort=-createdAt` },
+      getRecentOrders: { method: "get", url: (qs) => apiurls.orders.getAll.url() + qs + `&limit=10&sort=-createdAt` },
+      getMostWishlisted: { method: "get", url: (qs) => apiurls.analytics.mostWishlisted.url() + qs },
+      getMostReviewed: { method: "get", url: (qs) => apiurls.analytics.mostReviewed.url() + qs },
     }
   });
 
@@ -41,6 +43,8 @@ export const useDashboardModule = (exported) => {
         deliveryPerformanceRes,
         cancellationRefundRateRes,
         recentOrdersRes,
+        mostWishlistedRes,
+        mostReviewedRes,
       ] = await Promise.all([
         crud.getSummary(qs, { __options: { toast: false } }),
         crud.getRevenueByMonth(qs, { __options: { toast: false } }),
@@ -53,6 +57,8 @@ export const useDashboardModule = (exported) => {
         crud.getDeliveryPerformance(qs, { __options: { toast: false } }),
         crud.getCancellationRefundRate(qs, { __options: { toast: false } }),
         crud.getRecentOrders(qs, { __options: { toast: false } }),
+        crud.getMostWishlisted(qs, { __options: { toast: false } }),
+        crud.getMostReviewed(qs, { __options: { toast: false } }),
       ]);
 
       setData({
@@ -67,6 +73,8 @@ export const useDashboardModule = (exported) => {
         deliveryPerformance: deliveryPerformanceRes || null,
         cancellationRefundRate: cancellationRefundRateRes || null,
         recentOrders: recentOrdersRes?.docs || recentOrdersRes || [],
+        mostWishlisted: mostWishlistedRes || null,
+        mostReviewed: mostReviewedRes || null,
       });
     } catch (err) {
       console.error("Failed to fetch dashboard data:", err);
