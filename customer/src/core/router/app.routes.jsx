@@ -1,30 +1,30 @@
-
-import { Route, Routes } from 'react-router-dom';
-import Layout from '@/components/global/layout.jsx';
-import { appRoutes } from './routes';
-
-
+import { Route, Routes } from "react-router-dom";
+import Layout from "@/components/global/layout.jsx";
+import { appRoutes } from "./routes";
 
 export default function AppRoutes() {
-    return (
-        <Routes>
+  const layoutRoutes = appRoutes.filter((route) => route.withLayout);
+  const bareRoutes = appRoutes.filter((route) => !route.withLayout);
 
-            {appRoutes.map((route, index) => {
-                const basePath = `/${group.role}`;
-                const isIndex = route.path === basePath || route.path === `${basePath}/`;
-                return (
-                    <Route
-                        key={index}
-                        {...(isIndex ? { index: true } : { path: getRelativePath(route.path, basePath) })}
-                        element={
-                            <ProtectedRoute allowedRoles={[group.role]}>
-                                {route.element}
-                            </ProtectedRoute>
-                        }
-                    />
-                );
-            })}
+  return (
+    <Routes>
+      <Route path="/" element={<Layout />}>
+        {layoutRoutes.map((route, index) => (
+          <Route
+            key={index}
+            path={route.path === "/" ? undefined : route.path}
+            index={route.path === "/"}
+            element={route.element}
+          />
+        ))}
+      </Route>
 
-        </Routes>
-    );
+      {bareRoutes.map((route, index) => (
+        <Route key={index} path={route.path} element={route.element} />
+      ))}
+
+      {/* 404 Route */}
+      <Route path="*" element={<div>404 Not Found</div>} />
+    </Routes>
+  );
 }
