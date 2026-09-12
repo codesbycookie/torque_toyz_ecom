@@ -21,6 +21,8 @@ import { toast } from "sonner";
 
 export default function Home() {
   const { products } = useApi();
+  const list = products.useStore((s) => s.list);
+  const loading = products.useStore((s) => s.loading);
   const [email, setEmail] = useState("");
   const navigate = useNavigate();
 
@@ -179,8 +181,8 @@ export default function Home() {
       <section className="container mx-auto px-4 py-12 md:py-16 border-t">
         <FeaturedProducts
           title="New Arrivals"
-          products={products.state}
-          loading={products.loading.getAll}
+          products={list}
+          loading={loading.getAll}
           onAddToCart={handleAddToCart}
           onToggleWishlist={handleToggleWishlist}
           wishlistedIds={[]}
@@ -205,8 +207,8 @@ export default function Home() {
           </div>
 
           <ProductGrid
-            products={products.state.slice(0, 4)}
-            loading={products.loading.getAll}
+            products={list.slice(0, 4)}
+            loading={loading.getAll}
             onAddToCart={handleAddToCart}
             onToggleWishlist={handleToggleWishlist}
             wishlistedIds={[]}
