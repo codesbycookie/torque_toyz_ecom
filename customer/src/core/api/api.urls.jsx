@@ -3,6 +3,7 @@ const base_url = import.meta.env.VITE_BASE_URL;
 const apiurls = {
   auth: {
     login: { method: "post", url: () => `${base_url}/auths/login` },
+    register: { method: "post", url: () => `${base_url}/auths/register` },
     me: { method: "get", url: () => `${base_url}/auths/me` },
     logout: { method: "post", url: () => `${base_url}/auths/logout` },
     changePassword: {

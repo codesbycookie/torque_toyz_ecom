@@ -22,3 +22,12 @@ export const adminResetPasswordSchema = z.object({
   targetId: objectId,
   newPassword: passwordSchema,
 });
+
+export const registerSchema = z.object({
+  name: z.string().trim().min(2, 'Name is too short'),
+  email: z.string().trim().email(),
+  username: z.string().trim().toLowerCase().min(2, 'Username is too short').optional(),
+  phone: z.string().trim().min(10, 'Phone number is too short'),
+  password: passwordSchema,
+  acceptTerms: z.literal(true, { error: 'You must accept the terms and conditions' }),
+});

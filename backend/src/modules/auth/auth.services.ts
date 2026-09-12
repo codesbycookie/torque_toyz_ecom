@@ -7,6 +7,7 @@ import { ApiError } from "@core/errors/api.error.ts";
 
 import { ROLE, ERROR, SUCCESS } from "./auth.constants.ts";
 import { buildPayload } from "./auth.utils.ts";
+import { RegisterPayload } from "@typings/auth.types.ts";
 
 type Role = (typeof ROLE)[keyof typeof ROLE];
 
@@ -41,6 +42,30 @@ export const login = async (identifier: string, password?: string) => {
 
   const isMatch = await User.comparePassword(password!, user.password);
   if (!isMatch) throw new ApiError(401, ERROR.INVALID_PASSWORD);
+
+  const role: Role = user.role;
+  const payload = buildPayload(user, role, user.login_id);
+
+  return {
+    user: {
+      ...user.toObject(),
+      role,
+    },
+    token: generateToken(payload),
+  };
+};
+
+export const register = async (data: RegisterPayload) => {
+  const normalizedEmail = data.email.toLowerCase();
+  const existingUser = await User.findOne({ email: normalizedEmail });
+  
+  if (existingUser) throw new ApiError(409, "User with this email already exists");
+
+  const user = await new User({
+    ...data,
+    role: "user",
+    accepted_terms_at: data.acceptTerms ? new Date() : null,
+  }).save();
 
   const role: Role = user.role;
   const payload = buildPayload(user, role, user.login_id);
