@@ -4,18 +4,14 @@ import { apiurls } from "@/core/api/api.urls";
 import { createEntityQueryActions } from "@/core/utils/entity.util";
 
 export const useProductModule = (exported) => {
-  const store = useProductStore;
   const { products } = apiurls;
 
   const crud = createCrud({
     entity: "Product",
     urls: products,
-    store: useProductStore.getState(), // or pass the store instance if needed
+    store: useProductStore.getState(),
     getRole: () => null,
   });
-
-  // Better: keep a stable reference to the store
-  const productStore = useProductStore;
 
   const { fetch, reset, sortByColumn, presets, getQuery } =
     createEntityQueryActions({
@@ -24,27 +20,25 @@ export const useProductModule = (exported) => {
       setQuery: (q) => useProductStore.getState().setQuery(q),
     });
 
-  const getAll = (params = {}) => crud.getAll(params);
-  const getOne = (id) => crud.getOne(id);
-  const getBySlug = (slug) => crud.getBySlug(slug);
-
   const getFeatured = (limit = 8) => {
-    return crud.getAll({ limit, sortBy: "createdAt", order: "desc" });
+    return fetch({ limit, sortBy: "createdAt", order: "desc", page: 1 });
   };
 
   return {
-    // Expose the Zustand store hook so pages can subscribe
+    // reactive store access
     useStore: useProductStore,
 
-    // Actions
-    getAll,
-    getOne,
-    getBySlug,
+    // main actions
+    getAll: (params) => fetch(params),
+    getOne: (id) => crud.getOne(id),
+    getBySlug: (slug) => crud.getBySlug(slug),
     getFeatured,
+
+    // query helpers from createEntityQueryActions
     fetch,
     reset,
     sortByColumn,
-    filters: presets,
+    filters: presets, // ← contains search, latest, oldest, etc.
     getQuery,
   };
 };

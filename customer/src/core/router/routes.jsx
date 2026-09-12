@@ -1,7 +1,8 @@
 import Login from "@/pages/login/login";
 // import Register from "@/pages/register/register";
-import ProductDetail from "@/pages/product/product-detail";
+import ProductDetail from "@/pages/product-detail/product-detail";
 import Home from "@/pages/home/home";
+import Product from "@/pages/product/product";
 
 export const appRoutes = [
   {
@@ -24,4 +25,9 @@ export const appRoutes = [
   //   element: <Register />,
   //   withLayout: false,
   // },
+  {
+    path:"/products",
+    element:<Product/>,
+    withLayout:true
+  }
 ];

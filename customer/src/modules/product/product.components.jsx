@@ -11,6 +11,176 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { ShoppingCart, Heart, Star, ArrowRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 
+
+// ─── Vertical Product List Card (Amazon style) ──────────────
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+
+
+// ─── Vertical Product List Card (shadcn style) ──────────────
+export function ProductListCard({
+  product,
+  onAddToCart,
+  onToggleWishlist,
+  isWishlisted = false,
+}) {
+  const navigate = useNavigate();
+  const firstImage = product.images?.[0];
+  const price = Number(product.price || 0);
+  const isOutOfStock = product.stock <= 0;
+
+  const reviews = product.reviews || [];
+  const avgRating =
+    reviews.length > 0
+      ? (
+          reviews.reduce((sum, r) => sum + (r.rating || 0), 0) / reviews.length
+        ).toFixed(1)
+      : null;
+
+  return (
+    <Card
+      className="overflow-hidden border-x-0 border-t-0 rounded-none shadow-none hover:bg-muted/40 transition-colors cursor-pointer"
+      onClick={() => navigate(`/product/${product.slug || product._id}`)}
+    >
+      <CardContent className="p-4 sm:p-5">
+        <div className="flex gap-4 sm:gap-6">
+          {/* Left - Image */}
+          <div className="shrink-0 w-32 sm:w-40 md:w-44">
+            <div className="aspect-square rounded-lg overflow-hidden bg-muted border flex items-center justify-center">
+              {firstImage ? (
+                <img
+                  src={firstImage}
+                  alt={product.name}
+                  className="size-full object-contain p-2"
+                  loading="lazy"
+                />
+              ) : (
+                <span className="text-sm text-muted-foreground">No image</span>
+              )}
+            </div>
+          </div>
+
+          {/* Right - Details */}
+          <div className="flex-1 min-w-0 flex flex-col justify-between gap-3">
+            <div className="space-y-1.5">
+              {/* Title */}
+              <h3 className="font-medium text-[15px] sm:text-base leading-snug line-clamp-2 hover:text-primary transition-colors">
+                {product.name}
+              </h3>
+
+              {/* Category */}
+              {product.category?.name && (
+                <Badge variant="secondary" className="text-xs font-normal">
+                  {product.category.name}
+                </Badge>
+              )}
+
+              {/* Rating */}
+              {avgRating && (
+                <div className="flex items-center gap-1.5 pt-0.5">
+                  <div className="flex items-center gap-1">
+                    <span className="text-sm font-medium">{avgRating}</span>
+                    <div className="flex">
+                      {Array.from({ length: 5 }).map((_, i) => (
+                        <Star
+                          key={i}
+                          className={cn(
+                            "size-3.5",
+                            i < Math.round(Number(avgRating))
+                              ? "fill-amber-400 text-amber-400"
+                              : "text-muted-foreground/30"
+                          )}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                  <span className="text-xs text-muted-foreground">
+                    ({reviews.length} reviews)
+                  </span>
+                </div>
+              )}
+
+              {/* Price */}
+              <div className="pt-1">
+                <span className="text-xl font-semibold tracking-tight">
+                  ₹{price.toLocaleString("en-IN")}
+                </span>
+              </div>
+
+              {/* Stock status */}
+              <div className="text-sm">
+                {isOutOfStock ? (
+                  <Badge variant="destructive" className="font-normal">
+                    Out of stock
+                  </Badge>
+                ) : product.stock < 10 ? (
+                  <span className="text-amber-600 font-medium">
+                    Only {product.stock} left
+                  </span>
+                ) : (
+                  <span className="text-emerald-600 font-medium">In stock</span>
+                )}
+              </div>
+
+              {/* Weight */}
+              {product.weight > 0 && (
+                <p className="text-xs text-muted-foreground">
+                  Weight: {product.weight} kg
+                </p>
+              )}
+            </div>
+
+            {/* Actions */}
+            <div className="flex items-center gap-2 pt-1">
+              <Button
+                size="sm"
+                className="bg-yellow-400 hover:bg-yellow-500 text-black font-medium px-5"
+                disabled={isOutOfStock || !product.active}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onAddToCart?.(product);
+                }}
+              >
+                <ShoppingCart className="size-4 mr-1.5" />
+                Add to cart
+              </Button>
+
+              <TooltipProvider delayDuration={200}>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      size="icon"
+                      variant="outline"
+                      className="size-8"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onToggleWishlist?.(product);
+                      }}
+                    >
+                      <Heart
+                        className={cn(
+                          "size-4",
+                          isWishlisted && "fill-rose-500 text-rose-500"
+                        )}
+                      />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    {isWishlisted ? "Remove from wishlist" : "Add to wishlist"}
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </div>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
 // ─── Product Card ───────────────────────────────────────────
 export function ProductCard({
   product,
