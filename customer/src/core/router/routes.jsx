@@ -11,7 +11,7 @@ export const appRoutes = [
     withLayout: true,
   },
   {
-    path: "/products/:slug",
+    path: "/products/:slug",          // ← correct: static pattern with param
     element: <ProductDetail />,
     withLayout: true,
   },
@@ -26,8 +26,8 @@ export const appRoutes = [
   //   withLayout: false,
   // },
   {
-    path:"/products",
-    element:<Product/>,
-    withLayout:true
-  }
+    path: "/products",
+    element: <Product />,
+    withLayout: true,
+  },
 ];

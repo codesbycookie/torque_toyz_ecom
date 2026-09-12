@@ -196,7 +196,7 @@ export function ProductCard({
     <Card className="group overflow-hidden border-border/60 transition-all hover:shadow-md">
       {/* Image */}
       <Link
-        to={`/product/${product.slug || product._id}`}
+        to={`/products/${product.slug || product._id}`}
         className="block relative aspect-square overflow-hidden bg-muted"
       >
         {firstImage ? (
@@ -241,7 +241,7 @@ export function ProductCard({
 
       <CardHeader className="p-4 pb-2 space-y-1">
         <Link
-          to={`/product/${product.slug || product._id}`}
+          to={`/products/${product.slug || product._id}`}
           className="font-medium leading-tight line-clamp-2 hover:underline"
         >
           {product.name}
