@@ -2,7 +2,7 @@ import { createContext, useContext } from "react";
 import { useProductModule } from "@/modules/product/product.module";
 // import other modules later when ready
 // import { useCartModule } from "@/modules/cart/cart.module";
-// import { useWishlistModule } from "@/modules/wishlist/wishlist.module";
+import { useWishlistModule } from "@/modules/wishlist/wishlist.module";
 // import { useUserModule } from "@/modules/user/user.module";
 
 const ApiContext = createContext();
@@ -21,13 +21,13 @@ export const ApiProvider = ({ children }) => {
 
   const productModule = useProductModule(exported);
   // const cartModule = useCartModule(exported);
-  // const wishlistModule = useWishlistModule(exported);
+  const wishlistModule = useWishlistModule(exported);
   // const userModule = useUserModule(exported);
 
   Object.assign(exported, {
     products: productModule,
     // cart: cartModule,
-    // wishlist: wishlistModule,
+    wishlist: wishlistModule,
     // users: userModule,
   });
 

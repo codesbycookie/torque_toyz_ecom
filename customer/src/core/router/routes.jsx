@@ -4,6 +4,7 @@ import ProductDetail from "@/pages/product-detail/product-detail";
 import Home from "@/pages/home/home";
 import Product from "@/pages/product/product";
 import Profile from "@/pages/profile/profile";
+import Wishlist from "@/pages/wishlist/wishlist";
 
 export const appRoutes = [
   {
@@ -34,6 +35,11 @@ export const appRoutes = [
   {
     path: "/profile",
     element: <Profile />,
+    withLayout: true,
+  },
+  {
+    path: "/wishlist",
+    element: <Wishlist />,
     withLayout: true,
   },
 ];

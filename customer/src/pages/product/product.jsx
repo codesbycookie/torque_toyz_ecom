@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useApi } from "@/core/contexts/api.context";
+import { useWishlistModule } from "@/modules/wishlist/wishlist.module";
 import { ProductListCard } from "@/modules/product/product.components";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -26,6 +27,7 @@ import { Search, SlidersHorizontal, X } from "lucide-react";
 
 export default function ProductsPage() {
   const { products } = useApi();
+  const wishlist = useWishlistModule();
 
   const [search, setSearch] = useState("");
   const [sort, setSort] = useState("latest");
@@ -36,12 +38,16 @@ export default function ProductsPage() {
   // Load initial data
   useEffect(() => {
     products.getAll({ limit: 20, sortBy: "createdAt", order: "desc" });
+    wishlist.fetchAll();
   }, []);
 
-  // Reactive store
+  // Reactive stores
   const list = products.useStore((s) => s.list);
   const loading = products.useStore((s) => s.loading);
   const query = products.useStore((s) => s.query);
+
+  const wishlistItems = wishlist.useStore((s) => s.list);
+  const wishlistedIds = wishlistItems.map((p) => p._id);
 
   // ─── Search (debounced) ──────────────────────────────────
   useEffect(() => {
@@ -117,7 +123,8 @@ export default function ProductsPage() {
   };
 
   const handleToggleWishlist = (product) => {
-    console.log("Toggle wishlist:", product.name);
+    const alreadyWishlisted = wishlistedIds.includes(product._id);
+    wishlist.toggle(product, alreadyWishlisted);
   };
 
   const activeFiltersCount =
@@ -284,6 +291,7 @@ export default function ProductsPage() {
                 product={product}
                 onAddToCart={handleAddToCart}
                 onToggleWishlist={handleToggleWishlist}
+                isWishlisted={wishlistedIds.includes(product._id)}
               />
             ))}
           </div>
