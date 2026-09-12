@@ -3,6 +3,7 @@ import Register from "@/pages/register/register";
 import ProductDetail from "@/pages/product-detail/product-detail";
 import Home from "@/pages/home/home";
 import Product from "@/pages/product/product";
+import Profile from "@/pages/profile/profile";
 
 export const appRoutes = [
   {
@@ -28,6 +29,11 @@ export const appRoutes = [
   {
     path: "/products",
     element: <Product />,
+    withLayout: true,
+  },
+  {
+    path: "/profile",
+    element: <Profile />,
     withLayout: true,
   },
 ];
