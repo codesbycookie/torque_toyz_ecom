@@ -44,7 +44,7 @@ export function ProductListCard({
   return (
     <Card
       className="overflow-hidden border-x-0 border-t-0 rounded-none shadow-none hover:bg-muted/40 transition-colors cursor-pointer"
-      onClick={() => navigate(`/product/${product.slug || product._id}`)}
+      onClick={() => navigate(`/products/${product._id}`)}
     >
       <CardContent className="p-4 sm:p-5">
         <div className="flex gap-4 sm:gap-6">
@@ -196,7 +196,7 @@ export function ProductCard({
     <Card className="group overflow-hidden border-border/60 transition-all hover:shadow-md">
       {/* Image */}
       <Link
-        to={`/products/${product.slug || product._id}`}
+        to={`/products/${product._id}`}
         className="block relative aspect-square overflow-hidden bg-muted"
       >
         {firstImage ? (
