@@ -8,6 +8,7 @@ import {
   LoginPayload,
   ChangePasswordPayload,
   AdminResetPasswordPayload,
+  RegisterPayload,
 } from '@typings/auth.types.js';
 import { COOKIE, LOG, ENTITY, ERROR, SHORT_AGE, LONG_AGE } from './auth.constants.js';
 import { AccessRequest } from '@core/middlewares/access.middleware.ts';
@@ -39,6 +40,19 @@ const controllers = {
     });
 
     return sendResponse.fetched(res, ENTITY.USER, user);
+  },
+
+  registerUser: async (req: Request<{}, {}, RegisterPayload>, res: Response, next: NextFunction) => {
+    const result = await service.register(req.body);
+
+    const { user, token } = result;
+
+    res.cookie(COOKIE.NAME, token, {
+      ...cookieOptions,
+      maxAge: LONG_AGE,
+    });
+
+    return sendResponse.created(res, ENTITY.USER, user);
   },
 
   getCurrentUser: async (req: Request, res: Response, next: NextFunction) => {
@@ -113,5 +127,5 @@ const controllers = {
   },
 };
 
-export const { loginUser, logoutUser, getCurrentUser, adminResetPassword, changePassword } =
+export const { loginUser, registerUser, logoutUser, getCurrentUser, adminResetPassword, changePassword } =
   wrapControllers(controllers);

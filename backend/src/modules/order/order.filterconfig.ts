@@ -3,6 +3,9 @@ import { IOrder } from '@db/models/order.model.ts';
 
 export const orderFilterConfig: FilterConfig<IOrder> = {
     searchable: ['code'],
+    searchableRefs: [
+        { field: 'user', ref: 'User', matchOn: 'name' }
+    ],
     filterable: ['status', 'user', 'active', 'deleted'],
     sortable: ['code', 'createdAt', 'status'],
     defaultSort: 'createdAt',

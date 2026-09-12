@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import {
   loginUser,
+  registerUser,
   getCurrentUser,
   logoutUser,
   adminResetPassword,
@@ -13,6 +14,7 @@ import { zodValidate } from '@core/middlewares/zod.validator.ts';
 
 import {
   loginSchema,
+  registerSchema,
   changePasswordSchema,
   adminResetPasswordSchema,
 } from './auth.validator.ts';
@@ -23,6 +25,12 @@ router.post(
   '/login',
   zodValidate(loginSchema, 'body', 'LoginSchema'),
   loginUser
+);
+
+router.post(
+  '/register',
+  zodValidate(registerSchema, 'body', 'RegisterSchema'),
+  registerUser
 );
 
 router.get('/me', authMiddleware, getCurrentUser);
