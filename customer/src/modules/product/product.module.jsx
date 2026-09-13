@@ -22,15 +22,9 @@ export const useProductModule = () => {
     });
 
   // Manual getBySlug — does NOT use crud.getBySlug
-  const getBySlug = async (slug) => {
-    const base = import.meta.env.VITE_BASE_URL;
-
-    // Try the same pattern as categories
-    const url = `${base}/products/slug/${slug}`;
-
-    const res = await apiRequest("get", url);
-    const data = res?.data || res;
-
+  const getBySlug = async (idOrSlug) => {
+    // Backend currently only works with real MongoDB _id
+    const data = await crud.getOne(idOrSlug);
     useProductStore.getState().setCurrent(data);
     return data;
   };

@@ -1,12 +1,10 @@
-'use client';
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { useApi } from "@/core/contexts/api.context";
+import { ProductGrid } from "@/modules/product/product.components";
 
-import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useWishlistModule } from '@/modules/wishlist/wishlist.module';
-import { ProductGrid } from '@/modules/product/product.components';
-
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import {
   AlertDialog,
   AlertDialogTrigger,
@@ -17,31 +15,37 @@ import {
   AlertDialogFooter,
   AlertDialogCancel,
   AlertDialogAction,
-} from '@/components/ui/alert-dialog';
+} from "@/components/ui/alert-dialog";
 
-import { Heart, Trash2, ShoppingBag } from 'lucide-react';
+import { Heart, Trash2, ShoppingBag } from "lucide-react";
 
-export default function Wishlist({ onAddToCart }) {
+export default function Wishlist() {
   const navigate = useNavigate();
-  const { useStore, fetchAll, toggle, clear } = useWishlistModule();
-  const { list, loading } = useStore();
+  const { wishlist } = useApi();
+
+  const list = wishlist.useStore((s) => s.list);
+  const loading = wishlist.useStore((s) => s.loading);
 
   const [clearing, setClearing] = useState(false);
 
   useEffect(() => {
-    fetchAll();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    wishlist.fetchAll();
   }, []);
 
   const handleToggleWishlist = (product) => {
-    // Every item on this page is already wishlisted, so toggling always removes it.
-    toggle(product, true);
+    // Everything on this page is already wishlisted → always remove
+    wishlist.toggle(product, true);
+  };
+
+  const handleAddToCart = (product) => {
+    console.log("Add to cart:", product.name);
+    // later: cart.addItem(product)
   };
 
   const handleClear = async () => {
     try {
       setClearing(true);
-      await clear();
+      await wishlist.clear();
     } finally {
       setClearing(false);
     }
@@ -57,7 +61,7 @@ export default function Wishlist({ onAddToCart }) {
           <h1 className="text-2xl font-semibold tracking-tight">My Wishlist</h1>
           {list.length > 0 && (
             <Badge variant="secondary" className="font-medium">
-              {list.length} {list.length === 1 ? 'item' : 'items'}
+              {list.length} {list.length === 1 ? "item" : "items"}
             </Badge>
           )}
         </div>
@@ -75,13 +79,14 @@ export default function Wishlist({ onAddToCart }) {
                 Clear all
               </Button>
             </AlertDialogTrigger>
+
             <AlertDialogContent>
               <AlertDialogHeader>
                 <AlertDialogTitle>Clear your wishlist?</AlertDialogTitle>
                 <AlertDialogDescription>
-                  This will remove all {list.length}{' '}
-                  {list.length === 1 ? 'item' : 'items'} from your wishlist.
-                  This can't be undone.
+                  This will remove all {list.length}{" "}
+                  {list.length === 1 ? "item" : "items"} from your wishlist.
+                  This can’t be undone.
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
@@ -110,7 +115,7 @@ export default function Wishlist({ onAddToCart }) {
               Save products you love and find them here anytime.
             </p>
           </div>
-          <Button className="gap-2" onClick={() => navigate('/products')}>
+          <Button className="gap-2" onClick={() => navigate("/products")}>
             <ShoppingBag size={15} />
             Browse products
           </Button>
@@ -119,7 +124,7 @@ export default function Wishlist({ onAddToCart }) {
         <ProductGrid
           products={list}
           loading={loading?.global}
-          onAddToCart={onAddToCart}
+          onAddToCart={handleAddToCart}
           onToggleWishlist={handleToggleWishlist}
           wishlistedIds={list.map((p) => p._id)}
         />
