@@ -20,10 +20,10 @@ export const usePaymentColumns = (payments) => {
   return [
     {
       accessorKey: "order",
-      header: () => Hint("Product", "Ordered product"),
+      header: () => Hint("Order ID", "Order id"),
       cell: ({ row }) => {
         const order = row.original.order;
-        return <span className="font-medium">{order?.name || "-"}</span>;
+        return <span className="font-medium">{order?.code || "-"}</span>;
       },
     },
     {
