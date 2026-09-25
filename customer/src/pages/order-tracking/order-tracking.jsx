@@ -12,11 +12,22 @@ export default function OrderTracking() {
   const { id } = useParams();
   const { orders } = useApi();
   const { loadOnly, loading } = useLoader();
-  const orderDetails = orders.useStore(s => s.current);
 
   useEffect(() => {
-    if (id) loadOnly(() => orders.getOne(id));
+    if (id) {
+      loadOnly(async () => {
+        try {
+          const res = await orders.crud.getOne(id, { __options: { toast: false } });
+          orders.setCurrent(res?.data || res || null);
+        } catch (err) {
+          orders.setCurrent(null);
+        }
+      });
+    }
   }, [id]);
+
+  const orderDetails = orders.useStore(s => s.current);
+
 
   if (loading) {
     return <div className="flex justify-center py-20"><Loader2 className="h-8 w-8 animate-spin text-muted-foreground" /></div>;
@@ -37,7 +48,7 @@ export default function OrderTracking() {
     <div className="container mx-auto p-6 max-w-5xl animate-in fade-in zoom-in duration-500">
       <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Order {orderDetails._id || orderDetails.id}</h1>
+          <h1 className="text-3xl font-bold tracking-tight">Order {orderDetails.code || orderDetails._id || orderDetails.id}</h1>
           <p className="text-muted-foreground mt-1">Placed on {new Date(orderDetails.createdAt || orderDetails.date).toLocaleDateString()}</p>
         </div>
         <Button variant="outline" onClick={() => navigate("/orders")}>
@@ -55,11 +66,10 @@ export default function OrderTracking() {
               <div className="relative border-l border-muted-foreground/30 ml-4 space-y-8 pb-4 mt-2">
                 {steps.map((step, index) => (
                   <div key={index} className="relative flex items-center pl-8">
-                    <div className={`absolute -left-3.5 flex h-7 w-7 items-center justify-center rounded-full border-2 bg-background ${
-                      step.status === "completed" ? "border-primary text-primary" :
-                      step.status === "current" ? "border-blue-500 text-blue-500 ring-4 ring-blue-500/20" :
-                      "border-muted text-muted-foreground"
-                    }`}>
+                    <div className={`absolute -left-3.5 flex h-7 w-7 items-center justify-center rounded-full border-2 bg-background ${step.status === "completed" ? "border-primary text-primary" :
+                        step.status === "current" ? "border-blue-500 text-blue-500 ring-4 ring-blue-500/20" :
+                          "border-muted text-muted-foreground"
+                      }`}>
                       {step.status === "completed" ? <CheckCircle2 className="h-4 w-4" /> : <Circle className="h-3 w-3 fill-current" />}
                     </div>
                     <div className="flex-1 flex justify-between items-center bg-muted/30 p-4 rounded-lg">
@@ -84,7 +94,7 @@ export default function OrderTracking() {
                 const prod = item.product || item;
                 const quantity = item.quantity || 1;
                 const price = item.price || prod.price || 0;
-                
+
                 return (
                   <div key={prod._id || prod.id} className="flex items-center space-x-4">
                     <div className="h-16 w-16 bg-muted rounded overflow-hidden">

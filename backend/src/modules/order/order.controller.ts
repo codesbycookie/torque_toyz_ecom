@@ -33,9 +33,9 @@ const controllers = {
   },
 
   getMyOrders: async (req: AccessRequest, res: Response) => {
-    const userId = req.user!.id;
-    const orders = await service.getOrdersByUser(userId);
-    return sendResponse.fetched(res, "orders", orders);
+    const queries = buildQuery(req);
+    const result = await service.getOrdersByUser(req?.user, queries);
+    return sendResponse.paginated(res, "order", result);
   },
 
   getOrderById: async (req: Request<{ id: string }>, res: Response) => {

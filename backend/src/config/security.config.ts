@@ -13,11 +13,11 @@ export const applySecurityMiddlewares = (app: Express) => {
   app.use(cookieParser());
   console.log('✅ Cookie parser active');
 
-  const origins = process.env.ALLOWED_ORIGINS?.split(',') ?? [];
+  const origins = process.env.ALLOWED_ORIGINS?.split(', ') ?? [];
 
   app.use(
     cors({
-       origin: (origin, callback) => {
+      origin: (origin, callback) => {
         if (!origin || origins.includes(origin)) {
           callback(null, true);
         } else {

@@ -26,7 +26,7 @@ export const useOrderColumns = (orders) => {
     {
       accessorKey: "user",
       header: () => Hint("Customer", "Customer who placed the order"),
-      cell: ({ row }) => <span>{safeId(row.original.user.name || row.original.user?._id)}</span>,
+      cell: ({ row }) => <span>{safeId(row.original.user?.name || row.original.user?._id || "Guest")}</span>,
     },
     {
       accessorKey: "items",

@@ -3,9 +3,16 @@ import { Request, Response } from 'express';
 import * as service from './payment.services.ts';
 import sendResponse from '@core/constants/responsewrapper.constant.ts';
 import { wrapControllers } from '@core/constants/wrapcontroller.constant.ts';
-// import crypto from 'crypto';
+import { buildQuery } from '@core/constants/querybuilder.constant.ts';
+import { AccessRequest } from '@core/middlewares/access.middleware.ts';
 
 const controllers = {
+  getAllPayments: async (req: AccessRequest, res: Response) => {
+    const queries = buildQuery(req);
+    const result = await service.getAllPayments(queries, req.user?.role);
+    return sendResponse.paginated(res, 'payment', result);
+  },
+
   createPaymentOrder: async (req: Request<{}, {}, { orderId: string }>, res: Response) => {
     const { orderId } = req.body;
     const result = await service.createPaymentOrder(orderId);
@@ -22,11 +29,11 @@ const controllers = {
   },
 
   refundPayment: async (
-  req: Request<{}, {}, { orderId: string; amount?: number; reason?: string }>,
+  req: Request<{}, {}, { orderId: string; reason?: string }>,
   res: Response
 ) => {
-  const { orderId, amount, reason } = req.body;
-  const result = await service.refundPayment(orderId, amount, reason);
+  const { orderId, reason } = req.body;
+  const result = await service.refundPayment(orderId, reason);
   return sendResponse.success(res, 'Refund processed successfully', result);
 },
 
@@ -53,6 +60,6 @@ const controllers = {
   // },
 };
 
-export const { createPaymentOrder, verifyPayment,refundPayment
+export const { getAllPayments, createPaymentOrder, verifyPayment,refundPayment
   // handleWebhook
   } = wrapControllers(controllers);

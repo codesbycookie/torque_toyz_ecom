@@ -128,6 +128,7 @@ const apiurls = {
   },
 
   payments: {
+    getAll: { method: "get", url: () => `${base_url}/payments` },
     createOrder: {
       method: "post",
       url: () => `${base_url}/payments/create-order`,

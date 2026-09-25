@@ -5,6 +5,7 @@ import { useOrderStore } from "./order.store";
 export const useOrderModule = () => {
   const { orders } = apiurls;
   const store = useOrderStore();
+  const { set, update, setCurrent, setQuery } = store;
 
   const crud = createCrud({
     entity: "Order",
@@ -13,37 +14,29 @@ export const useOrderModule = () => {
     getRole: () => null,
   });
 
-  const getMine = async () => {
-    try {
-      const res = await crud.getMine({ __options: { toast: false } });
-      store.set(res || []);
-      return res;
-    } catch (err) {
-      store.set([]);
-      throw err;
-    }
-  };
-
-  const create = async (payload) => {
-    return await crud.create(payload, { __options: { toast: true, success: "Order placed successfully" } });
-  };
-  
-  const getOne = async (id) => {
-    try {
-      const res = await crud.getOne(id, { __options: { toast: false } });
-      store.setCurrent(res || null);
-      return res;
-    } catch (err) {
-      store.setCurrent(null);
-      throw err;
-    }
+  const getMine = async (incoming = {}) => {
+    const currentQuery = useOrderStore.getState().query;
+    const nextQuery = { ...currentQuery, ...incoming };
+    setQuery(nextQuery);
+    return crud.getMine(nextQuery);
   };
 
   return {
-    ...crud,
+    get state() {
+      return useOrderStore.getState().list;
+    },
+    get loading() {
+      return useOrderStore.getState().loading;
+    },
+    get pagination() {
+      return useOrderStore.getState().pagination;
+    },
+    get current() {
+      return useOrderStore.getState().current;
+    },
+    setCurrent,
+    crud,
     getMine,
-    create,
-    getOne,
     useStore: useOrderStore,
   };
 };

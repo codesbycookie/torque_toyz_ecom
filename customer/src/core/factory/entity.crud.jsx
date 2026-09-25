@@ -25,7 +25,7 @@ export const createCrud = ({ entity, urls, store, getRole }) => {
   };
 
   const DOWNLOAD_KEYS = ['download', 'exportCsv', 'exportXlsx', 'exportPdf', 'exportMarksheetCsv'];
-  const SET_KEYS = ['getAll'];
+  const SET_KEYS = ['getAll', 'getMine'];
   const ADD_KEYS = ['create'];
   const UPDATE_KEYS = ['edit', 'setActiveStatus', 'toggleStatus', 'branchApprove', 'branchAdminApprove', 'superAdminApprove', 'submit'];
   const DELETE_KEYS = ['delete'];

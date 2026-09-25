@@ -2,7 +2,7 @@ import { Router, raw } from 'express';
 import { authMiddleware } from '@core/middlewares/auth.middleware.ts';
 import { zodValidate } from '@core/middlewares/zod.validator.js';
 import { createPaymentOrderSchema, refundPaymentSchema, verifyPaymentSchema } from './payment.validator.js';
-import { createPaymentOrder, verifyPayment, refundPayment } from './payment.controller.js';
+import { getAllPayments, createPaymentOrder, verifyPayment, refundPayment } from './payment.controller.js';
 
 const router = Router();
 
@@ -20,6 +20,8 @@ const router = Router();
 // );
 
 router.use(authMiddleware);
+
+router.get('/', getAllPayments);
 
 router.post(
   '/create-order',

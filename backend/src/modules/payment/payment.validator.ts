@@ -12,6 +12,5 @@ export const verifyPaymentSchema = z.object({
 
 export const refundPaymentSchema = z.object({
   orderId: z.string().min(1, 'Order id is required'),
-  amount: z.number().positive().optional(), // omit for full refund
   reason: z.string().trim().optional(),
 });

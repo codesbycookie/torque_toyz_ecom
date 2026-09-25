@@ -10,7 +10,7 @@ export interface IOrderItem {
   price: number;
   weight: number;
   quantity: number;
-  
+
 }
 
 export interface IShippingAddress {

@@ -161,7 +161,7 @@ export const Refund = ({
           variant="destructive"
           onClick={() => {
             try {
-              onConfirm(payment._id);
+              submitFn(payment.order?._id || payment.order || payment._id);
             } finally {
               closeModal();
             }

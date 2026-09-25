@@ -606,7 +606,7 @@ export function RecentOrders({ orders, loading }) {
                                         <div className="text-[11px] text-muted-foreground">{new Date(order.createdAt).toLocaleDateString()}</div>
                                     </TableCell>
                                     <TableCell>
-                                        <div className="text-sm">{order.shipping_address.city || "Unknown"}</div>
+                                        <div className="text-sm">{order.shipping_address?.city || "Unknown"}</div>
                                     </TableCell>
                                     <TableCell>
                                         <div className={cn(

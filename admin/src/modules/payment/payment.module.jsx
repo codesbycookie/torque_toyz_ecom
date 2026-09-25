@@ -32,9 +32,9 @@ export const usePaymentModule = (exported) => {
     setCurrent(payment);
     return openModal(modals.refund, {
       payment,
-      submitFn: (id) =>
-        crud.refund({ payment: id }).then(() => {
-          update(id, { status: "refunded", failure_reason: null });
+      submitFn: (orderId) =>
+        crud.refund({ orderId }).then(() => {
+          update(payment._id, { status: "refunded", failure_reason: null });
           toast.success("Refund initiated successfully");
         }),
       exported,

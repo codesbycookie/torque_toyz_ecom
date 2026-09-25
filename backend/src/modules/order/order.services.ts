@@ -25,7 +25,7 @@ export const recalculateDraftPricing = async (order: any) => {
                 item.image = p.images?.[0] || 'https://placehold.co/600x400?text=No+Image';
                 item.price = p.price;
                 item.weight = p.weight;
-                
+
                 subtotal += p.price * item.quantity;
                 total_weight += p.weight * item.quantity;
             }
@@ -47,7 +47,7 @@ export const recalculateDraftPricing = async (order: any) => {
         shipping_cost,
         total: subtotal + shipping_cost,
     };
-    
+
     await order.save();
 };
 
@@ -86,7 +86,7 @@ export const addItemToDraft = async (guestId: string, productId: string, quantit
     if (!product || !product.active || product.deleted) {
         throw new ApiError(400, `Product ${productId} not found or inactive`);
     }
-    
+
     if (product.stock < quantity) {
         throw new ApiError(400, `Insufficient stock for ${product.name}`);
     }
@@ -112,7 +112,7 @@ export const addItemToDraft = async (guestId: string, productId: string, quantit
 export const updateDraftItemQuantity = async (guestId: string, productId: string, quantity: number, userId?: string) => {
     const orderRaw = await Order.findById((await getDraftOrder(guestId, userId)).id);
     if (!orderRaw) throw new ApiError(404, 'Draft order not found');
-    
+
     const existingItem = orderRaw.items.find((i: any) => String(i.product) === productId);
     if (!existingItem) {
         throw new ApiError(404, 'Item not found in draft order');
@@ -132,7 +132,7 @@ export const removeItemFromDraft = async (guestId: string, productId: string, us
     const orderRaw = await Order.findById((await getDraftOrder(guestId, userId)).id);
     if (!orderRaw) throw new ApiError(404, 'Draft order not found');
     orderRaw.items = orderRaw.items.filter((i: any) => String(i.product) !== productId);
-    
+
     await recalculateDraftPricing(orderRaw);
     return enhanceOrder(orderRaw);
 };
@@ -141,7 +141,7 @@ export const updateDraftShippingAddress = async (guestId: string, shipping_addre
     const orderRaw = await Order.findById((await getDraftOrder(guestId, userId)).id);
     if (!orderRaw) throw new ApiError(404, 'Draft order not found');
     orderRaw.shipping_address = shipping_address;
-    
+
     await recalculateDraftPricing(orderRaw);
     return enhanceOrder(orderRaw);
 };
@@ -151,7 +151,7 @@ export const clearDraft = async (guestId: string, userId?: string) => {
     if (!orderRaw) throw new ApiError(404, 'Draft order not found');
     orderRaw.items = [];
     orderRaw.shipping_address = undefined;
-    
+
     await recalculateDraftPricing(orderRaw);
     return enhanceOrder(orderRaw);
 };
@@ -173,13 +173,13 @@ export const checkoutDraftOrder = async (guestId: string, data: CreateOrderPaylo
     if (!orderRaw.shipping_address || !orderRaw.shipping_address.state) {
         throw new ApiError(400, 'Shipping address is incomplete');
     }
-    
+
     if (orderRaw.items.length === 0) {
         throw new ApiError(400, 'Cannot checkout an empty order');
     }
 
     await recalculateDraftPricing(orderRaw);
-    
+
     if (orderRaw.pricing.shipping_cost === 0) {
         const slab = await Location.findRateForWeight(orderRaw.shipping_address.state, orderRaw.pricing.total_weight);
         if (!slab) throw new ApiError(400, 'No delivery rate available for this location/weight');
@@ -280,9 +280,10 @@ export const getAllOrders = async (queries: Record<string, unknown>, role?: Role
     });
 };
 
-export const getOrdersByUser = async (userId: string) => {
-    const orders = await Order.getByUser(userId);
-    return orders.map(enhanceOrder);
+export const getOrdersByUser = async (user: any, queries: Record<string, unknown>) => {
+    return dynamicFilter(Order, orderFilterConfig, { user: user?.id || user?._id, ...queries, deleted: false }, {
+        visibility: getVisibility(user?.role),
+    });
 };
 
 export const getOrderById = async (id: string) => {
@@ -329,7 +330,7 @@ export const retrieveOrder = async (id: string) => {
 };
 
 export const setDeliveryPartnerUrl = async (id: string, url: string) => {
-  const updated = await Order.findByIdAndUpdate(id, { delivery_partner_url: url }, { new: true });
-  if (!updated) return null;
-  return enhanceOrder(updated);
+    const updated = await Order.findByIdAndUpdate(id, { delivery_partner_url: url }, { new: true });
+    if (!updated) return null;
+    return enhanceOrder(updated);
 };

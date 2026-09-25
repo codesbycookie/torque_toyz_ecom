@@ -3,6 +3,8 @@ import Payment from '@db/models/payment.model.ts';
 import Order from '@db/models/order.model.ts';
 import { ApiError } from '@core/errors/api.error.ts';
 import { razorpayInstance, toPaise, toRupees } from '@config/razorpay.config.ts';
+import { dynamicFilter } from '@core/constants/dynamicfilter.constant.ts';
+import { paymentFilterConfig } from './payment.filterconfig.ts';
 
 export const createPaymentOrder = async (orderId: string) => {
   const order = await Order.findOne({ _id: orderId, deleted: false });
@@ -37,6 +39,12 @@ export const createPaymentOrder = async (orderId: string) => {
     currency: razorpayOrder.currency,
     order_code: order.code,
   };
+};
+
+export const getAllPayments = async (queries: Record<string, unknown>, role?: string) => {
+  return dynamicFilter(Payment, paymentFilterConfig, queries, {
+    visibility: role === 'super_admin' ? 'all' : 'active-only',
+  });
 };
 
 export const verifyPayment = async (
@@ -78,7 +86,7 @@ export const verifyPayment = async (
 };
 
 
-export const refundPayment = async (orderId: string, amount?: number, reason?: string) => {
+export const refundPayment = async (orderId: string, reason?: string) => {
   const order = await Order.findOne({ _id: orderId, deleted: false });
   if (!order) throw new ApiError(404, 'Order not found');
 
@@ -89,17 +97,27 @@ export const refundPayment = async (orderId: string, amount?: number, reason?: s
     throw new ApiError(400, 'Payment record is missing a Razorpay payment id');
   }
 
-  // partial refund if amount given, else full refund of what was paid
-  const refundAmountPaise = amount ? toPaise(amount) : toPaise(payment.amount);
+  // We automatically exclude shipping charges by refunding the subtotal
+  const refundAmountPaise = toPaise(order.pricing.subtotal);
 
-  if (amount && amount > payment.amount) {
+  if (order.pricing.subtotal > payment.amount) {
     throw new ApiError(400, 'Refund amount cannot exceed the original payment amount');
   }
 
-  const refund = await razorpayInstance.payments.refund(payment.razorpay_payment_id, {
-    amount: refundAmountPaise,
-    notes: reason ? { reason } : undefined,
-  });
+  let refund;
+  try {
+    const refundParams: any = { amount: refundAmountPaise };
+    if (reason) refundParams.notes = { reason };
+
+    console.log("-> REFUNDING RAZORPAY PAYMENT:", payment.razorpay_payment_id);
+    console.log("-> REFUND PARAMS:", refundParams);
+
+    refund = await razorpayInstance.payments.refund(payment.razorpay_payment_id, refundParams);
+    console.log("<- RAZORPAY RESPONSE:", refund)
+  } catch (err: any) {
+    console.log(err)
+    throw new ApiError(400, err.error?.description || err.message || 'Refund failed at gateway');
+  }
 
   const isFullRefund = refundAmountPaise === toPaise(payment.amount);
 
@@ -113,6 +131,9 @@ export const refundPayment = async (orderId: string, amount?: number, reason?: s
   if (isFullRefund) {
     await Order.updateStatus(order._id, 'cancelled', reason ?? 'Order refunded');
   }
+
+
+  console.log(refund, payment, order)
 
   return {
     refund_id: refund.id,

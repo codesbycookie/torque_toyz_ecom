@@ -8,5 +8,5 @@ export const orderFilterConfig: FilterConfig<IOrder> = {
     ],
     filterable: ['status', 'user', 'active', 'deleted'],
     sortable: ['code', 'createdAt', 'status'],
-    defaultSort: 'createdAt',
+    defaultSort: '-createdAt',
 };
