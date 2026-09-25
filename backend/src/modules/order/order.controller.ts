@@ -87,6 +87,69 @@ const controllers = {
 
   deleteOrder: orderStatus.softDelete,
   retrieveOrder: orderStatus.retrieve,
+
+  getDraft: async (req: Request, res: Response) => {
+    const guestId = (req.headers['x-cart-id'] as string) || '';
+    if (!guestId) return sendResponse.badRequest(res, 'x-cart-id header is required');
+    const userId = (req as any).user?.id;
+    const order = await service.getDraftOrder(guestId, userId);
+    return sendResponse.fetched(res, "draft order", order);
+  },
+
+  addItemToDraft: async (req: Request, res: Response) => {
+    const guestId = (req.headers['x-cart-id'] as string) || '';
+    if (!guestId) return sendResponse.badRequest(res, 'x-cart-id header is required');
+    const { productId, quantity } = req.body;
+    if (!productId || !quantity) return sendResponse.badRequest(res, 'productId and quantity required');
+    const userId = (req as any).user?.id;
+    const order = await service.addItemToDraft(guestId, productId, Number(quantity), userId);
+    return sendResponse.updated(res, "draft order", order);
+  },
+
+  updateDraftQuantity: async (req: Request, res: Response) => {
+    const guestId = (req.headers['x-cart-id'] as string) || '';
+    if (!guestId) return sendResponse.badRequest(res, 'x-cart-id header is required');
+    const { productId, quantity } = req.body;
+    if (!productId || quantity === undefined) return sendResponse.badRequest(res, 'productId and quantity required');
+    const userId = (req as any).user?.id;
+    const order = await service.updateDraftItemQuantity(guestId, productId, Number(quantity), userId);
+    return sendResponse.updated(res, "draft order", order);
+  },
+
+  removeDraftItem: async (req: Request, res: Response) => {
+    const guestId = (req.headers['x-cart-id'] as string) || '';
+    if (!guestId) return sendResponse.badRequest(res, 'x-cart-id header is required');
+    const { productId } = req.params;
+    if (!productId) return sendResponse.badRequest(res, 'productId parameter required');
+    const userId = (req as any).user?.id;
+    const order = await service.removeItemFromDraft(guestId, productId as string, userId);
+    return sendResponse.updated(res, "draft order", order);
+  },
+
+  updateDraftAddress: async (req: Request, res: Response) => {
+    const guestId = (req.headers['x-cart-id'] as string) || '';
+    if (!guestId) return sendResponse.badRequest(res, 'x-cart-id header is required');
+    const { shipping_address } = req.body;
+    const userId = (req as any).user?.id;
+    const order = await service.updateDraftShippingAddress(guestId, shipping_address, userId);
+    return sendResponse.updated(res, "draft order", order);
+  },
+
+  clearDraft: async (req: Request, res: Response) => {
+    const guestId = (req.headers['x-cart-id'] as string) || '';
+    if (!guestId) return sendResponse.badRequest(res, 'x-cart-id header is required');
+    const userId = (req as any).user?.id;
+    const order = await service.clearDraft(guestId, userId);
+    return sendResponse.updated(res, "draft order", order);
+  },
+
+  checkoutDraft: async (req: Request, res: Response) => {
+    const guestId = (req.headers['x-cart-id'] as string) || '';
+    if (!guestId) return sendResponse.badRequest(res, 'x-cart-id header is required');
+    const userId = (req as any).user?.id;
+    const order = await service.checkoutDraftOrder(guestId, req.body, userId);
+    return sendResponse.updated(res, "order placed", order);
+  }
 };
 
 export const {
@@ -99,4 +162,11 @@ export const {
   setDeliveryPartnerUrl,
   deleteOrder,
   retrieveOrder,
+  getDraft,
+  addItemToDraft,
+  updateDraftQuantity,
+  removeDraftItem,
+  updateDraftAddress,
+  clearDraft,
+  checkoutDraft
 } = wrapControllers(controllers);

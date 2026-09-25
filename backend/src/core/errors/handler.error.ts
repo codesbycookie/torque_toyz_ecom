@@ -29,7 +29,7 @@ const errorHandler = (err: any, req: Request, res: Response, next: NextFunction)
   logErrorToDB({
     ...err,
     requestId,
-    message: err.message,
+    message: err.message || JSON.stringify(err.error) || 'Unknown error occurred',
     stack: err.stack,
   });
 

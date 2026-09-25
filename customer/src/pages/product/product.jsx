@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
+import { toast } from "sonner";
 import { useApi } from "@/core/contexts/api.context";
-import { useWishlistModule } from "@/modules/wishlist/wishlist.module";
+import { useLoader } from "@/core/hooks/useLoader";
 import { ProductListCard } from "@/modules/product/product.components";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -26,8 +27,9 @@ import { Badge } from "@/components/ui/badge";
 import { Search, SlidersHorizontal, X } from "lucide-react";
 
 export default function ProductsPage() {
-  const { products } = useApi();
-  const wishlist = useWishlistModule();
+  const api = useApi();
+  const { products, wishlist } = api;
+  const { loadOnly, loading: isProductsLoading } = useLoader();
 
   const [search, setSearch] = useState("");
   const [sort, setSort] = useState("latest");
@@ -37,8 +39,10 @@ export default function ProductsPage() {
 
   // Load initial data
   useEffect(() => {
-    products.getAll({ limit: 20, sortBy: "createdAt", order: "desc" });
-    wishlist.fetchAll();
+    loadOnly(() => Promise.all([
+      products.getAll({ limit: 20, sortBy: "createdAt", order: "desc" }),
+      wishlist.fetchAll()
+    ]));
   }, []);
 
   // Reactive stores
@@ -119,7 +123,8 @@ export default function ProductsPage() {
   };
 
   const handleAddToCart = (product) => {
-    console.log("Add to cart:", product.name);
+    api.cart.addToCart(product);
+    toast.success(`${product.name} added to cart`);
   };
 
   const handleToggleWishlist = (product) => {

@@ -39,12 +39,12 @@ export const createCrud = ({ entity, urls, store, getRole }) => {
 
   const beginLoading = (key) => {
     loadingCounts[key] = (loadingCounts[key] || 0) + 1;
-    if (loadingCounts[key] === 1) store?.startLoading(key);
+    if (loadingCounts[key] === 1) store?.startLoading?.(key);
   };
 
   const endLoading = (key) => {
     loadingCounts[key] = Math.max((loadingCounts[key] || 1) - 1, 0);
-    if (loadingCounts[key] === 0) store?.stopLoading(key);
+    if (loadingCounts[key] === 0) store?.stopLoading?.(key);
   };
 
   Object.entries(urls).forEach(([key, config]) => {
@@ -125,19 +125,19 @@ export const createCrud = ({ entity, urls, store, getRole }) => {
         const data = res?.data;
 
         if (SET_KEYS.includes(key)) {
-          store.set(data || []);
+          store?.set?.(data || []);
           if (res?.pagination) {
-            store.setPagination(res.pagination);
+            store?.setPagination?.(res.pagination);
           }
         }
 
         if (ADD_KEYS.includes(key) && !callOptions.skipStore) {
-          store.add(data);
+          store?.add?.(data);
         }
 
         if (UPDATE_KEYS.includes(key)) {
-          store.update(args[0], data);
-          store?.setCurrent(data);
+          store?.update?.(args[0], data);
+          store?.setCurrent?.(data);
         }
 
         if (DELETE_KEYS.includes(key)) {
@@ -152,18 +152,18 @@ export const createCrud = ({ entity, urls, store, getRole }) => {
           }
 
           if (role !== 'super_admin') {
-            store.remove(args[0]);
+            store?.remove?.(args[0]);
           } else {
-            store.update(args[0], { deleted: true, active: false });
+            store?.update?.(args[0], { deleted: true, active: false });
           }
         }
 
         if (RETRIEVE_KEYS.includes(key)) {
-          store.update(args[0], { deleted: false, active: true });
+          store?.update?.(args[0], { deleted: false, active: true });
         }
 
         if (ERASE_KEYS.includes(key)) {
-          store.remove(args[0]);
+          store?.remove?.(args[0]);
         }
 
         const shouldToast = callOptions.toast !== false;

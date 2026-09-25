@@ -44,13 +44,20 @@ const eraseUsers = async () => {
   console.log(`  erased   ${result.deletedCount} user(s)`);
 };
 
-const seedUsers = async () => {
+const seedUsers = async (locations: any[]) => {
   await new User({
     name: 'Super Admin',
     email: 'admin@torquetoyz.com',
     phone: '9999999999',
     password: 'Password@123',
     role: 'admin',
+    address: {
+      door: '1A',
+      street: 'HQ Tech Park',
+      city: 'Admin City',
+      state: locations[0]._id,
+      pincode: 110001
+    }
   }).save();
   console.log('  created  1 admin user');
 
@@ -58,12 +65,20 @@ const seedUsers = async () => {
   for (let i = 0; i < COUNT; i++) {
     const first = pick(FIRST_NAMES);
     const last = pick(LAST_NAMES);
+    const loc = pick(locations);
     const user = await new User({
       name: `${first} ${last}`,
       email: `${first.toLowerCase()}.${last.toLowerCase()}${i}@example.com`,
       phone: `9${randInt(100000000, 999999999)}`,
       password: 'Password@123',
       role: 'user',
+      address: {
+        door: `${randInt(1, 500)}`,
+        street: `${pick(FIRST_NAMES)} Street`,
+        city: `${loc.state.split(' - ')[0]} City`,
+        state: loc._id,
+        pincode: randInt(100000, 999999)
+      }
     }).save();
     created.push(user);
   }
@@ -444,13 +459,13 @@ const run = async () => {
   await mongoose.connect(MONGO_URI);
   console.log('Connected.\n');
 
-  console.log('Users...');
-  await eraseUsers();
-  const users = await seedUsers();
-
-  console.log('\nLocations...');
+  console.log('Locations...');
   await eraseLocations();
   const locations = await seedLocations();
+
+  console.log('\nUsers...');
+  await eraseUsers();
+  const users = await seedUsers(locations);
 
   console.log('\nCategories...');
   await eraseCategories();

@@ -5,6 +5,11 @@ import Home from "@/pages/home/home";
 import Product from "@/pages/product/product";
 import Profile from "@/pages/profile/profile";
 import Wishlist from "@/pages/wishlist/wishlist";
+import Settings from "@/pages/settings/settings";
+import Cart from "@/pages/cart/cart";
+import Orders from "@/pages/orders/orders";
+import OrderTracking from "@/pages/order-tracking/order-tracking";
+import Checkout from "@/pages/checkout/checkout";
 
 export const appRoutes = [
   {
@@ -40,6 +45,31 @@ export const appRoutes = [
   {
     path: "/wishlist",
     element: <Wishlist />,
+    withLayout: true,
+  },
+  {
+    path: "/settings",
+    element: <Settings />,
+    withLayout: true,
+  },
+  {
+    path: "/cart",
+    element: <Cart />,
+    withLayout: true,
+  },
+  {
+    path: "/orders",
+    element: <Orders />,
+    withLayout: true,
+  },
+  {
+    path: "/orders/:id",
+    element: <OrderTracking />,
+    withLayout: true,
+  },
+  {
+    path: "/checkout",
+    element: <Checkout />,
     withLayout: true,
   },
 ];

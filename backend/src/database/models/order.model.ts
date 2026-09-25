@@ -43,6 +43,7 @@ export interface IStatusEntry {
 // ── Main order interface ─────────────────────────────────────────────
 
 export type OrderStatus =
+  | "in_cart"
   | "placed"
   | "confirmed"
   | "shipped"
@@ -50,12 +51,13 @@ export type OrderStatus =
   | "cancelled";
 
 export interface IOrder extends Document {
-  code: string;
-  user: Types.ObjectId;
+  code?: string;
+  user?: Types.ObjectId;
+  guest_id?: string;
   items: IOrderItem[];
-  shipping_address: IShippingAddress;
+  shipping_address?: IShippingAddress;
   pricing: IPricing;
-  payment: IPayment;
+  payment?: IPayment;
   status: OrderStatus;
   delivery_partner_url?: string;
   status_history: IStatusEntry[];
@@ -142,37 +144,31 @@ const StatusEntrySchema = new Schema<IStatusEntry>(
 
 const OrderSchema = new Schema<IOrder, IOrderModel>(
   {
-    code: { type: String, unique: true },
+    code: { type: String },
     user: {
       type: Schema.Types.ObjectId,
       ref: "User",
-      required: true,
     },
+    guest_id: { type: String },
     delivery_partner_url: { type: String, trim: true },
     items: {
       type: [OrderItemSchema],
-      required: true,
-      validate: {
-        validator: (arr: IOrderItem[]) => arr.length > 0,
-        message: "Order must contain at least one item",
-      },
+      default: [],
     },
     shipping_address: {
       type: ShippingAddressSchema,
-      required: true,
     },
     pricing: {
       type: PricingSchema,
-      required: true,
+      default: { subtotal: 0, total_weight: 0, shipping_cost: 0, total: 0 },
     },
     payment: {
       type: PaymentSchema,
-      required: true,
     },
     status: {
       type: String,
-      enum: ["placed", "confirmed", "shipped", "delivered", "cancelled"],
-      default: "placed",
+      enum: ["in_cart", "placed", "confirmed", "shipped", "delivered", "cancelled"],
+      default: "in_cart",
     },
     status_history: {
       type: [StatusEntrySchema],
@@ -194,13 +190,27 @@ OrderSchema.index({ status: 1 });
 // ── Hooks ────────────────────────────────────────────────────────────
 
 OrderSchema.pre("save", async function (this: IOrder & mongoose.Document) {
-  if (!this.isNew) return;
+  // If moving from in_cart to placed, assign code
+  if (this.isModified("status") && this.status === "placed" && !this.code) {
+    const next_seq = await getNextSequence("order");
+    this.code = `ORD-${String(next_seq).padStart(3, "0")}`;
+  }
 
-  const next_seq = await getNextSequence("order");
-  this.code = `ORD-${String(next_seq).padStart(3, "0")}`;
+  // Only validate required fields if not in_cart
+  if (this.status !== "in_cart") {
+    if (!this.user) throw new Error("User is required for checkout");
+    if (!this.shipping_address || !this.shipping_address.state) throw new Error("Shipping address is required for checkout");
+    if (this.items.length === 0) throw new Error("Order must contain at least one item");
+    if (!this.payment) throw new Error("Payment method is required");
+  }
 
-  // seed status_history with the initial "placed" entry
+  // seed status_history with the initial entry
   if (this.status_history.length === 0) {
+    this.status_history.push({
+      status: this.status,
+      timestamp: new Date(),
+    });
+  } else if (this.isModified("status")) {
     this.status_history.push({
       status: this.status,
       timestamp: new Date(),

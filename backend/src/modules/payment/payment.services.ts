@@ -8,7 +8,7 @@ export const createPaymentOrder = async (orderId: string) => {
   const order = await Order.findOne({ _id: orderId, deleted: false });
   if (!order) throw new ApiError(404, 'Order not found');
 
-  if (order.payment.method !== 'online') {
+  if (!order.payment || order.payment.method !== 'online') {
     throw new ApiError(400, 'This order is not set up for online payment');
   }
   if (order.payment.status === 'paid') {

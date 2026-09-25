@@ -1,5 +1,6 @@
 import { Router } from "express";
-import { authMiddleware } from "@core/middlewares/auth.middleware.js";
+import { authMiddleware } from "@core/middlewares/auth.middleware.ts";
+import { optionalAuthMiddleware } from "@core/middlewares/optionalAuth.middleware.ts";
 // import { accessControl } from '@core/middlewares/access.middleware.js';
 import { zodValidate } from "@core/middlewares/zod.validator.js";
 import {
@@ -19,9 +20,25 @@ import {
   deleteOrder,
   retrieveOrder,
   setDeliveryPartnerUrl,
-} from "./order.controller.js";
+  getDraft,
+  addItemToDraft,
+  updateDraftQuantity,
+  removeDraftItem,
+  updateDraftAddress,
+  clearDraft,
+  checkoutDraft
+} from "./order.controller.ts";
 
 const router = Router();
+
+// Draft (Cart) Routes
+router.get("/draft", optionalAuthMiddleware, getDraft);
+router.post("/draft/items", optionalAuthMiddleware, addItemToDraft);
+router.put("/draft/items", optionalAuthMiddleware, updateDraftQuantity);
+router.delete("/draft/items/:productId", optionalAuthMiddleware, removeDraftItem);
+router.put("/draft/address", optionalAuthMiddleware, updateDraftAddress);
+router.delete("/draft", optionalAuthMiddleware, clearDraft);
+router.post("/draft/checkout", optionalAuthMiddleware, checkoutDraft);
 
 router.use(authMiddleware);
 

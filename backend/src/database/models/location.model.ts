@@ -73,7 +73,10 @@ LocationSchema.statics.findRateForWeight = async function (
   const slab = location.slabs.find(
     (s: ITariffSlab) => kgs > s.min && kgs <= s.max,
   );
-  return slab ?? null;
+  
+  if (slab) return slab;
+
+  return null;
 };
 
 LocationSchema.statics.updateSlab = async function (

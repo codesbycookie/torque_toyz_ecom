@@ -256,8 +256,8 @@ describe("Payment API Endpoint Suite", () => {
     expect(paymentDoc!.razorpay_payment_id).to.equal(fakePaymentId);
 
     const order = await Order.findById(onlineOrderId);
-    expect(order!.payment.status).to.equal("paid");
-    expect(order!.payment.transaction_id).to.equal(fakePaymentId);
+    expect(order!.payment!.status).to.equal("paid");
+    expect(order!.payment!.transaction_id).to.equal(fakePaymentId);
     expect(order!.status).to.equal("confirmed");
   });
 
@@ -270,7 +270,7 @@ describe("Payment API Endpoint Suite", () => {
     tester.assertSuccess(res, "Refund processed successfully");
 
     const order = await Order.findById(onlineOrderId);
-    expect(order!.payment.status).to.equal("refunded");
+    expect(order!.payment!.status).to.equal("refunded");
     expect(order!.status).to.equal("cancelled");
   });
 

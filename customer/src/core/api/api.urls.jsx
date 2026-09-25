@@ -139,6 +139,12 @@ const apiurls = {
     clear: { method: "delete", url: () => `${base_url}/wishlists` },
   },
 
+  payments: {
+    createOrder: { method: "post", url: () => `${base_url}/payments/create-order` },
+    verify: { method: "post", url: () => `${base_url}/payments/verify` },
+    refund: { method: "post", url: () => `${base_url}/payments/refund` },
+  },
+
   settings: {
     get: { method: "get", url: () => `${base_url}/settings` },
     getRaw: { method: "get", url: () => `${base_url}/settings/raw` },

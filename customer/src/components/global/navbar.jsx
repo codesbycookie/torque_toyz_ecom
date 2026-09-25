@@ -1,12 +1,23 @@
+import { useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { ShoppingCart, Menu, Search, User } from "lucide-react";
+import { useAuth } from "@/core/contexts/auth.context";
+import { useApi } from "@/core/contexts/api.context";
 
 export default function Navbar() {
+
+  const { user } = useAuth();
+  const api = useApi();
+  
+  useEffect(() => {
+    api.cart.fetchCart();
+  }, []);
+
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 shadow-sm">
       <div className="container mx-auto flex h-16 items-center px-4 md:px-8">
-        
+
         {/* Logo & Desktop Nav */}
         <div className="mr-4 hidden md:flex">
           <Link to="/" className="mr-8 flex items-center space-x-2">
@@ -14,6 +25,7 @@ export default function Navbar() {
               TorqueToyz
             </span>
           </Link>
+          {user ? user.name || user.username : <></>}
           <nav className="flex items-center space-x-6 text-sm font-medium">
             <Link to="/products/cars" className="transition-colors hover:text-primary text-muted-foreground font-semibold">
               Cars
@@ -23,6 +35,12 @@ export default function Navbar() {
             </Link>
             <Link to="/products/accessories" className="transition-colors hover:text-primary text-muted-foreground font-semibold">
               Accessories
+            </Link>
+            <Link to="/orders" className="transition-colors hover:text-primary text-muted-foreground font-semibold">
+              Orders
+            </Link>
+            <Link to="/settings" className="transition-colors hover:text-primary text-muted-foreground font-semibold">
+              Settings
             </Link>
           </nav>
         </div>
@@ -52,7 +70,7 @@ export default function Navbar() {
               />
             </div>
           </div>
-          
+
           <nav className="flex items-center space-x-1">
             <Link to="/login">
               <Button variant="ghost" size="icon" className="rounded-full hidden sm:flex">
@@ -60,11 +78,17 @@ export default function Navbar() {
                 <span className="sr-only">Account</span>
               </Button>
             </Link>
-            <Button variant="ghost" size="icon" className="rounded-full relative">
-              <ShoppingCart className="h-5 w-5" />
-              <span className="absolute top-1 right-1 flex h-2 w-2 rounded-full bg-primary"></span>
-              <span className="sr-only">Cart</span>
-            </Button>
+            <Link to="/cart">
+              <Button variant="ghost" size="icon" className="rounded-full relative">
+                <ShoppingCart className="h-5 w-5" />
+                {api.cart.items.length > 0 && (
+                  <span className="absolute top-0 right-0 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground">
+                    {api.cart.items.length}
+                  </span>
+                )}
+                <span className="sr-only">Cart</span>
+              </Button>
+            </Link>
           </nav>
         </div>
       </div>
