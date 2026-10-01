@@ -128,7 +128,7 @@ export default function ProductsPage() {
   };
 
   const handleToggleWishlist = (product) => {
-    const alreadyWishlisted = wishlistedIds.includes(product._id);
+    const alreadyWishlisted = wishlistedIds.includes(product._id) || Boolean(product?.is_in_wishlist);
     wishlist.toggle(product, alreadyWishlisted);
   };
 
@@ -296,7 +296,7 @@ export default function ProductsPage() {
                 product={product}
                 onAddToCart={handleAddToCart}
                 onToggleWishlist={handleToggleWishlist}
-                isWishlisted={wishlistedIds.includes(product._id)}
+                isWishlisted={wishlistedIds.includes(product._id) || Boolean(product?.is_in_wishlist)}
               />
             ))}
           </div>

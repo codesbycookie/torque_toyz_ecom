@@ -20,9 +20,13 @@ import {
 import { toast } from "sonner";
 
 export default function Home() {
-  const { products } = useApi();
+  const { products, wishlist, cart } = useApi();
   const list = products.useStore((s) => s.list);
   const loading = products.useStore((s) => s.loading);
+
+  const wishlistItems = wishlist?.useStore((s) => s.list) || [];
+  const wishlistedIds = wishlistItems.map((p) => p._id);
+
   const [email, setEmail] = useState("");
   const navigate = useNavigate();
 
@@ -31,13 +35,13 @@ export default function Home() {
   }, []);
 
   const handleAddToCart = (product) => {
-    console.log("Add to cart:", product.name);
-    // later: cart.addItem(product)
+    cart.addToCart(product, 1);
+    toast.success(`${product.name} added to cart`);
   };
 
   const handleToggleWishlist = (product) => {
-    console.log("Toggle wishlist:", product.name);
-    // later: wishlist.toggle(product)
+    const isWish = wishlistedIds.includes(product._id) || Boolean(product?.is_in_wishlist);
+    wishlist.toggle(product, isWish);
   };
 
   const handleNewsletterSubmit = (e) => {
@@ -185,7 +189,7 @@ export default function Home() {
           loading={loading.getAll}
           onAddToCart={handleAddToCart}
           onToggleWishlist={handleToggleWishlist}
-          wishlistedIds={[]}
+          wishlistedIds={wishlistedIds}
           viewAllLink="/products?sort=latest"
         />
       </section>
@@ -211,7 +215,7 @@ export default function Home() {
             loading={loading.getAll}
             onAddToCart={handleAddToCart}
             onToggleWishlist={handleToggleWishlist}
-            wishlistedIds={[]}
+            wishlistedIds={wishlistedIds}
           />
         </div>
       </section>

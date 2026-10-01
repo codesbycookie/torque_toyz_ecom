@@ -43,7 +43,6 @@ export interface IStatusEntry {
 // ── Main order interface ─────────────────────────────────────────────
 
 export type OrderStatus =
-  | "in_cart"
   | "placed"
   | "confirmed"
   | "shipped"
@@ -71,12 +70,16 @@ export interface IOrder extends Document {
 }
 
 export interface IOrderModel extends Model<IOrder> {
-  getByUser(user_id: Types.ObjectId | string): Promise<IOrder[]>;
+  createOrder(data: any): Promise<IOrder>;
   updateStatus(
     order_id: Types.ObjectId | string,
     status: OrderStatus,
     note?: string
   ): Promise<IOrder | null>;
+  updateDeliveryPartnerUrl(id: string, url: string): Promise<IOrder | null>;
+  removeOrder(id: string): Promise<IOrder | null>;
+  retrieveOrder(id: string): Promise<IOrder | null>;
+  eraseOrder(id: string): Promise<IOrder | null>;
 }
 
 // ── Sub-schemas ──────────────────────────────────────────────────────
@@ -167,8 +170,8 @@ const OrderSchema = new Schema<IOrder, IOrderModel>(
     },
     status: {
       type: String,
-      enum: ["in_cart", "placed", "confirmed", "shipped", "delivered", "cancelled"],
-      default: "in_cart",
+      enum: ["placed", "confirmed", "shipped", "delivered", "cancelled"],
+      default: "placed",
     },
     status_history: {
       type: [StatusEntrySchema],
@@ -190,19 +193,15 @@ OrderSchema.index({ status: 1 });
 // ── Hooks ────────────────────────────────────────────────────────────
 
 OrderSchema.pre("save", async function (this: IOrder & mongoose.Document) {
-  // If moving from in_cart to placed, assign code
-  if (this.isModified("status") && this.status === "placed" && !this.code) {
+  if (!this.code) {
     const next_seq = await getNextSequence("order");
     this.code = `ORD-${String(next_seq).padStart(3, "0")}`;
   }
 
-  // Only validate required fields if not in_cart
-  if (this.status !== "in_cart") {
-    if (!this.user) throw new Error("User is required for checkout");
-    if (!this.shipping_address || !this.shipping_address.state) throw new Error("Shipping address is required for checkout");
-    if (this.items.length === 0) throw new Error("Order must contain at least one item");
-    if (!this.payment) throw new Error("Payment method is required");
-  }
+  if (!this.user && !this.guest_id) throw new Error("User or Guest ID is required for checkout");
+  if (!this.shipping_address || !this.shipping_address.state) throw new Error("Shipping address is required for checkout");
+  if (this.items.length === 0) throw new Error("Order must contain at least one item");
+  if (!this.payment) throw new Error("Payment method is required");
 
   // seed status_history with the initial entry
   if (this.status_history.length === 0) {
@@ -220,10 +219,8 @@ OrderSchema.pre("save", async function (this: IOrder & mongoose.Document) {
 
 // ── Statics ──────────────────────────────────────────────────────────
 
-OrderSchema.statics.getByUser = async function (
-  user_id: Types.ObjectId | string
-): Promise<IOrder[]> {
-  return this.find({ user: user_id, deleted: false }).sort({ createdAt: -1 });
+OrderSchema.statics.createOrder = async function (data: any): Promise<IOrder> {
+  return new this(data).save();
 };
 
 OrderSchema.statics.updateStatus = async function (
@@ -245,6 +242,37 @@ OrderSchema.statics.updateStatus = async function (
     },
     { new: true }
   );
+};
+
+OrderSchema.statics.updateDeliveryPartnerUrl = async function (
+  id: string,
+  url: string
+): Promise<IOrder | null> {
+  return this.findOneAndUpdate(
+    { _id: id, deleted: false },
+    { $set: { delivery_partner_url: url } },
+    { new: true }
+  );
+};
+
+OrderSchema.statics.removeOrder = async function (id: string): Promise<IOrder | null> {
+  return this.findByIdAndUpdate(
+    id,
+    { deleted: true, deletedAt: new Date() },
+    { new: true }
+  );
+};
+
+OrderSchema.statics.retrieveOrder = async function (id: string): Promise<IOrder | null> {
+  return this.findByIdAndUpdate(
+    id,
+    { deleted: false, $unset: { deletedAt: 1 } },
+    { new: true }
+  );
+};
+
+OrderSchema.statics.eraseOrder = async function (id: string): Promise<IOrder | null> {
+  return this.findByIdAndDelete(id);
 };
 
 export default mongoose.model<IOrder, IOrderModel>("Order", OrderSchema);

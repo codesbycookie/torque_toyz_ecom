@@ -1,5 +1,6 @@
 import { toast } from "sonner";
 import { useWishlistStore } from "./wishlist.store";
+import { useProductStore } from "@/modules/product/product.store";
 import { createCrud } from "@/core/factory/entity.crud";
 import { apiurls } from "@/core/api/api.urls";
 
@@ -25,6 +26,44 @@ export const useWishlistModule = () => {
     getRole: () => null,
   });
 
+  const syncProductWishlistState = (wishlistProductList) => {
+    const wishlistedIds = new Set((wishlistProductList || []).map((p) => p._id || p));
+    const productStore = useProductStore.getState();
+
+    if (productStore.list?.length) {
+      const updatedList = productStore.list.map((p) => ({
+        ...p,
+        is_in_wishlist: wishlistedIds.has(p._id),
+      }));
+      productStore.set(updatedList);
+    }
+
+    if (productStore.current) {
+      productStore.setCurrent({
+        ...productStore.current,
+        is_in_wishlist: wishlistedIds.has(productStore.current._id),
+      });
+    }
+  };
+
+  const updateProductWishlistState = (productId, isInWishlist) => {
+    const productStore = useProductStore.getState();
+
+    if (productStore.current && productStore.current._id === productId) {
+      productStore.setCurrent({
+        ...productStore.current,
+        is_in_wishlist: isInWishlist,
+      });
+    }
+
+    if (productStore.list?.length) {
+      const updatedList = productStore.list.map((p) =>
+        p._id === productId ? { ...p, is_in_wishlist: isInWishlist } : p
+      );
+      productStore.set(updatedList);
+    }
+  };
+
   const fetchAll = async () => {
     let res = null;
     try {
@@ -38,11 +77,13 @@ export const useWishlistModule = () => {
 
     useWishlistStore.getState().setCurrent(res || null);
     useWishlistStore.getState().set(list);
+    syncProductWishlistState(list);
     return list;
   };
 
   const addProduct = async (productId) => {
     try {
+      updateProductWishlistState(productId, true);
       const res = await crud.addProduct(
         { product: productId },
         { __options: { toast: false } }
@@ -51,12 +92,14 @@ export const useWishlistModule = () => {
       toast.success("Added to wishlist");
       return res;
     } catch (err) {
+      updateProductWishlistState(productId, false);
       throw err;
     }
   };
 
   const removeProduct = async (productId) => {
     try {
+      updateProductWishlistState(productId, false);
       const res = await crud.removeProduct(productId, {
         __options: { toast: false },
       });
@@ -64,6 +107,7 @@ export const useWishlistModule = () => {
       toast.success("Removed from wishlist");
       return res;
     } catch (err) {
+      updateProductWishlistState(productId, true);
       throw err;
     }
   };
@@ -73,6 +117,7 @@ export const useWishlistModule = () => {
       const res = await crud.clear({ __options: { toast: false } });
       useWishlistStore.getState().setCurrent(res || null);
       useWishlistStore.getState().set(res?.products || []);
+      syncProductWishlistState([]);
       toast.success("Wishlist cleared");
       return res;
     } catch (err) {

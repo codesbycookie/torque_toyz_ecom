@@ -1,7 +1,10 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import formatdate from "@/core/utils/formatdate.util"
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import formatdate from "@/core/utils/formatdate.util";
 import { useState } from "react";
+import { toast } from "sonner";
 import {
   DialogClose,
   DialogContent,
@@ -21,10 +24,12 @@ import { ORDER_STATUS_VARIANT } from "./order.schema";
 
 export const ChangeOrderStatus = ({
   order,
+  initialStatus,
   submitFn = () => {},
   closeModal = () => {},
 }) => {
-  const [status, setStatus] = useState(order?.status || "");
+  const [status, setStatus] = useState(initialStatus || order?.status || "");
+  const [trackingUrl, setTrackingUrl] = useState(order?.delivery_partner_url || "");
   const [submitting, setSubmitting] = useState(false);
 
   if (!order) return null;
@@ -32,13 +37,18 @@ export const ChangeOrderStatus = ({
   const statusOptions = Object.keys(ORDER_STATUS_VARIANT);
 
   const handleSubmit = async () => {
-    if (status === order.status) {
+    const isUnchanged = status === order.status && trackingUrl.trim() === (order.delivery_partner_url || "");
+    if (isUnchanged) {
       closeModal();
+      return;
+    }
+    if (status === "shipped" && !trackingUrl.trim()) {
+      toast.error("Please enter a tracking URL for shipped orders");
       return;
     }
     try {
       setSubmitting(true);
-      await submitFn(order, status);
+      await submitFn(order, status, trackingUrl.trim());
       closeModal();
     } finally {
       setSubmitting(false);
@@ -51,7 +61,7 @@ export const ChangeOrderStatus = ({
         <DialogTitle>Change Order Status</DialogTitle>
         <DialogDescription>
           Update the status for order{" "}
-          <span className="font-medium">{order.code}</span>
+          <span className="font-medium font-mono">{order.code}</span>
         </DialogDescription>
       </DialogHeader>
 
@@ -64,7 +74,7 @@ export const ChangeOrderStatus = ({
         </div>
 
         <div className="space-y-2">
-          <span className="text-sm text-muted-foreground">New Status</span>
+          <span className="text-sm font-medium text-muted-foreground">New Status</span>
           <Select value={status} onValueChange={setStatus}>
             <SelectTrigger className="w-full">
               <SelectValue placeholder="Select status" />
@@ -78,6 +88,25 @@ export const ChangeOrderStatus = ({
             </SelectContent>
           </Select>
         </div>
+
+        {status === "shipped" && (
+          <div className="space-y-2 pt-2 animate-in fade-in duration-300">
+            <Label htmlFor="trackingUrl" className="text-sm font-medium">
+              Tracking URL (Delivery Partner URL) <span className="text-destructive">*</span>
+            </Label>
+            <Input
+              id="trackingUrl"
+              type="url"
+              placeholder="https://courier-tracking.com/track/..."
+              value={trackingUrl}
+              onChange={(e) => setTrackingUrl(e.target.value)}
+              required
+            />
+            <p className="text-xs text-muted-foreground">
+              This link will be embedded in an iframe on the customer's tracking page.
+            </p>
+          </div>
+        )}
       </div>
 
       <DialogFooter className="mt-4 gap-2">
@@ -88,7 +117,7 @@ export const ChangeOrderStatus = ({
         </DialogClose>
         <Button
           size="lg"
-          disabled={submitting || status === order.status}
+          disabled={submitting || (status === order.status && trackingUrl.trim() === (order.delivery_partner_url || ""))}
           onClick={handleSubmit}
         >
           {submitting ? "Updating..." : "Update Status"}

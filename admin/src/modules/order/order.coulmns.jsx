@@ -83,7 +83,13 @@ export const useOrderColumns = (orders) => {
                         key={s}
                         disabled={order.status === s}
                         variant={s === "cancelled" ? "destructive" : undefined}
-                        onClick={() => orders.setStatus(order, s)}
+                        onClick={() => {
+                          if (s === "shipped") {
+                            orders.openChangeStatus(order, "shipped");
+                          } else {
+                            orders.setStatus(order, s);
+                          }
+                        }}
                       >
                         {order.status === s && <Check className="size-4" />}
                         <span className="capitalize">{s}</span>

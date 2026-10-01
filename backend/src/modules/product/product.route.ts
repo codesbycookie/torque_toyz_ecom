@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { upload } from '@config/cloudinary.config.ts';
 import { parseProductUpload } from '@core/middlewares/uploadparser.middleware.ts';
 import { authMiddleware } from '@core/middlewares/auth.middleware.js';
+import { optionalAuthMiddleware } from '@core/middlewares/optionalAuth.middleware.ts';
 // import { accessControl } from '@core/middlewares/access.middleware.js';
 import { zodValidate } from '@core/middlewares/zod.validator.js';
 import {
@@ -28,9 +29,10 @@ const router = Router();
 // router.use(accessControl);
 
 
-router.get('/', getAllProducts);
-router.get('/:id', getProductById);
-router.get('/:slug', getProductBySlug);
+router.get('/', optionalAuthMiddleware, getAllProducts);
+router.get('/:id', optionalAuthMiddleware, getProductById);
+router.get('/slug/:slug', optionalAuthMiddleware, getProductBySlug);
+router.get('/:slug', optionalAuthMiddleware, getProductBySlug);
 
 router.use(authMiddleware);
 

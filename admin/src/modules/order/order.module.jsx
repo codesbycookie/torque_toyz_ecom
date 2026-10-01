@@ -42,12 +42,16 @@ export const useOrderModule = (exported) => {
     });
   };
 
-  // Admin action: change order status. Updates via API then syncs
-  // status_history locally.
-  const setStatus = (order, status) => {
-    if (order.status === status) return;
+  const setStatus = async (order, status, trackingUrl) => {
+    if (order.status === status && !trackingUrl) return;
 
-    return crud.updateStatus(order._id, { status }).then(() => {
+    if (trackingUrl) {
+      await crud.updateDeliveryPartnerUrl(order._id, { delivery_partner_url: trackingUrl });
+      update(order._id, { delivery_partner_url: trackingUrl });
+    }
+
+    if (order.status !== status) {
+      await crud.updateStatus(order._id, { status });
       update(order._id, {
         status,
         status_history: [
@@ -55,14 +59,16 @@ export const useOrderModule = (exported) => {
           { status, timestamp: new Date().toISOString() },
         ],
       });
-      toast.success(`Order ${order.code} marked as ${status}`);
-    });
+    }
+
+    toast.success(`Order ${order.code} updated to ${status}`);
   };
 
-  const openChangeStatus = (order) => {
+  const openChangeStatus = (order, initialStatus) => {
     return openModal(modals.changeStatus, {
       order,
-      submitFn: (order, status) => setStatus(order, status),
+      initialStatus,
+      submitFn: (order, status, trackingUrl) => setStatus(order, status, trackingUrl),
       exported,
     });
   };

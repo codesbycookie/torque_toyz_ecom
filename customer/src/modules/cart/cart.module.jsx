@@ -18,7 +18,7 @@ export const useCartModule = () => {
   const fetchCart = async () => {
     try {
       store.setLoading(true);
-      const res = await apiRequest("get", "http://localhost:3000/api/v1/orders/draft", {
+      const res = await apiRequest("get", "http://localhost:3000/api/v1/cart", {
         headers: getHeaders(),
       });
       if (res?.data) {
@@ -34,7 +34,7 @@ export const useCartModule = () => {
   const addToCart = async (product, quantity = 1) => {
     try {
       store.setLoading(true);
-      const res = await apiRequest("post", "http://localhost:3000/api/v1/orders/draft/items", {
+      const res = await apiRequest("post", "http://localhost:3000/api/v1/cart/items", {
         headers: getHeaders(),
         data: { productId: product._id || product.id, quantity },
       });
@@ -49,7 +49,7 @@ export const useCartModule = () => {
   const updateQuantity = async (productId, quantity) => {
     try {
       store.setLoading(true);
-      const res = await apiRequest("put", "http://localhost:3000/api/v1/orders/draft/items", {
+      const res = await apiRequest("put", "http://localhost:3000/api/v1/cart/items", {
         headers: getHeaders(),
         data: { productId, quantity },
       });
@@ -64,7 +64,7 @@ export const useCartModule = () => {
   const removeFromCart = async (productId) => {
     try {
       store.setLoading(true);
-      const res = await apiRequest("delete", `http://localhost:3000/api/v1/orders/draft/items/${productId}`, {
+      const res = await apiRequest("delete", `http://localhost:3000/api/v1/cart/items/${productId}`, {
         headers: getHeaders(),
       });
       if (res?.data) store.setCart(res.data);
@@ -78,7 +78,7 @@ export const useCartModule = () => {
   const updateShippingAddress = async (shipping_address) => {
     try {
       store.setLoading(true);
-      const res = await apiRequest("put", "http://localhost:3000/api/v1/orders/draft/address", {
+      const res = await apiRequest("put", "http://localhost:3000/api/v1/cart/address", {
         headers: getHeaders(),
         data: { shipping_address },
       });
@@ -93,7 +93,7 @@ export const useCartModule = () => {
   const clearCart = async () => {
     try {
       store.setLoading(true);
-      const res = await apiRequest("delete", "http://localhost:3000/api/v1/orders/draft", {
+      const res = await apiRequest("delete", "http://localhost:3000/api/v1/cart", {
         headers: getHeaders(),
       });
       if (res?.data) store.setCart(res.data);
@@ -107,7 +107,7 @@ export const useCartModule = () => {
   const checkoutDraft = async (payment_method) => {
     try {
       store.setLoading(true);
-      const res = await apiRequest("post", "http://localhost:3000/api/v1/orders/draft/checkout", {
+      const res = await apiRequest("post", "http://localhost:3000/api/v1/cart/checkout", {
         headers: getHeaders(),
         data: { payment_method },
       });

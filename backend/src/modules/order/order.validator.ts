@@ -27,6 +27,11 @@ export const updatePaymentStatusSchema = z.object({
     transaction_id: z.string().trim().optional(),
 });
 
-export const updateDeliveryPartnerUrl = z.object({
-    url: z.string().url()
-})
+export const updateDeliveryPartnerUrl = z
+  .object({
+    url: z.string().trim().optional(),
+    delivery_partner_url: z.string().trim().optional(),
+  })
+  .refine((data) => Boolean(data.url || data.delivery_partner_url), {
+    message: "url or delivery_partner_url is required",
+  });

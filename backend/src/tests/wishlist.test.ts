@@ -55,14 +55,15 @@ console.log('BODY:', res.body);
   it('should successfully add a product to the wishlist, auto-creating it', async () => {
     const res = await tester.post(baseRoute, { product: testProductId }, token);
     tester.assertUpdated(res, 'wishlist');
-    expect(res.body.data.products).to.include(testProductId);
+    const productIds = res.body.data.products.map((p: any) => p._id || p.toString());
+    expect(productIds).to.include(testProductId);
   });
 
   it('should not duplicate a product added twice', async () => {
     await tester.post(baseRoute, { product: testProductId }, token);
     const res = await tester.get(baseRoute, token);
     tester.assertFetched(res, 'wishlist');
-    const count = res.body.data.products.filter((p: string) => p === testProductId).length;
+    const count = res.body.data.products.filter((p: any) => (p._id || p.toString()) === testProductId).length;
     expect(count).to.equal(1);
   });
 
@@ -75,7 +76,8 @@ console.log('BODY:', res.body);
   it('should successfully remove a product from the wishlist', async () => {
     const res = await tester.delete(`${baseRoute}/${testProductId}`, token);
     tester.assertUpdated(res, 'wishlist');
-    expect(res.body.data.products).to.not.include(testProductId);
+    const productIds = res.body.data.products.map((p: any) => p._id || p.toString());
+    expect(productIds).to.not.include(testProductId);
     expect(res.body.data.products).to.have.length(1);
   });
 

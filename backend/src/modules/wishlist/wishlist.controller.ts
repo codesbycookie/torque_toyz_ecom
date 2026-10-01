@@ -8,7 +8,7 @@ import { AccessRequest } from '@core/middlewares/access.middleware.ts';
 const controllers = {
   getMyWishlist: async (req: AccessRequest, res: Response) => {
     const userId = req.user!.id;
-    const wishlist = await service.getWishlistByUser(userId);
+    const wishlist = await service.getWishlistByUser(userId, req.query);
     if (!wishlist) return sendResponse.notFound(res, 'wishlist');
     return sendResponse.fetched(res, 'wishlist', wishlist);
   },

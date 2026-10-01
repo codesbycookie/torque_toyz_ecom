@@ -27,8 +27,8 @@ import { toast } from "sonner";
 
 export default function ProductDetail() {
   const { slug } = useParams();
-  const navigate = useNavigate();
-  const { products } = useApi();
+  const api = useApi();
+  const { products, wishlist, cart } = api;
 
   const [selectedImage, setSelectedImage] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -36,6 +36,9 @@ export default function ProductDetail() {
   // Get product from store
   const product = products.useStore((s) => s.current);
   const storeLoading = products.useStore((s) => s.loading);
+
+  const wishlistItems = wishlist.useStore((s) => s.list);
+  const isWishlisted = Boolean(product?.is_in_wishlist) || wishlistItems.some((p) => p._id === product?._id);
 
   useEffect(() => {
     if (!slug) return;
@@ -82,12 +85,16 @@ export default function ProductDetail() {
       : null;
 
   const handleAddToCart = () => {
-    console.log("Add to cart:", product.name);
-    toast.success("Added to cart");
+    if (product) {
+      cart.addToCart(product, 1);
+      toast.success(`${product.name} added to cart`);
+    }
   };
 
   const handleToggleWishlist = () => {
-    console.log("Toggle wishlist:", product.name);
+    if (product) {
+      wishlist.toggle(product, isWishlisted);
+    }
   };
 
   return (
@@ -172,7 +179,12 @@ export default function ProductDetail() {
                   variant="outline"
                   onClick={handleToggleWishlist}
                 >
-                  <Heart className="size-4" />
+                  <Heart
+                    className={cn(
+                      "size-4",
+                      isWishlisted && "fill-rose-500 text-rose-500"
+                    )}
+                  />
                 </Button>
               </div>
             </div>
@@ -249,7 +261,12 @@ export default function ProductDetail() {
                 variant="outline"
                 onClick={handleToggleWishlist}
               >
-                <Heart className="size-5" />
+                <Heart
+                  className={cn(
+                    "size-5",
+                    isWishlisted && "fill-rose-500 text-rose-500"
+                  )}
+                />
               </Button>
             </div>
 

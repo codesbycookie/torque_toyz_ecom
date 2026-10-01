@@ -32,12 +32,19 @@ export default function Orders() {
   };
 
   const getStatusColor = (status) => {
-    switch (status) {
-      case "Delivered": return "bg-green-500 hover:bg-green-600";
-      case "Shipped": return "bg-blue-500 hover:bg-blue-600";
-      case "Processing": return "bg-yellow-500 hover:bg-yellow-600 text-yellow-950";
-      default: return "bg-gray-500 hover:bg-gray-600";
+    switch (status?.toLowerCase()) {
+      case "delivered": return "bg-emerald-600 text-white hover:bg-emerald-700";
+      case "shipped": return "bg-blue-600 text-white hover:bg-blue-700";
+      case "confirmed": return "bg-amber-500 text-black hover:bg-amber-600";
+      case "placed": return "bg-sky-600 text-white hover:bg-sky-700";
+      case "cancelled": return "bg-red-600 text-white hover:bg-red-700";
+      default: return "bg-secondary text-secondary-foreground";
     }
+  };
+
+  const formatStatus = (status) => {
+    if (!status) return "Placed";
+    return status.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
   };
 
   return (
@@ -88,12 +95,17 @@ export default function Orders() {
               ) : (
                 orderList.map((order) => (
                   <TableRow key={order._id || order.id}>
-                    <TableCell className="font-medium">{order.code || order._id || order.id}</TableCell>
-                    <TableCell>{new Date(order.createdAt || order.date).toLocaleDateString()}</TableCell>
-                    <TableCell>${(order.pricing?.total || order.total || 0).toFixed(2)} <span className="text-muted-foreground text-sm">({order.products?.length || order.items?.length || 0} items)</span></TableCell>
+                    <TableCell className="font-medium font-mono">{order.code || order._id || order.id}</TableCell>
+                    <TableCell>{new Date(order.createdAt || order.date).toLocaleDateString("en-IN")}</TableCell>
+                    <TableCell>
+                      ₹{(order.pricing?.total || order.total || 0).toLocaleString("en-IN", { minimumFractionDigits: 2 })}{" "}
+                      <span className="text-muted-foreground text-xs">
+                        ({order.items?.length || order.products?.length || 0} {order.items?.length === 1 ? "item" : "items"})
+                      </span>
+                    </TableCell>
                     <TableCell>
                       <Badge className={`border-none ${getStatusColor(order.status)}`}>
-                        {order.status || "Pending"}
+                        {formatStatus(order.status)}
                       </Badge>
                     </TableCell>
                     <TableCell className="text-right">
