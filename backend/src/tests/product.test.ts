@@ -88,6 +88,13 @@ describe('Product API Endpoint Suite', () => {
     tester.assertFetched(res, 'product');
   });
 
+  it('should allow fetching product by slug without auth', async () => {
+    const product = await Product.findById(createdProductId);
+    const res = await tester.get(`${baseRoute}/slug/${product!.slug}`);
+    tester.assertFetched(res, 'product');
+    expect(res.body.data._id).to.equal(createdProductId);
+  });
+
   it('should successfully filter products by category', async () => {
     const res = await tester.get(`${baseRoute}?category=${testCategoryId}`);
     tester.assertFetched(res, 'product');

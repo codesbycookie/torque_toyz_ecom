@@ -17,6 +17,7 @@ import {
     getInventoryVelocity,
     getMostWishlistedProducts,
     getMostReviewedProducts,
+    getCancelledPaidOrders,
 } from './analytics.controller.js';
 
 const router = Router();
@@ -95,6 +96,18 @@ router.get(
     '/most-reviewed',
     zodValidate(dateRangeQuerySchema, 'query', 'DateRangeQuerySchema'),
     getMostReviewedProducts
+);
+
+router.get(
+    '/cancelled-paid-orders',
+    zodValidate(dateRangeQuerySchema, 'query', 'DateRangeQuerySchema'),
+    getCancelledPaidOrders
+);
+
+router.get(
+    '/pending-refunds',
+    zodValidate(dateRangeQuerySchema, 'query', 'DateRangeQuerySchema'),
+    getCancelledPaidOrders
 );
 
 export default router;

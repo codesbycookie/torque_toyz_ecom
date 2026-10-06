@@ -22,9 +22,10 @@ export interface IProduct extends Document {
 
 interface IProductModel extends mongoose.Model<IProduct> {
   getProductBySlug(slug: string): Promise<IProduct | null>;
+  findBySlug(slug: string): Promise<IProduct | null>;
 }
 
-const ProductSchema = new Schema<IProduct>(
+const ProductSchema = new Schema<IProduct, IProductModel>(
   {
     code: { type: String, unique: true },
     name: { type: String, required: true, trim: true },
@@ -75,8 +76,16 @@ ProductSchema.virtual("reviews", {
   options: { sort: { createdAt: -1 } },
 });
 
+ProductSchema.statics.getProductBySlug = function (slug: string) {
+  return this.findOne({ slug, deleted: false }).populate("category").populate({
+    path: "reviews",
+    match: { deleted: false, active: true },
+    options: { sort: { createdAt: -1 } },
+  });
+};
+
 ProductSchema.statics.findBySlug = function (slug: string) {
-  return this.findOne({ slug, deleted: false });
+  return this.getProductBySlug(slug);
 };
 
 const slugify = (text: string) =>

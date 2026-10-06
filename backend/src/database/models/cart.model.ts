@@ -51,6 +51,7 @@ const ShippingAddressSchema = new Schema<IShippingAddress>(
 const PricingSchema = new Schema<IPricing>(
   {
     subtotal: { type: Number, required: true, min: 0 },
+    tax: { type: Number, required: true, min: 0, default: 0 },
     total_weight: { type: Number, required: true, min: 0 },
     shipping_cost: { type: Number, required: true, min: 0 },
     total: { type: Number, required: true, min: 0 },
@@ -74,7 +75,7 @@ const CartSchema = new Schema<ICart, ICartModel>(
     },
     pricing: {
       type: PricingSchema,
-      default: { subtotal: 0, total_weight: 0, shipping_cost: 0, total: 0 },
+      default: { subtotal: 0, tax: 0, total_weight: 0, shipping_cost: 0, total: 0 },
     },
     active: { type: Boolean, default: true },
     deleted: { type: Boolean, default: false },

@@ -45,12 +45,12 @@ export default function ProductsPage() {
     ]));
   }, []);
 
-  // Reactive stores
-  const list = products.useStore((s) => s.list);
-  const loading = products.useStore((s) => s.loading);
-  const query = products.useStore((s) => s.query);
+  // Reactive module properties
+  const list = products.list || [];
+  const loading = products.loading || {};
+  const query = products.query || {};
 
-  const wishlistItems = wishlist.useStore((s) => s.list);
+  const wishlistItems = wishlist.list || [];
   const wishlistedIds = wishlistItems.map((p) => p._id);
 
   // ─── Search (debounced) ──────────────────────────────────

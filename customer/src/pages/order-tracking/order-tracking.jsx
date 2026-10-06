@@ -1,9 +1,28 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import {
+  AlertDialog,
+  AlertDialogTrigger,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogCancel,
+  AlertDialogAction,
+} from "@/components/ui/alert-dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { toast } from "sonner";
 import {
   CheckCircle2,
   Circle,
@@ -16,7 +35,9 @@ import {
   CreditCard,
   MapPin,
   Clock,
-  ArrowLeft
+  ArrowLeft,
+  XCircle,
+  Ban,
 } from "lucide-react";
 import { useApi } from "@/core/contexts/api.context";
 import { useLoader } from "@/core/hooks/useLoader";
@@ -27,20 +48,36 @@ export default function OrderTracking() {
   const { orders } = useApi();
   const { loadOnly, loading } = useLoader();
 
+  const [cancelReason, setCancelReason] = useState("Changed my mind");
+  const [isCancelling, setIsCancelling] = useState(false);
+
   useEffect(() => {
     if (id) {
       loadOnly(async () => {
         try {
-          const res = await orders.crud.getOne(id, { __options: { toast: false } });
-          orders.setCurrent(res?.data || res || null);
-        } catch (err) {
+          await orders.getOne(id);
+        } catch {
           orders.setCurrent(null);
         }
       });
     }
   }, [id]);
 
-  const orderDetails = orders.useStore((s) => s.current);
+  const orderDetails = orders.current;
+
+  const handleCancelOrder = async () => {
+    if (!orderDetails) return;
+    const orderId = orderDetails._id || orderDetails.id;
+    try {
+      setIsCancelling(true);
+      await orders.cancelOrder(orderId, cancelReason);
+      toast.success("Order cancelled successfully");
+    } catch {
+      toast.error("Failed to cancel order");
+    } finally {
+      setIsCancelling(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -65,7 +102,9 @@ export default function OrderTracking() {
     );
   }
 
-  const isCancelled = orderDetails.status === "cancelled";
+  const statusLower = orderDetails.status?.toLowerCase();
+  const isCancelled = statusLower === "cancelled";
+  const canCancel = ["placed", "confirmed"].includes(statusLower);
 
   // Build status history lookup map
   const historyMap = {};
@@ -105,7 +144,7 @@ export default function OrderTracking() {
     delivered: 4,
   };
 
-  const currentRank = statusRankMap[orderDetails.status?.toLowerCase()] || (isCancelled ? 0 : 1);
+  const currentRank = statusRankMap[statusLower] || (isCancelled ? 0 : 1);
 
   const pipelineSteps = [
     {
@@ -172,6 +211,7 @@ export default function OrderTracking() {
 
   return (
     <div className="container mx-auto p-6 max-w-5xl animate-in fade-in zoom-in duration-500 space-y-6">
+      {/* Page Header & Actions */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b pb-6">
         <div>
           <div className="flex items-center gap-3">
@@ -191,11 +231,63 @@ export default function OrderTracking() {
             })}
           </p>
         </div>
-        <Button variant="outline" onClick={() => navigate("/orders")}>
-          <ArrowLeft className="mr-2 h-4 w-4" /> Back to Orders
-        </Button>
+
+        <div className="flex items-center gap-3">
+          <Button variant="outline" onClick={() => navigate("/orders")}>
+            <ArrowLeft className="mr-2 h-4 w-4" /> Back to Orders
+          </Button>
+
+          {/* Cancel Order Dialog Trigger */}
+          {canCancel && (
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button variant="destructive" className="gap-2" disabled={isCancelling}>
+                  <Ban className="h-4 w-4" /> Cancel Order
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle className="flex items-center gap-2 text-destructive">
+                    <XCircle className="h-5 w-5" /> Cancel Order #{orderDetails.code || orderDetails._id}?
+                  </AlertDialogTitle>
+                  <AlertDialogDescription className="space-y-3 pt-2">
+                    <span>
+                      Are you sure you want to cancel this order? This action cannot be undone and item quantities will be restocked.
+                    </span>
+                    <div className="space-y-1.5 text-left pt-2">
+                      <label className="text-xs font-semibold text-foreground">Reason for Cancellation:</label>
+                      <Select value={cancelReason} onValueChange={setCancelReason}>
+                        <SelectTrigger className="h-9 text-xs">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Changed my mind">Changed my mind</SelectItem>
+                          <SelectItem value="Ordered by mistake">Ordered by mistake</SelectItem>
+                          <SelectItem value="Incorrect shipping address">Incorrect shipping address</SelectItem>
+                          <SelectItem value="Found a better price elsewhere">Found a better price elsewhere</SelectItem>
+                          <SelectItem value="Delivery time is too long">Delivery time is too long</SelectItem>
+                          <SelectItem value="Other">Other reason</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Keep Order</AlertDialogCancel>
+                  <AlertDialogAction
+                    onClick={handleCancelOrder}
+                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                  >
+                    Confirm Cancellation
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          )}
+        </div>
       </div>
 
+      {/* Cancelled Alert Banner */}
       {isCancelled && (
         <Card className="border-destructive/40 bg-destructive/10">
           <CardContent className="pt-6 flex items-start gap-4">
@@ -215,7 +307,8 @@ export default function OrderTracking() {
         </Card>
       )}
 
-      {orderDetails.delivery_partner_url && (
+      {/* Live Carrier Tracking Feed */}
+      {orderDetails.delivery_partner_url && !isCancelled && (
         <Card className="overflow-hidden border-primary/30 shadow-md">
           <CardHeader className="bg-muted/30 pb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b">
             <div>
@@ -349,6 +442,10 @@ export default function OrderTracking() {
               <div className="flex justify-between text-sm">
                 <span className="text-muted-foreground">Subtotal</span>
                 <span>₹{(orderDetails.pricing?.subtotal || 0).toLocaleString("en-IN", { minimumFractionDigits: 2 })}</span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">GST / Tax</span>
+                <span>₹{(orderDetails.pricing?.tax || 0).toLocaleString("en-IN", { minimumFractionDigits: 2 })}</span>
               </div>
               <div className="flex justify-between text-sm">
                 <span className="text-muted-foreground">Shipping</span>

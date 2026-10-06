@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { MoreHorizontal, Check } from "lucide-react";
 import { Hint } from "@/core/utils/tooltip.util";
-import { ORDER_STATUSES, ORDER_STATUS_VARIANT } from "./order.schema";
+import { ORDER_STATUSES, ORDER_STATUS_VARIANT, ORDER_STATUS_STYLES, PAYMENT_STATUS_STYLES, getStatusItemState, getCancelLabel } from "./order.schema";
 import { safeId } from "@/core/utils/normalize-id";
 
 export const useOrderColumns = (orders) => {
@@ -41,20 +41,26 @@ export const useOrderColumns = (orders) => {
     {
       accessorKey: "payment",
       header: () => Hint("Payment", "Payment status"),
-      cell: ({ row }) => (
-        <Badge variant={row.original.payment?.status === "paid" ? "default" : "outline"}>
-          {row.original.payment?.status}
-        </Badge>
-      ),
+      cell: ({ row }) => {
+        const status = row.original.payment?.status || "pending";
+        return (
+          <Badge className={PAYMENT_STATUS_STYLES[status] || "bg-secondary text-secondary-foreground"}>
+            {status}
+          </Badge>
+        );
+      },
     },
     {
       accessorKey: "status",
       header: () => Hint("Status", "Order status"),
-      cell: ({ row }) => (
-        <Badge variant={ORDER_STATUS_VARIANT[row.getValue("status")] || "outline"}>
-          {row.getValue("status")}
-        </Badge>
-      ),
+      cell: ({ row }) => {
+        const status = row.getValue("status");
+        return (
+          <Badge className={ORDER_STATUS_STYLES[status] || "bg-secondary text-secondary-foreground"}>
+            {status}
+          </Badge>
+        );
+      },
     },
     {
       accessorKey: "actions",
@@ -78,23 +84,27 @@ export const useOrderColumns = (orders) => {
                 <DropdownMenuSubTrigger>Set Status</DropdownMenuSubTrigger>
                 <DropdownMenuPortal>
                   <DropdownMenuSubContent>
-                    {ORDER_STATUSES.map((s) => (
-                      <DropdownMenuItem
-                        key={s}
-                        disabled={order.status === s}
-                        variant={s === "cancelled" ? "destructive" : undefined}
-                        onClick={() => {
-                          if (s === "shipped") {
-                            orders.openChangeStatus(order, "shipped");
-                          } else {
-                            orders.setStatus(order, s);
-                          }
-                        }}
-                      >
-                        {order.status === s && <Check className="size-4" />}
-                        <span className="capitalize">{s}</span>
-                      </DropdownMenuItem>
-                    ))}
+                    {ORDER_STATUSES.map((s) => {
+                      const { disabled, isCurrent } = getStatusItemState(order.status, s);
+                      const label = s === "cancelled" ? getCancelLabel(order.payment?.status) : s;
+                      return (
+                        <DropdownMenuItem
+                          key={s}
+                          disabled={disabled}
+                          variant={s === "cancelled" ? "destructive" : undefined}
+                          onClick={() => {
+                            if (s === "shipped") {
+                              orders.openChangeStatus(order, "shipped");
+                            } else {
+                              orders.setStatus(order, s);
+                            }
+                          }}
+                        >
+                          {isCurrent && <Check className="size-4" />}
+                          <span className="capitalize">{label}</span>
+                        </DropdownMenuItem>
+                      );
+                    })}
                   </DropdownMenuSubContent>
                 </DropdownMenuPortal>
               </DropdownMenuSub>

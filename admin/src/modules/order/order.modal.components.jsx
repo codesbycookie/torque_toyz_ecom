@@ -20,7 +20,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { ORDER_STATUS_VARIANT } from "./order.schema";
+import { ORDER_STATUSES, ORDER_STATUS_VARIANT, ORDER_STATUS_STYLES, PAYMENT_STATUS_STYLES, getStatusItemState, getCancelLabel } from "./order.schema";
 
 export const ChangeOrderStatus = ({
   order,
@@ -33,8 +33,6 @@ export const ChangeOrderStatus = ({
   const [submitting, setSubmitting] = useState(false);
 
   if (!order) return null;
-
-  const statusOptions = Object.keys(ORDER_STATUS_VARIANT);
 
   const handleSubmit = async () => {
     const isUnchanged = status === order.status && trackingUrl.trim() === (order.delivery_partner_url || "");
@@ -68,7 +66,7 @@ export const ChangeOrderStatus = ({
       <div className="space-y-4 py-2">
         <div className="flex justify-between items-center py-2 border-b text-sm">
           <span className="text-muted-foreground">Current Status</span>
-          <Badge variant={ORDER_STATUS_VARIANT[order.status] || "outline"}>
+          <Badge className={ORDER_STATUS_STYLES[order.status] || "bg-secondary text-secondary-foreground"}>
             {order.status}
           </Badge>
         </div>
@@ -80,11 +78,15 @@ export const ChangeOrderStatus = ({
               <SelectValue placeholder="Select status" />
             </SelectTrigger>
             <SelectContent>
-              {statusOptions.map((s) => (
-                <SelectItem key={s} value={s} className="capitalize">
-                  {s}
-                </SelectItem>
-              ))}
+              {ORDER_STATUSES.map((s) => {
+                const { disabled, isCurrent } = getStatusItemState(order.status, s);
+                const label = s === "cancelled" ? getCancelLabel(order.payment?.status) : s;
+                return (
+                  <SelectItem key={s} value={s} disabled={disabled} className="capitalize">
+                    {label} {isCurrent ? "(Current)" : ""}
+                  </SelectItem>
+                );
+              })}
             </SelectContent>
           </Select>
         </div>
@@ -218,8 +220,7 @@ export const ViewOrder = ({ order, closeModal = () => {} }) => {
               <div className="flex justify-between items-center py-2 border-b">
                 <span className="text-muted-foreground">Status</span>
                 <Badge
-                  variant={ORDER_STATUS_VARIANT[order.status] || "outline"}
-                  className="text-sm px-3 py-1"
+                  className={ORDER_STATUS_STYLES[order.status] || "bg-secondary text-secondary-foreground"}
                 >
                   {order.status}
                 </Badge>
@@ -235,9 +236,7 @@ export const ViewOrder = ({ order, closeModal = () => {} }) => {
               <div className="flex justify-between items-center py-2 border-b">
                 <span className="text-muted-foreground">Payment Status</span>
                 <Badge
-                  variant={
-                    order.payment?.status === "paid" ? "default" : "outline"
-                  }
+                  className={PAYMENT_STATUS_STYLES[order.payment?.status] || "bg-secondary text-secondary-foreground"}
                 >
                   {order.payment?.status}
                 </Badge>
@@ -262,6 +261,13 @@ export const ViewOrder = ({ order, closeModal = () => {} }) => {
               <div className="flex justify-between items-center py-2 border-b">
                 <span className="text-muted-foreground">Subtotal</span>
                 <span className="font-medium">₹{order.pricing?.subtotal}</span>
+              </div>
+
+              <div className="flex justify-between items-center py-2 border-b">
+                <span className="text-muted-foreground">GST / Tax</span>
+                <span className="font-medium">
+                  ₹{order.pricing?.tax || 0}
+                </span>
               </div>
 
               <div className="flex justify-between items-center py-2 border-b">

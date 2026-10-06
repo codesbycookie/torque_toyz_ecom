@@ -37,6 +37,7 @@ export default function Setting() {
       site_name: "",
       support_email: "",
       low_stock_threshold: 0,
+      gst_percentage: 18,
       maintenance_mode: false,
     },
   });
@@ -173,6 +174,28 @@ export default function Setting() {
                     <div className="md:col-span-2">
                       <FormControl>
                         <Input type="number" placeholder="10" {...field} />
+                      </FormControl>
+                    </div>
+                  </FormItem>
+                )}
+              />
+
+              <Separator />
+
+              <FormField
+                control={form.control}
+                name="gst_percentage"
+                render={({ field }) => (
+                  <FormItem className="grid grid-cols-1 md:grid-cols-3 gap-4 py-6 items-start">
+                    <div className="md:col-span-1">
+                      <FormLabel className="text-base">GST Percentage (%)</FormLabel>
+                      <FormDescription>
+                        Tax rate applied to customer orders at checkout.
+                      </FormDescription>
+                    </div>
+                    <div className="md:col-span-2">
+                      <FormControl>
+                        <Input type="number" step="0.01" placeholder="18" {...field} />
                       </FormControl>
                     </div>
                   </FormItem>

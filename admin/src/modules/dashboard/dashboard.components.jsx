@@ -1,11 +1,16 @@
 
+import React, { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { DollarSign, IndianRupee, Users, CreditCard, Activity, Calendar as CalendarIcon, TrendingUp } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { DollarSign, IndianRupee, Users, CreditCard, Activity, Calendar as CalendarIcon, TrendingUp, RotateCcw, AlertCircle, AlertTriangle, CheckCircle2 } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
+import { toast } from "sonner";
+import { apiRequest } from "@/core/api/api.request";
+import { apiurls } from "@/core/api/api.urls";
 import {
     Popover,
     PopoverContent,
@@ -990,6 +995,240 @@ export function MostReviewedChart({ data, loading }) {
                         />
                     </BarChart>
                 </ChartContainer>
+            </CardContent>
+        </Card>
+    );
+}
+
+export function PendingRefundsWarningBanner({ data, loading, onRefresh, onNavigateToPerformance }) {
+    const [expanded, setExpanded] = useState(false);
+    const [processingId, setProcessingId] = useState(null);
+
+    if (loading || !data?.summary?.total_orders) return null;
+
+    const { total_orders, total_refund_amount } = data.summary;
+    const orders = data.orders || [];
+
+    const handleRefund = async (order) => {
+        try {
+            setProcessingId(order._id);
+            // Try updating order payment status directly to 'refunded' (acknowledge refund)
+            await apiRequest("patch", apiurls.orders.updatePaymentStatus.url(order._id), {
+                data: { status: "refunded" }
+            });
+            toast.success(`Refund acknowledged & marked as completed for ${order.code}`);
+            if (onRefresh) onRefresh();
+        } catch (err) {
+            toast.error(err?.response?.data?.message || err?.message || "Failed to process refund");
+        } finally {
+            setProcessingId(null);
+        }
+    };
+
+    return (
+        <div className="rounded-lg border border-amber-500/40 bg-gradient-to-r from-amber-500/10 via-amber-500/5 to-rose-500/10 p-4 shadow-sm text-foreground mb-4">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div className="flex items-start md:items-center gap-3">
+                    <div className="p-2.5 bg-amber-500/20 text-amber-600 dark:text-amber-400 rounded-full shrink-0 animate-pulse">
+                        <AlertTriangle className="h-6 w-6" />
+                    </div>
+                    <div>
+                        <div className="font-semibold text-base flex items-center gap-2">
+                            <span className="text-amber-700 dark:text-amber-300">Action Required: Pending Refunds</span>
+                            <Badge className="bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs px-2 py-0.5">
+                                {total_orders} {total_orders === 1 ? 'Order' : 'Orders'}
+                            </Badge>
+                        </div>
+                        <p className="text-xs md:text-sm text-muted-foreground mt-0.5">
+                            {total_orders} cancelled {total_orders === 1 ? 'order has' : 'orders have'} paid status totaling <strong className="font-bold text-rose-600 dark:text-rose-400">₹{total_refund_amount.toLocaleString()}</strong> requiring refund processing.
+                        </p>
+                    </div>
+                </div>
+
+                <div className="flex items-center gap-2 shrink-0">
+                    <Button 
+                        size="sm" 
+                        variant="outline" 
+                        className="border-amber-500/40 bg-amber-500/10 hover:bg-amber-500/20 text-amber-900 dark:text-amber-100 text-xs font-medium"
+                        onClick={() => setExpanded(!expanded)}
+                    >
+                        {expanded ? "Hide Orders" : "Quick View Orders"}
+                    </Button>
+                    {onNavigateToPerformance && (
+                        <Button 
+                            size="sm" 
+                            className="bg-amber-600 hover:bg-amber-700 text-white text-xs font-medium"
+                            onClick={onNavigateToPerformance}
+                        >
+                            View Full List
+                        </Button>
+                    )}
+                </div>
+            </div>
+
+            {expanded && (
+                <div className="mt-4 pt-4 border-t border-amber-500/20">
+                    <div className="overflow-x-auto">
+                        <Table className="bg-background/80 rounded-md border border-amber-500/20">
+                            <TableHeader>
+                                <TableRow className="hover:bg-transparent">
+                                    <TableHead className="text-xs">Order Code</TableHead>
+                                    <TableHead className="text-xs">Customer</TableHead>
+                                    <TableHead className="text-xs">Method</TableHead>
+                                    <TableHead className="text-xs">Amount</TableHead>
+                                    <TableHead className="text-xs">Cancelled At</TableHead>
+                                    <TableHead className="text-xs text-right">Action</TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                {orders.map((order) => (
+                                    <TableRow key={order._id}>
+                                        <TableCell className="font-mono text-xs font-semibold">{order.code}</TableCell>
+                                        <TableCell className="text-xs">
+                                            <div className="font-medium">{order.user?.name || "Guest"}</div>
+                                            <div className="text-muted-foreground text-[11px]">{order.user?.email || order.user?.login_id || "-"}</div>
+                                        </TableCell>
+                                        <TableCell className="text-xs uppercase font-semibold text-muted-foreground">{order.payment?.method || "online"}</TableCell>
+                                        <TableCell className="font-semibold text-xs text-rose-600 dark:text-rose-400">₹{order.pricing?.total?.toLocaleString()}</TableCell>
+                                        <TableCell className="text-xs text-muted-foreground">{order.cancelled_at ? format(new Date(order.cancelled_at), "MMM dd, yyyy") : "-"}</TableCell>
+                                        <TableCell className="text-right">
+                                            <Button
+                                                size="sm"
+                                                variant="default"
+                                                disabled={processingId === order._id}
+                                                className="h-7 text-xs px-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-medium"
+                                                onClick={() => handleRefund(order)}
+                                            >
+                                                {processingId === order._id ? "Refunding..." : "Acknowledge & Refund"}
+                                            </Button>
+                                        </TableCell>
+                                    </TableRow>
+                                ))}
+                            </TableBody>
+                        </Table>
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+}
+
+export function PendingRefundsCard({ data, loading, onRefresh }) {
+    const [processingId, setProcessingId] = useState(null);
+
+    if (loading) {
+        return (
+            <Card className="flex flex-col h-full shadow-sm border-border/40">
+                <CardHeader>
+                    <Skeleton className="h-6 w-48 mb-2" />
+                    <Skeleton className="h-4 w-64" />
+                </CardHeader>
+                <CardContent>
+                    <Skeleton className="h-32 w-full rounded-md" />
+                </CardContent>
+            </Card>
+        );
+    }
+
+    const summary = data?.summary || { total_orders: 0, total_refund_amount: 0 };
+    const orders = data?.orders || [];
+
+    const handleRefund = async (order) => {
+        try {
+            setProcessingId(order._id);
+            await apiRequest("patch", apiurls.orders.updatePaymentStatus.url(order._id), {
+                data: { status: "refunded" }
+            });
+            toast.success(`Refund acknowledged & marked as completed for ${order.code}`);
+            if (onRefresh) onRefresh();
+        } catch (err) {
+            toast.error(err?.response?.data?.message || err?.message || "Failed to process refund");
+        } finally {
+            setProcessingId(null);
+        }
+    };
+
+    return (
+        <Card className="flex flex-col h-full shadow-sm border-border/40">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
+                <div>
+                    <CardTitle className="text-lg font-semibold tracking-tight flex items-center gap-2">
+                        <RotateCcw className="h-5 w-5 text-amber-500" />
+                        Cancelled Orders (Paid & Refund Needed)
+                    </CardTitle>
+                    <CardDescription>
+                        Cancelled orders with paid status requiring payment refund processing
+                    </CardDescription>
+                </div>
+                <div className="flex items-center gap-2">
+                    <span className="bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 px-2.5 py-1 rounded-full text-xs font-semibold">
+                        {summary.total_orders} Orders Pending
+                    </span>
+                    <span className="bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20 px-2.5 py-1 rounded-full text-xs font-semibold">
+                        ₹{summary.total_refund_amount.toLocaleString()} Total
+                    </span>
+                </div>
+            </CardHeader>
+            <CardContent className="flex-1">
+                {orders.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center p-8 text-center border border-dashed rounded-lg bg-muted/20">
+                        <CheckCircle2 className="h-8 w-8 text-emerald-500 mb-2" />
+                        <p className="text-sm font-medium text-foreground">No Pending Refunds</p>
+                        <p className="text-xs text-muted-foreground mt-1">
+                            All cancelled orders with paid status have been refunded.
+                        </p>
+                    </div>
+                ) : (
+                    <Table>
+                        <TableHeader>
+                            <TableRow className="hover:bg-transparent">
+                                <TableHead>Order Code</TableHead>
+                                <TableHead>Customer</TableHead>
+                                <TableHead>Method</TableHead>
+                                <TableHead>Amount</TableHead>
+                                <TableHead>Cancelled At</TableHead>
+                                <TableHead>Reason</TableHead>
+                                <TableHead className="text-right">Action</TableHead>
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                            {orders.slice(0, 10).map((order) => (
+                                <TableRow key={order._id}>
+                                    <TableCell className="font-mono text-xs font-semibold">
+                                        {order.code}
+                                    </TableCell>
+                                    <TableCell className="text-xs">
+                                        <div className="font-medium">{order.user?.name || "Guest"}</div>
+                                        <div className="text-muted-foreground">{order.user?.email || order.user?.login_id || order.guest_id || "-"}</div>
+                                    </TableCell>
+                                    <TableCell className="text-xs uppercase font-semibold text-muted-foreground">
+                                        {order.payment?.method || "online"}
+                                    </TableCell>
+                                    <TableCell className="font-semibold text-xs text-rose-600 dark:text-rose-400">
+                                        ₹{order.pricing?.total?.toLocaleString() || 0}
+                                    </TableCell>
+                                    <TableCell className="text-xs text-muted-foreground">
+                                        {order.cancelled_at ? format(new Date(order.cancelled_at), "MMM dd, yyyy HH:mm") : "-"}
+                                    </TableCell>
+                                    <TableCell className="text-xs text-muted-foreground max-w-[180px] truncate">
+                                        {order.cancellation_reason || "No reason specified"}
+                                    </TableCell>
+                                    <TableCell className="text-right">
+                                        <Button
+                                            size="sm"
+                                            variant="default"
+                                            disabled={processingId === order._id}
+                                            className="h-7 text-xs px-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-medium"
+                                            onClick={() => handleRefund(order)}
+                                        >
+                                            {processingId === order._id ? "Refunding..." : "Acknowledge & Refund"}
+                                        </Button>
+                                    </TableCell>
+                                </TableRow>
+                            ))}
+                        </TableBody>
+                    </Table>
+                )}
             </CardContent>
         </Card>
     );

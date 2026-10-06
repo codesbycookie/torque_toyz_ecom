@@ -8,7 +8,7 @@ const useCartStore = create(
       cartId: null,
       cart: {
         items: [],
-        pricing: { subtotal: 0, total_weight: 0, shipping_cost: 0, total: 0 },
+        pricing: { subtotal: 0, tax: 0, total_weight: 0, shipping_cost: 0, total: 0 },
         shipping_address: null,
       },
       loading: false,

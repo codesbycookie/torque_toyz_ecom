@@ -37,9 +37,13 @@ const apiurls = {
     create: { method: "post", url: () => `${base_url}/products` },
     getAll: { method: "get", url: () => `${base_url}/products` },
     getBySlug: {
-    method: "get",
-    url: (slug) => `${base_url}/products/slug/${slug}`,
-  },
+      method: "get",
+      url: (slug) => `${base_url}/products/slug/${slug}`,
+    },
+    getProductBySlug: {
+      method: "get",
+      url: (slug) => `${base_url}/products/slug/${slug}`,
+    },
     getOne: { method: "get", url: (id) => `${base_url}/products/${id}` },
     edit: { method: "put", url: (id) => `${base_url}/products/${id}` },
     delete: { method: "delete", url: (id) => `${base_url}/products/${id}` },

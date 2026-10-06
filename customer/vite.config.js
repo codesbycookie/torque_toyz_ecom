@@ -9,7 +9,7 @@ export default defineConfig({
     port: 5175,
   },
   build: {
-    ssr: true
+    outDir: "dist",
   },
   resolve: {
     alias: {

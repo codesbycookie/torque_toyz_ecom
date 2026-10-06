@@ -23,6 +23,7 @@ export interface IShippingAddress {
 
 export interface IPricing {
   subtotal: number;
+  tax: number;
   total_weight: number;
   shipping_cost: number;
   total: number;
@@ -110,6 +111,7 @@ const ShippingAddressSchema = new Schema<IShippingAddress>(
 const PricingSchema = new Schema<IPricing>(
   {
     subtotal: { type: Number, required: true, min: 0 },
+    tax: { type: Number, required: true, min: 0, default: 0 },
     total_weight: { type: Number, required: true, min: 0 },
     shipping_cost: { type: Number, required: true, min: 0 },
     total: { type: Number, required: true, min: 0 },
@@ -163,7 +165,7 @@ const OrderSchema = new Schema<IOrder, IOrderModel>(
     },
     pricing: {
       type: PricingSchema,
-      default: { subtotal: 0, total_weight: 0, shipping_cost: 0, total: 0 },
+      default: { subtotal: 0, tax: 0, total_weight: 0, shipping_cost: 0, total: 0 },
     },
     payment: {
       type: PaymentSchema,

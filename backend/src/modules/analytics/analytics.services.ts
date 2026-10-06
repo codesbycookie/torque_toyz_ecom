@@ -365,3 +365,65 @@ export const getMostReviewedProducts = async (range: DateRange, limit: number = 
     ]);
     return result;
 };
+
+// ── Cancelled Paid Orders (Refund Needed) ────────────────────────────
+
+export const getCancelledPaidOrders = async (range: DateRange) => {
+    const match: any = {
+        ...buildDateMatch(range),
+        status: 'cancelled',
+        'payment.status': 'paid',
+    };
+
+    const orders = await Order.find(match)
+        .populate('user', 'name login_id email')
+        .sort({ updatedAt: -1 })
+        .lean();
+
+    const formattedOrders = orders.map((order: any) => {
+        const cancelEntry = order.status_history?.find((s: any) => s.status === 'cancelled');
+        return {
+            _id: order._id,
+            code: order.code,
+            user: order.user ? {
+                _id: order.user._id,
+                name: order.user.name,
+                login_id: order.user.login_id,
+                email: order.user.email,
+            } : null,
+            guest_id: order.guest_id || null,
+            items: order.items || [],
+            pricing: order.pricing,
+            payment: order.payment,
+            status: order.status,
+            cancellation_reason: cancelEntry?.note || null,
+            cancelled_at: cancelEntry?.timestamp || order.updatedAt,
+            createdAt: order.createdAt,
+            updatedAt: order.updatedAt,
+        };
+    });
+
+    const total_refund_amount = formattedOrders.reduce(
+        (sum, order) => sum + (order.pricing?.total || 0),
+        0
+    );
+
+    const by_payment_method = formattedOrders.reduce((acc: Record<string, { count: number; total_amount: number }>, order: any) => {
+        const method = order.payment?.method || 'unknown';
+        if (!acc[method]) {
+            acc[method] = { count: 0, total_amount: 0 };
+        }
+        acc[method].count += 1;
+        acc[method].total_amount += (order.pricing?.total || 0);
+        return acc;
+    }, {});
+
+    return {
+        summary: {
+            total_orders: formattedOrders.length,
+            total_refund_amount,
+            by_payment_method,
+        },
+        orders: formattedOrders,
+    };
+};

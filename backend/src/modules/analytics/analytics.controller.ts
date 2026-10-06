@@ -73,6 +73,10 @@ const controllers = {
         return sendResponse.fetched(res, 'most reviewed products', data);
     },
 
+    getCancelledPaidOrders: async (req: Request, res: Response) => {
+        const data = await service.getCancelledPaidOrders(getRange(req));
+        return sendResponse.fetched(res, 'cancelled paid orders needing refund', data);
+    },
 };
 
 export const {
@@ -88,4 +92,5 @@ export const {
     getPeakTimes,
     getMostWishlistedProducts,
     getMostReviewedProducts,
+    getCancelledPaidOrders,
 } = wrapControllers(controllers);

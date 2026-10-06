@@ -52,4 +52,19 @@ describe('Analytics API Endpoint Suite', () => {
     const res = await tester.get(`${baseRoute}/peak-times`, token);
     tester.assertFetched(res, 'peak order times');
   });
+
+  it('should successfully fetch cancelled paid orders needing refund', async () => {
+    const res = await tester.get(`${baseRoute}/cancelled-paid-orders`, token);
+    tester.assertFetched(res, 'cancelled paid orders needing refund');
+    expect(res.body.data).to.have.property('summary');
+    expect(res.body.data).to.have.property('orders');
+    expect(res.body.data.summary).to.have.property('total_orders');
+    expect(res.body.data.summary).to.have.property('total_refund_amount');
+    expect(res.body.data.summary).to.have.property('by_payment_method');
+  });
+
+  it('should successfully fetch pending refunds via alias endpoint', async () => {
+    const res = await tester.get(`${baseRoute}/pending-refunds`, token);
+    tester.assertFetched(res, 'cancelled paid orders needing refund');
+  });
 });

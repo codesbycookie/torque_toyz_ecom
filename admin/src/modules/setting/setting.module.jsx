@@ -77,10 +77,17 @@ export const useSettingModule = (exported) => {
   const save = async (data) => {
     startLoading("edit");
     try {
+      const settingsList = Array.isArray(data?.settings)
+        ? data.settings
+        : isPlainObject(data)
+        ? Object.entries(data).map(([key, value]) => ({ key, value }))
+        : [];
+
       const res = await apiRequest(settings.bulkUpdate.method, settings.bulkUpdate.url(), {
-        data,
+        data: { settings: settingsList },
       });
-      setCurrent({ ...useSettingStore.getState().current, ...data });
+      const updatedValues = isPlainObject(data) && !data.settings ? data : {};
+      setCurrent({ ...useSettingStore.getState().current, ...updatedValues });
       toast.success("Settings updated successfully");
       return res;
     } catch (err) {

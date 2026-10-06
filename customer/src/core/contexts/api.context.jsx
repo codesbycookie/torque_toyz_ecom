@@ -5,6 +5,7 @@ import { useWishlistModule } from "@/modules/wishlist/wishlist.module";
 import { useOrderModule } from "@/modules/order/order.module";
 import { useUserModule } from "@/modules/user/user.module";
 import { usePaymentModule } from "@/modules/payment/payment.module";
+import { useLocationModule } from "@/modules/location/location.module";
 
 const ApiContext = createContext();
 
@@ -26,14 +27,33 @@ export const ApiProvider = ({ children }) => {
   const orderModule = useOrderModule(exported);
   const userModule = useUserModule(exported);
   const paymentModule = usePaymentModule(exported);
+  const locationModule = useLocationModule(exported);
 
   Object.assign(exported, {
-    products: productModule,
+    // Singular aliases
+    product: productModule,
     cart: cartModule,
     wishlist: wishlistModule,
+    order: orderModule,
+    user: userModule,
+    payment: paymentModule,
+    location: locationModule,
+
+    // Plural aliases
+    products: productModule,
     orders: orderModule,
     users: userModule,
     payments: paymentModule,
+    locations: locationModule,
+
+    // Module name aliases
+    productModule,
+    cartModule,
+    wishlistModule,
+    orderModule,
+    userModule,
+    paymentModule,
+    locationModule,
   });
 
   return (

@@ -12,6 +12,7 @@ export const useDashboardStore = create((set) => ({
     revenueByLocation: null,
     deliveryPerformance: null,
     cancellationRefundRate: null,
+    pendingRefunds: null,
     mostWishlisted: null,
     mostReviewed: null,
   },

@@ -1,33 +1,29 @@
 import { apiurls } from "@/core/api/api.urls";
-import { apiRequest } from "@/core/api/api.request";
+import { createCrud } from "@/core/factory/entity.crud";
+import { loadRazorpayScript } from "./payment.helpers";
 
 export const usePaymentModule = () => {
   const { payments } = apiurls;
 
+  const crud = createCrud({
+    entity: "Payment",
+    urls: payments,
+    store: null,
+    getRole: () => null,
+  });
+
   const createPaymentOrder = async (orderId) => {
-    try {
-      const res = await apiRequest(payments.createOrder.method, payments.createOrder.url(), {
-        data: { orderId },
-      });
-      return res?.data || res;
-    } catch (err) {
-      throw err;
-    }
+    return crud.createOrder({ orderId }, { __options: { toast: false } });
   };
 
   const verifyPayment = async (verificationData) => {
-    try {
-      const res = await apiRequest(payments.verify.method, payments.verify.url(), {
-        data: verificationData,
-      });
-      return res?.data || res;
-    } catch (err) {
-      throw err;
-    }
+    return crud.verify(verificationData, { __options: { toast: false } });
   };
 
   return {
+    crud,
     createPaymentOrder,
     verifyPayment,
+    loadScript: loadRazorpayScript,
   };
 };

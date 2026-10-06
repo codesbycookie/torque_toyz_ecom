@@ -210,6 +210,7 @@ const REAL_SETTINGS = [
   { key: 'support_phone', value: '', description: 'Customer support phone number' },
   { key: 'business_address', value: '', description: 'Registered business address' },
   { key: 'low_stock_threshold', value: 10, description: 'Stock level that triggers a low-stock warning' },
+  { key: 'gst_percentage', value: 18, description: 'GST rate percentage applied to orders' },
   { key: 'allow_cod', value: true, description: 'Whether cash-on-delivery is offered at checkout' },
   { key: 'allow_online_payment', value: true, description: 'Whether online payment is offered at checkout' },
   { key: 'min_order_amount', value: 0, description: 'Minimum order value required to checkout' },

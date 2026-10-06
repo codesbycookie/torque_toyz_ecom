@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { useApi } from "@/core/contexts/api.context";
 import { useAuth } from "@/core/contexts/auth.context";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -15,13 +15,16 @@ import {
   DeliveryPerformanceCard,
   InventoryVelocityChart,
   MostWishlistedChart,
-  MostReviewedChart
+  MostReviewedChart,
+  PendingRefundsCard,
+  PendingRefundsWarningBanner
 } from "@/modules/dashboard/dashboard.components";
 
 export default function Dashboard() {
   const { dashboard } = useApi();
   const { user } = useAuth();
   const { loadDashboardData, state: data, loading, error, dateRange, setDateRange } = dashboard;
+  const [activeTab, setActiveTab] = useState("overview");
 
   useEffect(() => {
     loadDashboardData();
@@ -50,13 +53,21 @@ export default function Dashboard() {
         </div>
       </div>
 
-      <Tabs defaultValue="overview" className="space-y-6 pt-2">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6 pt-2">
         <TabsList className="bg-muted/40 p-1 rounded-lg h-auto inline-flex">
           <TabsTrigger value="overview" className="rounded-md px-5 py-1.5 text-sm font-medium transition-all data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm text-muted-foreground">Overview</TabsTrigger>
           <TabsTrigger value="analytics" className="rounded-md px-5 py-1.5 text-sm font-medium transition-all data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm text-muted-foreground">Analytics</TabsTrigger>
           <TabsTrigger value="performance" className="rounded-md px-5 py-1.5 text-sm font-medium transition-all data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm text-muted-foreground">Performance</TabsTrigger>
         </TabsList>
+        
         <TabsContent value="overview" className="space-y-4">
+          <PendingRefundsWarningBanner 
+            data={data?.pendingRefunds} 
+            loading={loading} 
+            onRefresh={loadDashboardData}
+            onNavigateToPerformance={() => setActiveTab("performance")}
+          />
+
           <SummaryCards data={data?.summary} customerData={data?.customerInsights} loading={loading} />
 
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
@@ -105,6 +116,13 @@ export default function Dashboard() {
             <div className="col-span-3 flex flex-col">
               <CancellationRefundChart data={data?.cancellationRefundRate} loading={loading} />
             </div>
+          </div>
+          <div className="grid gap-4 grid-cols-1">
+            <PendingRefundsCard 
+              data={data?.pendingRefunds} 
+              loading={loading} 
+              onRefresh={loadDashboardData}
+            />
           </div>
         </TabsContent>
       </Tabs>

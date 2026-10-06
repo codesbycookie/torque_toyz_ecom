@@ -1,139 +1,193 @@
 import useCartStore from "./cart.store";
-import { apiurls } from "@/core/api/api.urls";
 import { apiRequest } from "@/core/api/api.request";
-import { useEffect } from "react";
+import {
+  resolveProductId,
+  getCartHeaders,
+  restoreCartFromBackup,
+} from "./cart.helpers";
 
-export const useCartModule = () => {
-  const store = useCartStore();
+const baseUrl = import.meta.env.VITE_BASE_URL || "http://localhost:3000/api/v1";
 
-  const getHeaders = () => {
-    let cartId = useCartStore.getState().cartId;
-    if (!cartId) {
-      useCartStore.getState().initCartId();
-      cartId = useCartStore.getState().cartId;
-    }
-    return { "x-cart-id": cartId };
-  };
+export const useCartModule = (exported) => {
+  const cartState = useCartStore((s) => s.cart);
+  const loading = useCartStore((s) => s.loading);
+  const cartId = useCartStore((s) => s.cartId);
+
+  const getHeaders = () =>
+    getCartHeaders(
+      () => useCartStore.getState().cartId,
+      () => useCartStore.getState().initCartId()
+    );
 
   const fetchCart = async () => {
     try {
-      store.setLoading(true);
-      const res = await apiRequest("get", "http://localhost:3000/api/v1/cart", {
+      useCartStore.getState().setLoading(true);
+      const res = await apiRequest("get", `${baseUrl}/cart`, {
         headers: getHeaders(),
       });
-      if (res?.data) {
-        store.setCart(res.data);
+      const data = res?.data || res;
+      if (data && data.items) {
+        useCartStore.getState().setCart(data);
       }
+      return data;
     } catch (err) {
       console.error("Failed to fetch cart", err);
     } finally {
-      store.setLoading(false);
+      useCartStore.getState().setLoading(false);
     }
   };
 
   const addToCart = async (product, quantity = 1) => {
+    const cleanProductId = resolveProductId(product);
     try {
-      store.setLoading(true);
-      const res = await apiRequest("post", "http://localhost:3000/api/v1/cart/items", {
+      useCartStore.getState().setLoading(true);
+      const res = await apiRequest("post", `${baseUrl}/cart/items`, {
         headers: getHeaders(),
-        data: { productId: product._id || product.id, quantity },
+        data: { productId: cleanProductId, quantity },
       });
-      if (res?.data) store.setCart(res.data);
+      const data = res?.data || res;
+      if (data && data.items) {
+        useCartStore.getState().setCart(data);
+      }
+      return data;
     } catch (err) {
       console.error("Failed to add to cart", err);
+      throw err;
     } finally {
-      store.setLoading(false);
+      useCartStore.getState().setLoading(false);
     }
   };
 
-  const updateQuantity = async (productId, quantity) => {
+  const updateQuantity = async (productOrId, quantity) => {
+    const cleanProductId = resolveProductId(productOrId);
     try {
-      store.setLoading(true);
-      const res = await apiRequest("put", "http://localhost:3000/api/v1/cart/items", {
+      useCartStore.getState().setLoading(true);
+      const res = await apiRequest("put", `${baseUrl}/cart/items`, {
         headers: getHeaders(),
-        data: { productId, quantity },
+        data: { productId: cleanProductId, quantity },
       });
-      if (res?.data) store.setCart(res.data);
+      const data = res?.data || res;
+      if (data && data.items) {
+        useCartStore.getState().setCart(data);
+      }
+      return data;
     } catch (err) {
       console.error("Failed to update cart", err);
+      throw err;
     } finally {
-      store.setLoading(false);
+      useCartStore.getState().setLoading(false);
     }
   };
 
-  const removeFromCart = async (productId) => {
+  const removeFromCart = async (productOrId) => {
+    const cleanProductId = resolveProductId(productOrId);
     try {
-      store.setLoading(true);
-      const res = await apiRequest("delete", `http://localhost:3000/api/v1/cart/items/${productId}`, {
-        headers: getHeaders(),
-      });
-      if (res?.data) store.setCart(res.data);
+      useCartStore.getState().setLoading(true);
+      const res = await apiRequest(
+        "delete",
+        `${baseUrl}/cart/items/${cleanProductId}`,
+        {
+          headers: getHeaders(),
+        }
+      );
+      const data = res?.data || res;
+      if (data && data.items) {
+        useCartStore.getState().setCart(data);
+      }
+      return data;
     } catch (err) {
       console.error("Failed to remove from cart", err);
+      throw err;
     } finally {
-      store.setLoading(false);
+      useCartStore.getState().setLoading(false);
     }
   };
 
   const updateShippingAddress = async (shipping_address) => {
     try {
-      store.setLoading(true);
-      const res = await apiRequest("put", "http://localhost:3000/api/v1/cart/address", {
+      useCartStore.getState().setLoading(true);
+      const res = await apiRequest("put", `${baseUrl}/cart/address`, {
         headers: getHeaders(),
         data: { shipping_address },
       });
-      if (res?.data) store.setCart(res.data);
+      const data = res?.data || res;
+      if (data && data.items) {
+        useCartStore.getState().setCart(data);
+      }
+      return data;
     } catch (err) {
       console.error("Failed to update shipping address", err);
     } finally {
-      store.setLoading(false);
+      useCartStore.getState().setLoading(false);
     }
   };
 
   const clearCart = async () => {
     try {
-      store.setLoading(true);
-      const res = await apiRequest("delete", "http://localhost:3000/api/v1/cart", {
+      useCartStore.getState().setLoading(true);
+      const res = await apiRequest("delete", `${baseUrl}/cart`, {
         headers: getHeaders(),
       });
-      if (res?.data) store.setCart(res.data);
+      const data = res?.data || res;
+      if (data && data.items) {
+        useCartStore.getState().setCart(data);
+      }
+      return data;
     } catch (err) {
       console.error("Failed to clear cart", err);
     } finally {
-      store.setLoading(false);
+      useCartStore.getState().setLoading(false);
     }
   };
 
-  const checkoutDraft = async (payment_method) => {
+  const checkoutDraft = async (payment_method, shipping_address) => {
     try {
-      store.setLoading(true);
-      const res = await apiRequest("post", "http://localhost:3000/api/v1/cart/checkout", {
+      useCartStore.getState().setLoading(true);
+      const res = await apiRequest("post", `${baseUrl}/cart/checkout`, {
         headers: getHeaders(),
-        data: { payment_method },
+        data: { payment_method, shipping_address },
       });
-      if (res?.data) {
-        store.setCart({ items: [], pricing: { subtotal: 0, total_weight: 0, shipping_cost: 0, total: 0 }, shipping_address: null });
-        return res.data;
+      const data = res?.data || res;
+      if (data) {
+        useCartStore.getState().setCart({
+          items: [],
+          pricing: { subtotal: 0, tax: 0, total_weight: 0, shipping_cost: 0, total: 0 },
+          shipping_address: null,
+        });
+        return data;
       }
     } catch (err) {
       console.error("Failed to checkout", err);
       throw err;
     } finally {
-      store.setLoading(false);
+      useCartStore.getState().setLoading(false);
     }
   };
 
+  const restoreCart = async ({ orderId, cartBackup, errorMessage, shippingAddress }) => {
+    return restoreCartFromBackup({
+      orderId,
+      cartBackup,
+      errorMessage,
+      shippingAddress,
+      cartModule: { clearCart, addToCart, updateShippingAddress },
+      ordersModule: exported?.orders,
+    });
+  };
+
   return {
-    get items() {
-      return store.cart.items;
+    cart: cartState,
+    items: cartState?.items || [],
+    pricing: cartState?.pricing || {
+      subtotal: 0,
+      tax: 0,
+      total_weight: 0,
+      shipping_cost: 0,
+      total: 0,
     },
-    get pricing() {
-      return store.cart.pricing;
-    },
-    get cart() {
-      return store.cart;
-    },
-    loading: store.loading,
+    shippingAddress: cartState?.shipping_address,
+    cartId,
+    loading,
     fetchCart,
     addToCart,
     removeFromCart,
@@ -141,5 +195,6 @@ export const useCartModule = () => {
     updateShippingAddress,
     clearCart,
     checkoutDraft,
+    restoreCart,
   };
 };

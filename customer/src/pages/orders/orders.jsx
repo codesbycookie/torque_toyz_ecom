@@ -4,18 +4,31 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { Loader2, ChevronLeft, ChevronRight, Search } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogTrigger,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogCancel,
+  AlertDialogAction,
+} from "@/components/ui/alert-dialog";
+import { Loader2, ChevronLeft, ChevronRight, Search, Ban } from "lucide-react";
 import { useApi } from "@/core/contexts/api.context";
 import { Input } from "@/components/ui/input";
+import { toast } from "sonner";
 
 export default function Orders() {
   const navigate = useNavigate();
   const { orders } = useApi();
   
-  const orderList = orders.useStore((state) => state.list) || [];
-  const loading = orders.useStore((state) => state.loading);
-  const pagination = orders.useStore((state) => state.pagination);
+  const orderList = orders.list || [];
+  const loading = orders.loading || {};
+  const pagination = orders.pagination || null;
   const [searchTerm, setSearchTerm] = useState("");
+  const [cancellingOrderId, setCancellingOrderId] = useState(null);
 
   useEffect(() => {
     orders.getMine();
@@ -29,6 +42,19 @@ export default function Orders() {
   const handlePageChange = (newPage) => {
     if (newPage < 1 || (pagination && newPage > pagination.pages)) return;
     orders.getMine({ page: newPage });
+  };
+
+  const handleCancelOrder = async (orderId) => {
+    try {
+      setCancellingOrderId(orderId);
+      await orders.cancelOrder(orderId, "Cancelled by customer");
+      toast.success("Order cancelled successfully");
+      orders.getMine();
+    } catch {
+      toast.error("Failed to cancel order");
+    } finally {
+      setCancellingOrderId(null);
+    }
   };
 
   const getStatusColor = (status) => {
@@ -93,28 +119,63 @@ export default function Orders() {
                   </TableCell>
                 </TableRow>
               ) : (
-                orderList.map((order) => (
-                  <TableRow key={order._id || order.id}>
-                    <TableCell className="font-medium font-mono">{order.code || order._id || order.id}</TableCell>
-                    <TableCell>{new Date(order.createdAt || order.date).toLocaleDateString("en-IN")}</TableCell>
-                    <TableCell>
-                      ₹{(order.pricing?.total || order.total || 0).toLocaleString("en-IN", { minimumFractionDigits: 2 })}{" "}
-                      <span className="text-muted-foreground text-xs">
-                        ({order.items?.length || order.products?.length || 0} {order.items?.length === 1 ? "item" : "items"})
-                      </span>
-                    </TableCell>
-                    <TableCell>
-                      <Badge className={`border-none ${getStatusColor(order.status)}`}>
-                        {formatStatus(order.status)}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <Button variant="outline" size="sm" onClick={() => navigate(`/orders/${order._id || order.id}`)}>
-                        View Tracking
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))
+                orderList.map((order) => {
+                  const orderId = order._id || order.id;
+                  const statusLower = order.status?.toLowerCase();
+                  const canCancel = ["placed", "confirmed"].includes(statusLower);
+
+                  return (
+                    <TableRow key={orderId}>
+                      <TableCell className="font-medium font-mono">{order.code || orderId}</TableCell>
+                      <TableCell>{new Date(order.createdAt || order.date).toLocaleDateString("en-IN")}</TableCell>
+                      <TableCell>
+                        ₹{(order.pricing?.total || order.total || 0).toLocaleString("en-IN", { minimumFractionDigits: 2 })}{" "}
+                        <span className="text-muted-foreground text-xs">
+                          ({order.items?.length || order.products?.length || 0} {order.items?.length === 1 ? "item" : "items"})
+                        </span>
+                      </TableCell>
+                      <TableCell>
+                        <Badge className={`border-none ${getStatusColor(order.status)}`}>
+                          {formatStatus(order.status)}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex items-center justify-end gap-2">
+                          <Button variant="outline" size="sm" onClick={() => navigate(`/orders/${orderId}`)}>
+                            View Tracking
+                          </Button>
+
+                          {canCancel && (
+                            <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                <Button variant="ghost" size="sm" className="text-destructive hover:bg-destructive/10 hover:text-destructive h-8 px-2" disabled={cancellingOrderId === orderId}>
+                                  <Ban className="size-3.5 mr-1" /> Cancel
+                                </Button>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>Cancel Order #{order.code || orderId}?</AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                    Are you sure you want to cancel this order? The order status will be marked as cancelled and stock will be restocked.
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>Keep Order</AlertDialogCancel>
+                                  <AlertDialogAction
+                                    onClick={() => handleCancelOrder(orderId)}
+                                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                  >
+                                    Cancel Order
+                                  </AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
+                          )}
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })
               )}
             </TableBody>
           </Table>

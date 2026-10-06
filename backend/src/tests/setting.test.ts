@@ -46,22 +46,22 @@ describe('Settings API Endpoint Suite', () => {
     });
   });
 
-//   it('should successfully bulk update multiple settings', async () => {
-//     const res = await tester.put(
-//       `${baseRoute}/bulk`,
-//       {
-//         settings: [
-//           { key: 'low_stock_threshold', value: 20 },
-//           { key: 'maintenance_mode', value: true },
-//         ],
-//       },
-//       token
-//     );
-//     tester.assertUpdated(res, 'settings');
+  it('should successfully bulk update multiple settings', async () => {
+    const res = await tester.put(
+      `${baseRoute}/bulk`,
+      {
+        settings: [
+          { key: 'low_stock_threshold', value: 20 },
+          { key: 'maintenance_mode', value: true },
+        ],
+      },
+      token
+    );
+    tester.assertUpdated(res, 'settings');
 
-//     const check = await tester.get(baseRoute, token);
-//     tester.assertFetched(check, 'settings');
-//     expect(check.body.data.orders.low_stock_threshold).to.equal(20);
-//     expect(check.body.data.site.maintenance_mode).to.equal(true);
-//   });
+    const check = await tester.get(baseRoute, token);
+    tester.assertFetched(check, 'settings');
+    expect(check.body.data.orders.low_stock_threshold).to.equal(20);
+    expect(check.body.data.site.maintenance_mode).to.equal(true);
+  });
 });

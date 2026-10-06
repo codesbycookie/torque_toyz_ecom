@@ -5,6 +5,7 @@ import { modals } from "./order.modals";
 import { useOrderColumns } from "./order.coulmns";
 import { createCrud } from "@/core/factory/entity.crud";
 import { apiurls } from "@/core/api/api.urls";
+import { apiRequest } from "@/core/api/api.request";
 import { createEntityQueryActions } from "@/core/utils/entity.util";
 
 export const useOrderModule = (exported) => {
@@ -52,6 +53,29 @@ export const useOrderModule = (exported) => {
 
     if (order.status !== status) {
       await crud.updateStatus(order._id, { status });
+
+      const isPaid = order.payment?.status === "paid";
+      if (status === "cancelled" && isPaid) {
+        try {
+          await apiRequest("post", apiurls.payments.refund.url(), {
+            data: { orderId: order._id, reason: "Order cancelled by admin" }
+          });
+        } catch {
+          await crud.updatePaymentStatus(order._id, { status: "refunded" });
+        }
+
+        update(order._id, {
+          status: "cancelled",
+          payment: { ...(order.payment || {}), status: "refunded" },
+          status_history: [
+            ...(order.status_history || []),
+            { status: "cancelled", timestamp: new Date().toISOString() },
+          ],
+        });
+        toast.success(`Order ${order.code} cancelled & payment refunded`);
+        return;
+      }
+
       update(order._id, {
         status,
         status_history: [
@@ -59,6 +83,11 @@ export const useOrderModule = (exported) => {
           { status, timestamp: new Date().toISOString() },
         ],
       });
+
+      if (status === "cancelled") {
+        toast.success(`Order ${order.code} cancelled`);
+        return;
+      }
     }
 
     toast.success(`Order ${order.code} updated to ${status}`);

@@ -33,11 +33,11 @@ export default function ProductDetail() {
   const [selectedImage, setSelectedImage] = useState(0);
   const [loading, setLoading] = useState(true);
 
-  // Get product from store
-  const product = products.useStore((s) => s.current);
-  const storeLoading = products.useStore((s) => s.loading);
+  // Get product from module
+  const product = products.current;
+  const storeLoading = products.loading;
 
-  const wishlistItems = wishlist.useStore((s) => s.list);
+  const wishlistItems = wishlist.list || [];
   const isWishlisted = Boolean(product?.is_in_wishlist) || wishlistItems.some((p) => p._id === product?._id);
 
   useEffect(() => {

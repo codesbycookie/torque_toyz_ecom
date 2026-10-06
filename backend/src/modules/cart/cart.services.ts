@@ -2,6 +2,7 @@ import Cart, { ICart } from "@db/models/cart.model.ts";
 import Order from "@db/models/order.model.ts";
 import Product from "@db/models/product.model.ts";
 import Location from "@db/models/location.model.ts";
+import Setting from "@db/models/setting.model.ts";
 import { Types } from "mongoose";
 import { ApiError } from "@core/errors/api.error.ts";
 import { getShippingSlab } from "@modules/order/order.services.ts";
@@ -39,29 +40,63 @@ export const recalculateCartPricing = async (cart: any) => {
     }
   }
 
+  const settingGst = await Setting.get("gst_percentage");
+  const gstRate = typeof settingGst === "number" ? settingGst : 18;
+  const tax = Math.round(subtotal * (gstRate / 100) * 100) / 100;
+
   cart.pricing = {
     subtotal,
+    tax,
     total_weight,
     shipping_cost,
-    total: subtotal + shipping_cost,
+    total: Math.round((subtotal + shipping_cost + tax) * 100) / 100,
   };
 
   await cart.save();
 };
 
 export const getCart = async (guestId: string, userId?: string) => {
-  let cart;
-  if (userId) {
+  let cart: any = null;
+
+  if (userId && guestId) {
+    const userCart = await Cart.findOne({ user: userId, deleted: false });
+    const guestCart = await Cart.findOne({ guest_id: guestId, deleted: false });
+
+    if (guestCart && userCart && String(guestCart._id) !== String(userCart._id)) {
+      // Merge items from guestCart into userCart if guestCart has items
+      if (guestCart.items && guestCart.items.length > 0) {
+        for (const gItem of guestCart.items) {
+          const existing = userCart.items.find(
+            (uItem: any) => String(uItem.product) === String(gItem.product)
+          );
+          if (existing) {
+            existing.quantity += gItem.quantity;
+          } else {
+            userCart.items.push(gItem);
+          }
+        }
+        guestCart.items = [];
+        await guestCart.save();
+        await userCart.save();
+      }
+      cart = userCart;
+    } else if (guestCart && !userCart) {
+      guestCart.user = new Types.ObjectId(userId);
+      await guestCart.save();
+      cart = guestCart;
+    } else if (userCart) {
+      cart = userCart;
+    }
+  } else if (userId) {
     cart = await Cart.findOne({ user: userId, deleted: false });
-  }
-  if (!cart && guestId) {
+  } else if (guestId) {
     cart = await Cart.findOne({ guest_id: guestId, deleted: false });
   }
 
   if (!cart) {
     cart = await new Cart({
-      guest_id: guestId,
-      user: userId || undefined,
+      guest_id: guestId || undefined,
+      user: userId ? new Types.ObjectId(userId) : undefined,
       items: [],
     }).save();
   }
@@ -75,25 +110,40 @@ export const getCart = async (guestId: string, userId?: string) => {
   return enhanceCart(cart);
 };
 
+const resolveCleanProductId = (productId: any): string => {
+  if (!productId) return "";
+  if (typeof productId === "string") return productId;
+  if (typeof productId === "object") {
+    return String(productId._id || productId.id || productId.product || "");
+  }
+  return String(productId);
+};
+
 export const addItemToCart = async (
   guestId: string,
-  productId: string,
+  productId: any,
   quantity: number,
   userId?: string
 ) => {
-  const cartRaw = await Cart.findById((await getCart(guestId, userId)).id);
+  const cleanProductId = resolveCleanProductId(productId);
+  if (!cleanProductId) {
+    throw new ApiError(400, "Invalid product ID");
+  }
+
+  const cartObj = await getCart(guestId, userId);
+  const cartRaw = await Cart.findById(cartObj._id || cartObj.id);
   if (!cartRaw) throw new ApiError(404, "Cart not found");
 
-  const product = await Product.findById(productId);
+  const product = await Product.findById(cleanProductId);
   if (!product || !product.active || product.deleted) {
-    throw new ApiError(400, `Product ${productId} not found or inactive`);
+    throw new ApiError(400, `Product ${cleanProductId} not found or inactive`);
   }
 
   if (product.stock < quantity) {
     throw new ApiError(400, `Insufficient stock for ${product.name}`);
   }
 
-  const existingItem = cartRaw.items.find((i: any) => String(i.product) === productId);
+  const existingItem = cartRaw.items.find((i: any) => String(i.product) === cleanProductId);
   if (existingItem) {
     existingItem.quantity += quantity;
   } else {
@@ -113,20 +163,23 @@ export const addItemToCart = async (
 
 export const updateCartItemQuantity = async (
   guestId: string,
-  productId: string,
+  productId: any,
   quantity: number,
   userId?: string
 ) => {
-  const cartRaw = await Cart.findById((await getCart(guestId, userId)).id);
+  const cleanProductId = resolveCleanProductId(productId);
+
+  const cartObj = await getCart(guestId, userId);
+  const cartRaw = await Cart.findById(cartObj._id || cartObj.id);
   if (!cartRaw) throw new ApiError(404, "Cart not found");
 
-  const existingItem = cartRaw.items.find((i: any) => String(i.product) === productId);
+  const existingItem = cartRaw.items.find((i: any) => String(i.product) === cleanProductId);
   if (!existingItem) {
     throw new ApiError(404, "Item not found in cart");
   }
 
   if (quantity <= 0) {
-    cartRaw.items = cartRaw.items.filter((i: any) => String(i.product) !== productId);
+    cartRaw.items = cartRaw.items.filter((i: any) => String(i.product) !== cleanProductId);
   } else {
     existingItem.quantity = quantity;
   }
@@ -137,13 +190,16 @@ export const updateCartItemQuantity = async (
 
 export const removeItemFromCart = async (
   guestId: string,
-  productId: string,
+  productId: any,
   userId?: string
 ) => {
-  const cartRaw = await Cart.findById((await getCart(guestId, userId)).id);
+  const cleanProductId = resolveCleanProductId(productId);
+
+  const cartObj = await getCart(guestId, userId);
+  const cartRaw = await Cart.findById(cartObj._id || cartObj.id);
   if (!cartRaw) throw new ApiError(404, "Cart not found");
 
-  cartRaw.items = cartRaw.items.filter((i: any) => String(i.product) !== productId);
+  cartRaw.items = cartRaw.items.filter((i: any) => String(i.product) !== cleanProductId);
 
   await recalculateCartPricing(cartRaw);
   return enhanceCart(cartRaw);
@@ -154,7 +210,8 @@ export const updateCartShippingAddress = async (
   shipping_address: any,
   userId?: string
 ) => {
-  const cartRaw = await Cart.findById((await getCart(guestId, userId)).id);
+  const cartObj = await getCart(guestId, userId);
+  const cartRaw = await Cart.findById(cartObj._id || cartObj.id);
   if (!cartRaw) throw new ApiError(404, "Cart not found");
 
   cartRaw.shipping_address = shipping_address;
@@ -164,7 +221,8 @@ export const updateCartShippingAddress = async (
 };
 
 export const clearCart = async (guestId: string, userId?: string) => {
-  const cartRaw = await Cart.findById((await getCart(guestId, userId)).id);
+  const cartObj = await getCart(guestId, userId);
+  const cartRaw = await Cart.findById(cartObj._id || cartObj.id);
   if (!cartRaw) throw new ApiError(404, "Cart not found");
 
   cartRaw.items = [];
@@ -179,11 +237,9 @@ export const checkoutCart = async (
   data: { payment_method: "cod" | "online"; shipping_address?: any },
   userId?: string
 ) => {
-  const cartRaw = await Cart.findById((await getCart(guestId, userId)).id);
+  const cartObj = await getCart(guestId, userId);
+  const cartRaw = await Cart.findById(cartObj._id || cartObj.id);
   if (!cartRaw) throw new ApiError(404, "Cart not found");
-
-
-  console.log(cartRaw, userId)
 
   if (!userId && !cartRaw.user) throw new ApiError(400, "User is required for checkout");
 
@@ -217,7 +273,7 @@ export const checkoutCart = async (
       throw new ApiError(400, "No delivery rate available for this location/weight");
     } else {
       cartRaw.pricing.shipping_cost = slab.rate;
-      cartRaw.pricing.total = cartRaw.pricing.subtotal + slab.rate;
+      cartRaw.pricing.total = Math.round((cartRaw.pricing.subtotal + (cartRaw.pricing.tax || 0) + slab.rate) * 100) / 100;
     }
   }
 

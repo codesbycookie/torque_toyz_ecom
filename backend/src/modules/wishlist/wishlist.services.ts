@@ -9,7 +9,6 @@ export const getWishlistByUser = async (userId: string, queries: Record<string, 
     forcePopulate: [{ path: "products" }],
     visibility: "all",
   });
-
   if (result && Array.isArray(result.data) && result.data.length > 0) {
     return enhanceWishlist(result.data[0]);
   }

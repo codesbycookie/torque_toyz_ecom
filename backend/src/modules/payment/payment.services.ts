@@ -97,12 +97,8 @@ export const refundPayment = async (orderId: string, reason?: string) => {
     throw new ApiError(400, 'Payment record is missing a Razorpay payment id');
   }
 
-  // We automatically exclude shipping charges by refunding the subtotal
-  const refundAmountPaise = toPaise(order.pricing.subtotal);
-
-  if (order.pricing.subtotal > payment.amount) {
-    throw new ApiError(400, 'Refund amount cannot exceed the original payment amount');
-  }
+  // Full refund of payment amount
+  const refundAmountPaise = toPaise(payment.amount);
 
   let refund;
   try {

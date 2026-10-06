@@ -21,10 +21,10 @@ import { toast } from "sonner";
 
 export default function Home() {
   const { products, wishlist, cart } = useApi();
-  const list = products.useStore((s) => s.list);
-  const loading = products.useStore((s) => s.loading);
+  const list = products.list || [];
+  const loading = products.loading || {};
 
-  const wishlistItems = wishlist?.useStore((s) => s.list) || [];
+  const wishlistItems = wishlist.list || [];
   const wishlistedIds = wishlistItems.map((p) => p._id);
 
   const [email, setEmail] = useState("");

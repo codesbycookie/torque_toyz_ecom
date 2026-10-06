@@ -38,7 +38,11 @@ const apiurls = {
     getOne: { method: "get", url: (id) => `${base_url}/products/${id}` },
     getBySlug: {
       method: "get",
-      url: (slug) => `${base_url}/products/${slug}`,
+      url: (slug) => `${base_url}/products/slug/${slug}`,
+    },
+    getProductBySlug: {
+      method: "get",
+      url: (slug) => `${base_url}/products/slug/${slug}`,
     },
     edit: { method: "put", url: (id) => `${base_url}/products/${id}` },
     delete: { method: "delete", url: (id) => `${base_url}/products/${id}` },
@@ -232,6 +236,14 @@ const apiurls = {
     mostReviewed: {
       method: "get",
       url: () => `${base_url}/analytics/most-reviewed`,
+    },
+    cancelledPaidOrders: {
+      method: "get",
+      url: () => `${base_url}/analytics/cancelled-paid-orders`,
+    },
+    pendingRefunds: {
+      method: "get",
+      url: () => `${base_url}/analytics/pending-refunds`,
     },
   },
 };
