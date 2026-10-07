@@ -14,6 +14,8 @@ import {
 
 const router = Router();
 
+router.get('/public', getSettingsGrouped);
+
 router.use(authMiddleware);
 // router.use(accessControl); // admin only — settings should never be user-accessible
 

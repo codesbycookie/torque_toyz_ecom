@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, Link } from "react-router-dom";
 import { useApi } from "@/core/contexts/api.context";
+import { useEcom } from "@/core/contexts/ecom.context";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
@@ -27,8 +28,14 @@ import { toast } from "sonner";
 
 export default function ProductDetail() {
   const { slug } = useParams();
+  const navigate = useNavigate();
   const api = useApi();
   const { products, wishlist, cart } = api;
+  const {
+    recentlyViewed,
+    addRecentlyViewed,
+    getRecommendedFor,
+  } = useEcom();
 
   const [selectedImage, setSelectedImage] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -46,6 +53,11 @@ export default function ProductDetail() {
     setLoading(true);
     products
       .getBySlug(slug)
+      .then((data) => {
+        if (data) {
+          addRecentlyViewed(data);
+        }
+      })
       .catch(() => {
         toast.error("Product not found");
         navigate("/products");
@@ -55,7 +67,10 @@ export default function ProductDetail() {
 
   // Reset selected image when product changes
   useEffect(() => {
-    setSelectedImage(0);
+    if (product) {
+      setSelectedImage(0);
+      addRecentlyViewed(product);
+    }
   }, [product?._id]);
 
   if (loading || storeLoading?.getOne) {

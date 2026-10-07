@@ -2,6 +2,7 @@ import { Toaster } from "@/components/ui/sonner";
 import { BrowserRouter as Router } from "react-router-dom";
 import { UIProvider } from "@/core/contexts/ui.context";
 import { ApiProvider } from "@/core/contexts/api.context";
+import { EcomProvider } from "@/core/contexts/ecom.context";
 import ScrollToTop from "@/core/utils/scrolltotop.util";
 import "./app.css";
 import AppRoutes from "@/core/router/app.routes";
@@ -15,9 +16,11 @@ export default function App() {
         <AuthProvider>
           <UIProvider>
             <ApiProvider>
-              <ScrollToTop />
-              <Toaster />
-              <AppRoutes />
+              <EcomProvider>
+                <ScrollToTop />
+                <Toaster />
+                <AppRoutes />
+              </EcomProvider>
             </ApiProvider>
           </UIProvider>
         </AuthProvider>

@@ -4,10 +4,12 @@ import { Button } from "@/components/ui/button";
 import { ShoppingCart, Menu, Search, User, Heart, X, Package, Settings, Home, ShoppingBag } from "lucide-react";
 import { useAuth } from "@/core/contexts/auth.context";
 import { useApi } from "@/core/contexts/api.context";
+import { useEcom } from "@/core/contexts/ecom.context";
 
 export default function Navbar() {
   const { user } = useAuth();
   const api = useApi();
+  const { bannerText } = useEcom();
   const location = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
@@ -31,6 +33,11 @@ export default function Navbar() {
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 shadow-sm">
+      {bannerText && (
+        <div className="bg-primary text-primary-foreground py-1.5 px-4 text-center text-xs font-semibold tracking-wide">
+          {bannerText}
+        </div>
+      )}
       <div className="container mx-auto flex h-16 items-center px-4 md:px-8">
 
         {/* Logo & Desktop Nav */}

@@ -7,6 +7,19 @@ import handleApiError from "@/core/errors/error.handler";
 const isPlainObject = (val) =>
   val !== null && typeof val === "object" && !Array.isArray(val);
 
+const flattenSettings = (data) => {
+  if (!isPlainObject(data)) return {};
+  let flat = {};
+  for (const key in data) {
+    if (isPlainObject(data[key])) {
+      flat = { ...flat, ...data[key] };
+    } else {
+      flat[key] = data[key];
+    }
+  }
+  return flat;
+};
+
 export const useSettingModule = (exported) => {
   const store = useSettingStore();
   const { current, setCurrent, startLoading, stopLoading } = store;
@@ -24,8 +37,9 @@ export const useSettingModule = (exported) => {
         return null;
       }
 
-      setCurrent(data);
-      return data;
+      const flatData = flattenSettings(data);
+      setCurrent(flatData);
+      return flatData;
     } catch (err) {
       handleApiError(err, "Failed to load settings");
       throw err;

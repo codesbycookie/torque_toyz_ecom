@@ -64,7 +64,7 @@ export const AuthProvider = ({ children }) => {
     const hydrateUser = async () => {
       try {
         setLoading(true);
-        const res = await crud.me();
+        const res = await crud.me({ __options: { toast: false, silent: true } });
 
         if (!mounted) return;
 

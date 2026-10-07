@@ -39,6 +39,10 @@ export default function Setting() {
       low_stock_threshold: 0,
       gst_percentage: 18,
       maintenance_mode: false,
+      ecom_announcement_banner: "",
+      ecom_sales_notifications_enabled: true,
+      ecom_must_buy_count: 4,
+      ecom_recommended_count: 8,
     },
   });
 
@@ -218,6 +222,100 @@ export default function Setting() {
                     <div className="md:col-span-2">
                       <FormControl>
                         <Switch checked={field.value} onCheckedChange={field.onChange} />
+                      </FormControl>
+                    </div>
+                  </FormItem>
+                )}
+              />
+
+              <Separator />
+
+              {/* E-Commerce Features Control */}
+              <div className="py-2">
+                <h2 className="text-lg font-semibold tracking-tight text-primary">Storefront & E-Commerce Controls</h2>
+                <p className="text-sm text-muted-foreground">Manage storefront banners, recommendations, and live social proof popups.</p>
+              </div>
+
+              <FormField
+                control={form.control}
+                name="ecom_announcement_banner"
+                render={({ field }) => (
+                  <FormItem className="grid grid-cols-1 md:grid-cols-3 gap-4 py-6 items-start">
+                    <div className="md:col-span-1">
+                      <FormLabel className="text-base">Announcement Banner</FormLabel>
+                      <FormDescription>
+                        Top ticker banner text visible to all visitors across the storefront.
+                      </FormDescription>
+                    </div>
+                    <div className="md:col-span-2">
+                      <FormControl>
+                        <Input placeholder="⚡ SPECIAL OFFER: Get 10% off + Free Shipping..." {...field} />
+                      </FormControl>
+                    </div>
+                  </FormItem>
+                )}
+              />
+
+              <Separator />
+
+              <FormField
+                control={form.control}
+                name="ecom_sales_notifications_enabled"
+                render={({ field }) => (
+                  <FormItem className="grid grid-cols-1 md:grid-cols-3 gap-4 py-6 items-start">
+                    <div className="md:col-span-1">
+                      <FormLabel className="text-base">Live Sales Proof Popups</FormLabel>
+                      <FormDescription>
+                        Enable real-time purchase notification toasts on customer storefront.
+                      </FormDescription>
+                    </div>
+                    <div className="md:col-span-2">
+                      <FormControl>
+                        <Switch checked={field.value} onCheckedChange={field.onChange} />
+                      </FormControl>
+                    </div>
+                  </FormItem>
+                )}
+              />
+
+              <Separator />
+
+              <FormField
+                control={form.control}
+                name="ecom_must_buy_count"
+                render={({ field }) => (
+                  <FormItem className="grid grid-cols-1 md:grid-cols-3 gap-4 py-6 items-start">
+                    <div className="md:col-span-1">
+                      <FormLabel className="text-base">Must-Buy Items Count</FormLabel>
+                      <FormDescription>
+                        Number of hot products featured in the Must-Buy section.
+                      </FormDescription>
+                    </div>
+                    <div className="md:col-span-2">
+                      <FormControl>
+                        <Input type="number" min="1" placeholder="4" {...field} />
+                      </FormControl>
+                    </div>
+                  </FormItem>
+                )}
+              />
+
+              <Separator />
+
+              <FormField
+                control={form.control}
+                name="ecom_recommended_count"
+                render={({ field }) => (
+                  <FormItem className="grid grid-cols-1 md:grid-cols-3 gap-4 py-6 items-start">
+                    <div className="md:col-span-1">
+                      <FormLabel className="text-base">Recommended Items Count</FormLabel>
+                      <FormDescription>
+                        Number of products featured in the Recommended section.
+                      </FormDescription>
+                    </div>
+                    <div className="md:col-span-2">
+                      <FormControl>
+                        <Input type="number" min="1" placeholder="8" {...field} />
                       </FormControl>
                     </div>
                   </FormItem>

@@ -6,6 +6,7 @@ import { useOrderModule } from "@/modules/order/order.module";
 import { useUserModule } from "@/modules/user/user.module";
 import { usePaymentModule } from "@/modules/payment/payment.module";
 import { useLocationModule } from "@/modules/location/location.module";
+import { useSettingModule } from "@/modules/setting/setting.module";
 
 const ApiContext = createContext();
 
@@ -28,6 +29,7 @@ export const ApiProvider = ({ children }) => {
   const userModule = useUserModule(exported);
   const paymentModule = usePaymentModule(exported);
   const locationModule = useLocationModule(exported);
+  const settingModule = useSettingModule(exported);
 
   Object.assign(exported, {
     // Singular aliases
@@ -38,6 +40,7 @@ export const ApiProvider = ({ children }) => {
     user: userModule,
     payment: paymentModule,
     location: locationModule,
+    setting: settingModule,
 
     // Plural aliases
     products: productModule,
@@ -45,6 +48,7 @@ export const ApiProvider = ({ children }) => {
     users: userModule,
     payments: paymentModule,
     locations: locationModule,
+    settings: settingModule,
 
     // Module name aliases
     productModule,
@@ -54,6 +58,7 @@ export const ApiProvider = ({ children }) => {
     userModule,
     paymentModule,
     locationModule,
+    settingModule,
   });
 
   return (
