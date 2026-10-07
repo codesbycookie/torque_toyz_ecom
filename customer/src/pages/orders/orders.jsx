@@ -25,7 +25,7 @@ export default function Orders() {
   const { orders } = useApi();
   
   const orderList = orders.list || [];
-  const loading = orders.loading || {};
+  const isLoading = Boolean(orders.loading?.global || orders.loading?.getMine || orders.loading?.getAll);
   const pagination = orders.pagination || null;
   const [searchTerm, setSearchTerm] = useState("");
   const [cancellingOrderId, setCancellingOrderId] = useState(null);
@@ -106,7 +106,7 @@ export default function Orders() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {loading ? (
+              {isLoading ? (
                 <TableRow>
                   <TableCell colSpan={5} className="text-center py-8">
                     <Loader2 className="h-6 w-6 animate-spin mx-auto text-muted-foreground" />

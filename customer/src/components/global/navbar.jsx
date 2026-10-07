@@ -9,7 +9,8 @@ import { useEcom } from "@/core/contexts/ecom.context";
 export default function Navbar() {
   const { user } = useAuth();
   const api = useApi();
-  const { bannerText } = useEcom();
+  const ecom = useEcom();
+  const bannerText = ecom?.bannerText;
   const location = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 

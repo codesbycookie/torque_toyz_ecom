@@ -61,6 +61,16 @@ const apiurls = {
     },
   },
 
+  recommendations: {
+    get: {
+      method: "get",
+      url: (params = {}) => {
+        const query = new URLSearchParams(params).toString();
+        return `${base_url}/recommendations${query ? `?${query}` : ""}`;
+      },
+    },
+  },
+
   locations: {
     create: { method: "post", url: () => `${base_url}/locations` },
     getAll: { method: "get", url: () => `${base_url}/locations` },
