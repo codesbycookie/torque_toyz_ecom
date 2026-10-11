@@ -40,6 +40,11 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loggingIn, setLoggingIn] = useState(false);
   const [loading, setLoading] = useState(true);
+  const userRef = useRef(null);
+
+  useEffect(() => {
+    userRef.current = user;
+  }, [user]);
 
   const crud = useMemo(
     () => createCrud({ entity: "Auth", urls: apiurls.auth, store: null }),
@@ -48,6 +53,8 @@ export const AuthProvider = ({ children }) => {
 
   useEffect(() => {
     setupInterceptors((message) => {
+      if (!userRef.current) return false;
+
       uiRef.clearModals?.();
       flushSync(() => {
         setUser(null);
@@ -55,6 +62,7 @@ export const AuthProvider = ({ children }) => {
 
       navigateRef.current("/login");
       toast.error(message);
+      return true;
     });
   }, []);
 
@@ -64,7 +72,9 @@ export const AuthProvider = ({ children }) => {
     const hydrateUser = async () => {
       try {
         setLoading(true);
-        const res = await crud.me({ __options: { toast: false, silent: true } });
+        const res = await crud.me({
+          __options: { toast: false, error: false, silent: true },
+        });
 
         if (!mounted) return;
 

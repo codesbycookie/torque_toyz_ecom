@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { useApi } from "@/core/contexts/api.context";
+import { useAuth } from "@/core/contexts/auth.context";
 import { useLoader } from "@/core/hooks/useLoader";
 import { ProductListCard } from "@/modules/product/product.components";
 import { Button } from "@/components/ui/button";
@@ -27,6 +29,8 @@ import { Badge } from "@/components/ui/badge";
 import { Search, SlidersHorizontal, X } from "lucide-react";
 
 export default function ProductsPage() {
+  const navigate = useNavigate();
+  const { authenticated } = useAuth();
   const api = useApi();
   const { products, wishlist } = api;
   const { loadOnly, loading: isProductsLoading } = useLoader();
@@ -41,9 +45,9 @@ export default function ProductsPage() {
   useEffect(() => {
     loadOnly(() => Promise.all([
       products.getAll({ limit: 20, sortBy: "createdAt", order: "desc" }),
-      wishlist.fetchAll()
+      authenticated ? wishlist.fetchAll() : Promise.resolve()
     ]));
-  }, []);
+  }, [authenticated]);
 
   // Reactive module properties
   const list = products.list || [];
@@ -123,11 +127,23 @@ export default function ProductsPage() {
   };
 
   const handleAddToCart = (product) => {
+    if (!authenticated) {
+      toast.info("Please sign in to add items to your cart");
+      navigate("/login");
+      return;
+    }
+
     api.cart.addToCart(product);
     toast.success(`${product.name} added to cart`);
   };
 
   const handleToggleWishlist = (product) => {
+    if (!authenticated) {
+      toast.info("Please sign in to use your wishlist");
+      navigate("/login");
+      return;
+    }
+
     const alreadyWishlisted = wishlistedIds.includes(product._id) || Boolean(product?.is_in_wishlist);
     wishlist.toggle(product, alreadyWishlisted);
   };

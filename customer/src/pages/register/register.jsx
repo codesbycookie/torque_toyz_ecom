@@ -1,6 +1,8 @@
 'use client';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
+import { Link, Navigate } from 'react-router-dom';
 import { useAuth } from '@/core/contexts/auth.context';
+import logo from '@/assets/hero.png';
 import {
   Eye,
   EyeOff,
@@ -11,73 +13,109 @@ import {
   Truck,
 } from 'lucide-react';
 
+/* ───────────────────────── validation ───────────────────────── */
+
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+
+function validate(f) {
+  const e = {};
+  if (!f.name.trim()) e.name = 'Enter your full name';
+  else if (f.name.trim().length < 2) e.name = 'Name must be at least 2 characters';
+  if (!f.email.trim()) e.email = 'Enter your email address';
+  else if (!EMAIL_RE.test(f.email.trim())) e.email = 'Enter a valid email address';
+  if (!f.phone.trim()) e.phone = 'Enter your phone number';
+  else if (!/^\d{10}$/.test(f.phone.trim())) e.phone = 'Phone number must be 10 digits';
+  if (!f.password) e.password = 'Create a password';
+  else if (f.password.length < 8) e.password = 'Password must be at least 8 characters';
+  else if (f.password.length > 64) e.password = 'Password must be 64 characters or fewer';
+  else if (!/[A-Z]/.test(f.password)) e.password = 'Password must contain at least one uppercase letter';
+  else if (!/[a-z]/.test(f.password)) e.password = 'Password must contain at least one lowercase letter';
+  else if (!/[0-9]/.test(f.password)) e.password = 'Password must contain at least one number';
+  if (!f.confirm) e.confirm = 'Re-enter your password';
+  else if (f.confirm !== f.password) e.confirm = 'Passwords do not match';
+  if (!f.terms) e.terms = 'You need to accept the terms to continue';
+  return e;
+}
+
+function getStrength(pw) {
+  if (!pw) return { score: 0, label: '' };
+  let score = 0;
+  if (pw.length >= 8) score++;
+  if (pw.length >= 10) score++;
+  if (/[a-z]/.test(pw) && /[A-Z]/.test(pw) && /\d/.test(pw)) score++;
+  if (/[^A-Za-z0-9]/.test(pw)) score++;
+  return { score, label: ['Weak', 'Fair', 'Good', 'Strong', 'Strong'][score] };
+}
+
+const STRENGTH_COLORS = [
+  'bg-destructive',
+  'bg-destructive',
+  'bg-amber-500',
+  'bg-emerald-500',
+  'bg-emerald-600',
+];
+
+/* ───────────────────────── page ───────────────────────── */
+
 export default function Register() {
-  const { register, loggingIn } = useAuth();
+  const { authenticated, register, loggingIn } = useAuth();
 
   const [form, setForm] = useState({
     name: '',
     email: '',
     phone: '',
     password: '',
-    confirmPassword: '',
+    confirm: '',
+    terms: false,
   });
+  const [touched, setTouched] = useState({});
+  const [submitted, setSubmitted] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [acceptTerms, setAcceptTerms] = useState(false);
-  const [errors, setErrors] = useState({});
+  const [error, setError] = useState('');
 
-  const handleChange = (field) => (e) => {
-    setForm((prev) => ({ ...prev, [field]: e.target.value }));
-    setErrors((prev) => ({ ...prev, [field]: undefined }));
+  const errors = useMemo(() => validate(form), [form]);
+  const strength = useMemo(() => getStrength(form.password), [form.password]);
+
+  if (authenticated) return <Navigate to="/" replace />;
+
+  const fieldError = (field) => (touched[field] || submitted ? errors[field] : undefined);
+
+  const set = (field) => (e) => {
+    const value =
+      field === 'phone' ? e.target.value.replace(/\D/g, '').slice(0, 10) : e.target.value;
+    setForm((p) => ({ ...p, [field]: value }));
+    setError('');
   };
 
-  const validate = () => {
-    const nextErrors = {};
+  const blur = (field) => () => setTouched((p) => ({ ...p, [field]: true }));
 
-    if (!form.name.trim() || form.name.trim().length < 2) {
-      nextErrors.name = 'Name is too short';
-    }
-    if (!/^\S+@\S+\.\S+$/.test(form.email.trim())) {
-      nextErrors.email = 'Enter a valid email';
-    }
-    if (!form.phone.trim() || form.phone.trim().length < 10) {
-      nextErrors.phone = 'Phone number is too short';
-    }
-    if (!form.password || form.password.length < 6) {
-      nextErrors.password = 'Password must be at least 6 characters';
-    }
-    if (form.confirmPassword !== form.password) {
-      nextErrors.confirmPassword = 'Passwords do not match';
-    }
-    if (!acceptTerms) {
-      nextErrors.acceptTerms = 'You must accept the terms and conditions';
-    }
-
-    setErrors(nextErrors);
-    return Object.keys(nextErrors).length === 0;
-  };
+  const inputClass = (field, extra = '') =>
+    `torque-input w-full rounded-md border bg-input/30 px-3.5 py-2.5 text-sm outline-none transition-colors ${
+      fieldError(field) ? 'border-destructive' : 'border-input'
+    } ${extra}`;
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!validate()) return;
+    setSubmitted(true);
+    if (Object.keys(errors).length) return;
 
-    await register({
+    // register() navigates home on success and returns the error on failure
+    const result = await register({
       name: form.name.trim(),
-      email: form.email.trim(),
+      email: form.email.trim().toLowerCase(),
       phone: form.phone.trim(),
       password: form.password,
-      role: 'user',
       acceptTerms: true,
     });
-  };
 
-  const isDisabled =
-    loggingIn ||
-    !form.name.trim() ||
-    !form.email.trim() ||
-    !form.phone.trim() ||
-    !form.password ||
-    !form.confirmPassword;
+    if (result) {
+      setError(
+        result?.response?.data?.message ||
+          result?.message ||
+          'Could not create your account. Please try again.'
+      );
+    }
+  };
 
   return (
     <div className="min-h-screen w-full bg-background text-foreground grid lg:grid-cols-2">
@@ -107,7 +145,7 @@ export default function Register() {
 
         <div className="relative flex items-center gap-3">
           <span className="animate-logo-intro inline-flex w-9 h-9 rounded-full border-2 border-dashed torque-border items-center justify-center">
-            <img src="@/assets/hero.png" alt="Torque Toyzz Logo" />
+            <img src={logo} alt="Torque Toyzz Logo" />
           </span>
           <span className="text-white font-bold tracking-tight text-lg">TORQUE TOYZZ</span>
         </div>
@@ -118,13 +156,13 @@ export default function Register() {
             New drops weekly
           </span>
           <h1 className="text-white text-5xl font-bold tracking-tight leading-[1.05] mb-5">
-            Join the
+            Join the grid.
             <br />
-            garage.
+            Start your engine.
           </h1>
           <p className="text-white/60 text-[15px] leading-relaxed">
-            Create an account to track orders, manage your builds, and get first
-            access to every new kit before it sells out.
+            Create an account to track orders, save your favourite builds, and get
+            first access to every new kit before it sells out.
           </p>
         </div>
 
@@ -136,7 +174,7 @@ export default function Register() {
 
       {/* Right — form */}
       <div className="flex items-center justify-center px-6 py-14 bg-background">
-        <div className="w-full max-w-sm">
+        <div className="w-full max-w-md">
           <div className="lg:hidden flex items-center gap-2 mb-8">
             <span className="w-7 h-7 rounded-full torque-red-bg" />
             <span className="font-bold tracking-tight">TORQUE TOYZZ</span>
@@ -145,10 +183,11 @@ export default function Register() {
           <div className="torque-card torque-glow p-8">
             <h2 className="text-2xl font-semibold tracking-tight mb-1">Create your account</h2>
             <p className="text-muted-foreground text-sm mb-7">
-              Sign up to start shopping with Torque Toyzz.
+              Sign up for your Torque Toyzz account.
             </p>
 
-            <form onSubmit={handleSubmit} className="space-y-4" noValidate>
+            <form onSubmit={handleSubmit} noValidate className="space-y-4">
+              {/* Full name */}
               <div>
                 <label htmlFor="name" className="block text-sm font-medium mb-1.5">
                   Full name
@@ -156,19 +195,22 @@ export default function Register() {
                 <input
                   id="name"
                   type="text"
-                  placeholder="John Doe"
+                  placeholder="Your full name"
                   value={form.name}
-                  onChange={handleChange('name')}
+                  onChange={set('name')}
+                  onBlur={blur('name')}
                   disabled={loggingIn}
                   autoComplete="name"
                   autoFocus
-                  className="torque-input w-full rounded-md border border-input bg-input/30 px-3.5 py-2.5 text-sm outline-none transition-colors"
+                  aria-invalid={!!fieldError('name')}
+                  className={inputClass('name')}
                 />
-                {errors.name && (
-                  <p className="text-destructive text-xs mt-1">{errors.name}</p>
+                {fieldError('name') && (
+                  <p className="text-xs text-destructive mt-1.5">{fieldError('name')}</p>
                 )}
               </div>
 
+              {/* Email */}
               <div>
                 <label htmlFor="email" className="block text-sm font-medium mb-1.5">
                   Email
@@ -178,16 +220,19 @@ export default function Register() {
                   type="email"
                   placeholder="you@email.com"
                   value={form.email}
-                  onChange={handleChange('email')}
+                  onChange={set('email')}
+                  onBlur={blur('email')}
                   disabled={loggingIn}
                   autoComplete="email"
-                  className="torque-input w-full rounded-md border border-input bg-input/30 px-3.5 py-2.5 text-sm outline-none transition-colors"
+                  aria-invalid={!!fieldError('email')}
+                  className={inputClass('email')}
                 />
-                {errors.email && (
-                  <p className="text-destructive text-xs mt-1">{errors.email}</p>
+                {fieldError('email') && (
+                  <p className="text-xs text-destructive mt-1.5">{fieldError('email')}</p>
                 )}
               </div>
 
+              {/* Phone */}
               <div>
                 <label htmlFor="phone" className="block text-sm font-medium mb-1.5">
                   Phone number
@@ -195,18 +240,22 @@ export default function Register() {
                 <input
                   id="phone"
                   type="tel"
-                  placeholder="9876543210"
+                  inputMode="numeric"
+                  placeholder="10-digit mobile number"
                   value={form.phone}
-                  onChange={handleChange('phone')}
+                  onChange={set('phone')}
+                  onBlur={blur('phone')}
                   disabled={loggingIn}
                   autoComplete="tel"
-                  className="torque-input w-full rounded-md border border-input bg-input/30 px-3.5 py-2.5 text-sm outline-none transition-colors"
+                  aria-invalid={!!fieldError('phone')}
+                  className={inputClass('phone')}
                 />
-                {errors.phone && (
-                  <p className="text-destructive text-xs mt-1">{errors.phone}</p>
+                {fieldError('phone') && (
+                  <p className="text-xs text-destructive mt-1.5">{fieldError('phone')}</p>
                 )}
               </div>
 
+              {/* Password */}
               <div>
                 <label htmlFor="password" className="block text-sm font-medium mb-1.5">
                   Password
@@ -215,12 +264,14 @@ export default function Register() {
                   <input
                     id="password"
                     type={showPassword ? 'text' : 'password'}
-                    placeholder="Create a password"
+                    placeholder="8+ characters, uppercase, lowercase, and a number"
                     value={form.password}
-                    onChange={handleChange('password')}
+                    onChange={set('password')}
+                    onBlur={blur('password')}
                     disabled={loggingIn}
                     autoComplete="new-password"
-                    className="torque-input w-full rounded-md border border-input bg-input/30 px-3.5 py-2.5 pr-10 text-sm outline-none transition-colors"
+                    aria-invalid={!!fieldError('password')}
+                    className={inputClass('password', 'pr-10')}
                   />
                   <button
                     type="button"
@@ -231,65 +282,89 @@ export default function Register() {
                     {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                   </button>
                 </div>
-                {errors.password && (
-                  <p className="text-destructive text-xs mt-1">{errors.password}</p>
+                {fieldError('password') && (
+                  <p className="text-xs text-destructive mt-1.5">{fieldError('password')}</p>
+                )}
+
+                {/* Strength meter */}
+                {form.password && (
+                  <div className="mt-2.5 flex items-center gap-3">
+                    <div className="flex flex-1 gap-1" aria-hidden="true">
+                      {[1, 2, 3, 4].map((i) => (
+                        <span
+                          key={i}
+                          className={`h-1 flex-1 rounded-full transition-colors ${
+                            i <= strength.score ? STRENGTH_COLORS[strength.score] : 'bg-muted'
+                          }`}
+                        />
+                      ))}
+                    </div>
+                    <span className="w-12 text-right text-xs text-muted-foreground">
+                      {strength.label}
+                    </span>
+                  </div>
                 )}
               </div>
 
+              {/* Confirm password */}
               <div>
-                <label htmlFor="confirmPassword" className="block text-sm font-medium mb-1.5">
+                <label htmlFor="confirm" className="block text-sm font-medium mb-1.5">
                   Confirm password
                 </label>
-                <div className="relative">
-                  <input
-                    id="confirmPassword"
-                    type={showConfirmPassword ? 'text' : 'password'}
-                    placeholder="Re-enter your password"
-                    value={form.confirmPassword}
-                    onChange={handleChange('confirmPassword')}
-                    disabled={loggingIn}
-                    autoComplete="new-password"
-                    className="torque-input w-full rounded-md border border-input bg-input/30 px-3.5 py-2.5 pr-10 text-sm outline-none transition-colors"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                    aria-label={showConfirmPassword ? 'Hide password' : 'Show password'}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground torque-text-hover transition-colors"
-                  >
-                    {showConfirmPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-                  </button>
-                </div>
-                {errors.confirmPassword && (
-                  <p className="text-destructive text-xs mt-1">{errors.confirmPassword}</p>
+                <input
+                  id="confirm"
+                  type={showPassword ? 'text' : 'password'}
+                  placeholder="Re-enter your password"
+                  value={form.confirm}
+                  onChange={set('confirm')}
+                  onBlur={blur('confirm')}
+                  disabled={loggingIn}
+                  autoComplete="new-password"
+                  aria-invalid={!!fieldError('confirm')}
+                  className={inputClass('confirm')}
+                />
+                {fieldError('confirm') && (
+                  <p className="text-xs text-destructive mt-1.5">{fieldError('confirm')}</p>
                 )}
               </div>
 
+              {/* Terms */}
               <div className="pt-1">
                 <label className="flex items-start gap-2 cursor-pointer select-none">
                   <input
                     type="checkbox"
-                    checked={acceptTerms}
+                    checked={form.terms}
                     onChange={(e) => {
-                      setAcceptTerms(e.target.checked);
-                      setErrors((prev) => ({ ...prev, acceptTerms: undefined }));
+                      setForm((p) => ({ ...p, terms: e.target.checked }));
+                      setTouched((p) => ({ ...p, terms: true }));
+                      setError('');
                     }}
                     disabled={loggingIn}
                     className="w-4 h-4 mt-0.5 rounded border-input accent-primary"
                   />
-                  <span className="text-sm text-muted-foreground">
-                    I agree to the <a href="#">Terms &amp; Conditions</a> and{' '}
-                    <a href="#">Privacy Policy</a>
+                  <span className="text-sm text-muted-foreground leading-snug">
+                    I agree to the{' '}
+                    <span className="font-medium text-foreground">Terms of Service</span> and{' '}
+                    <span className="font-medium text-foreground">Privacy Policy</span>
                   </span>
                 </label>
-                {errors.acceptTerms && (
-                  <p className="text-destructive text-xs mt-1">{errors.acceptTerms}</p>
+                {fieldError('terms') && (
+                  <p className="text-xs text-destructive mt-1.5">{fieldError('terms')}</p>
                 )}
               </div>
 
+              {error && (
+                <div
+                  role="alert"
+                  className="rounded-md border border-destructive/40 bg-destructive/10 px-3.5 py-2.5 text-sm text-destructive"
+                >
+                  {error}
+                </div>
+              )}
+
               <button
                 type="submit"
-                disabled={isDisabled}
+                disabled={loggingIn}
                 className="torque-button torque-shine w-full flex items-center justify-center gap-2 rounded-md py-2.5 text-sm font-semibold disabled:opacity-70 mt-2"
               >
                 {loggingIn ? (
@@ -306,7 +381,10 @@ export default function Register() {
               </button>
 
               <p className="text-muted-foreground text-sm text-center pt-2">
-                Already have an account? <a href="/login">Sign in</a>
+                Already have an account?{' '}
+                <Link to="/login" className="text-primary hover:underline">
+                  Sign in
+                </Link>
               </p>
             </form>
           </div>

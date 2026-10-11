@@ -25,10 +25,12 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { useAuth } from "@/core/contexts/auth.context";
 
 export default function ProductDetail() {
   const { slug } = useParams();
   const navigate = useNavigate();
+  const { authenticated } = useAuth();
   const api = useApi();
   const { products, wishlist, cart } = api;
   const {
@@ -100,6 +102,12 @@ export default function ProductDetail() {
       : null;
 
   const handleAddToCart = () => {
+    if (!authenticated) {
+      toast.info("Please sign in to add items to your cart");
+      navigate("/login");
+      return;
+    }
+
     if (product) {
       cart.addToCart(product, 1);
       toast.success(`${product.name} added to cart`);
@@ -107,6 +115,12 @@ export default function ProductDetail() {
   };
 
   const handleToggleWishlist = () => {
+    if (!authenticated) {
+      toast.info("Please sign in to use your wishlist");
+      navigate("/login");
+      return;
+    }
+
     if (product) {
       wishlist.toggle(product, isWishlisted);
     }

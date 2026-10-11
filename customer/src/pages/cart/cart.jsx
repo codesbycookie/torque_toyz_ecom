@@ -4,6 +4,7 @@ import React, { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { useApi } from "@/core/contexts/api.context";
+import { useAuth } from "@/core/contexts/auth.context";
 import { Button } from "@/components/ui/button";
 import {
   AlertDialog,
@@ -27,6 +28,7 @@ import {
 
 export default function Cart() {
   const navigate = useNavigate();
+  const { authenticated } = useAuth();
   const api = useApi();
   const { items = [], updateQuantity, removeFromCart, pricing, fetchCart, clearCart, loading } = api.cart;
   const { addProduct: addToWishlist } = api.wishlist;
@@ -37,9 +39,11 @@ export default function Cart() {
   const [isClearing, setIsClearing] = useState(false);
 
   useEffect(() => {
-    fetchCart();
+    if (authenticated) {
+      fetchCart();
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [authenticated]);
 
   const handleUpdateQuantity = async (productId, newQuantity) => {
     try {
@@ -70,6 +74,12 @@ export default function Cart() {
   };
 
   const handleMoveToWishlist = async (item) => {
+    if (!authenticated) {
+      toast.info("Please sign in to use your wishlist");
+      navigate("/login");
+      return;
+    }
+
     const productId = item.product || item.id || item._id;
     try {
       setIsUpdatingId(productId);
@@ -106,6 +116,20 @@ export default function Cart() {
   };
 
   const isInitialLoading = loading && items.length === 0;
+
+  if (!authenticated) {
+    return (
+      <div className="mx-auto flex min-h-[85vh] max-w-7xl items-center justify-center px-4 py-8 sm:px-6 lg:px-8">
+        <div className="w-full max-w-lg rounded-2xl border border-dashed bg-card/40 px-6 py-12 text-center">
+          <h1 className="mb-2 text-2xl font-bold tracking-tight">Shopping Cart</h1>
+          <p className="mb-6 text-sm text-muted-foreground">
+            You haven't signed in yet. Please log in to view your cart.
+          </p>
+          <Button onClick={() => navigate("/login")}>Log in</Button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8 min-h-[85vh]">

@@ -1,5 +1,6 @@
 'use client';
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { useAuth } from '@/core/contexts/auth.context';
 import {
   Eye,
@@ -118,7 +119,7 @@ export default function Login() {
                   <label htmlFor="password" className="block text-sm font-medium">
                     Password
                   </label>
-                  <a href="#" className="text-xs">
+                  <a href="/forgot-password" className="text-xs">
                     Forgot password?
                   </a>
                 </div>
@@ -175,7 +176,9 @@ export default function Login() {
               </button>
 
               <p className="text-muted-foreground text-sm text-center pt-2">
-                New to Torque Toyzz? <a href="#">Create an account</a>
+                New to Torque Toyzz? <Link to="/register" className="text-primary hover:underline">
+                  Create an account
+                </Link>
               </p>
             </form>
           </div>

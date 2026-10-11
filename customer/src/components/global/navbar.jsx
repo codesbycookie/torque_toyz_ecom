@@ -7,7 +7,7 @@ import { useApi } from "@/core/contexts/api.context";
 import { useEcom } from "@/core/contexts/ecom.context";
 
 export default function Navbar() {
-  const { user } = useAuth();
+  const { user, authenticated } = useAuth();
   const api = useApi();
   const ecom = useEcom();
   const bannerText = ecom?.bannerText;
@@ -15,8 +15,10 @@ export default function Navbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   useEffect(() => {
-    api.cart.fetchCart();
-  }, []);
+    if (authenticated) {
+      api.cart.fetchCart();
+    }
+  }, [authenticated]);
 
   // Close mobile menu on route change
   useEffect(() => {

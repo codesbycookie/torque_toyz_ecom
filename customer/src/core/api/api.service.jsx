@@ -10,16 +10,20 @@ let isLoggingOut = false;
 
 export const setupInterceptors = (onUnauthorized) => {
   api.interceptors.response.use(
-    (res) => res,
+    (res) => {
+      isLoggingOut = false;
+      return res;
+    },
     (error) => {
       if (error.response?.status === 401) {
         if (!isLoggingOut) {
-          isLoggingOut = true;
           const message =
             error.response?.data?.message ||
             error.response?.data?.error ||
             'Session expired. Please login again.';
-          onUnauthorized?.(message);
+          if (onUnauthorized?.(message, error) !== false) {
+            isLoggingOut = true;
+          }
         }
       }
       return Promise.reject(error);
@@ -88,5 +92,3 @@ export const downloadFile = async (url, params) => {
 
   return filename;
 };
-
-

@@ -4,6 +4,7 @@ import React, { useEffect, useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { useApi } from '@/core/contexts/api.context';
+import { useAuth } from '@/core/contexts/auth.context';
 import { Button } from '@/components/ui/button';
 import {
   AlertDialog,
@@ -38,6 +39,7 @@ import {
 
 export default function Wishlist() {
   const navigate = useNavigate();
+  const { authenticated } = useAuth();
   const api = useApi();
   const { wishlist, cart } = api;
 
@@ -61,9 +63,11 @@ export default function Wishlist() {
 
   // Fetch initial wishlist
   useEffect(() => {
-    wishlist.fetchAll();
+    if (authenticated) {
+      wishlist.fetchAll();
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [authenticated]);
 
   // Compute Categories available in Wishlist
   const categories = useMemo(() => {
@@ -175,6 +179,12 @@ export default function Wishlist() {
 
   // Single Actions
   const handleAddToCart = async (product) => {
+    if (!authenticated) {
+      toast.info("Please sign in to add items to your cart");
+      navigate("/login");
+      return;
+    }
+
     if (product.stock <= 0) return;
     try {
       setAddingProductIds((prev) => [...prev, product._id]);
@@ -198,6 +208,12 @@ export default function Wishlist() {
 
   // Batch Operations
   const handleMoveSelectedToCart = async () => {
+    if (!authenticated) {
+      toast.info("Please sign in to add items to your cart");
+      navigate("/login");
+      return;
+    }
+
     const inStockSelected = selectedProducts.filter((p) => p.stock > 0);
 
     if (inStockSelected.length === 0) {
@@ -241,6 +257,12 @@ export default function Wishlist() {
   };
 
   const handleMoveAllInStockToCart = async () => {
+    if (!authenticated) {
+      toast.info("Please sign in to add items to your cart");
+      navigate("/login");
+      return;
+    }
+
     const inStockItems = list.filter((p) => p.stock > 0);
     if (inStockItems.length === 0) {
       toast.error('No in-stock items available to move');
@@ -273,6 +295,20 @@ export default function Wishlist() {
   };
 
   const isInitialLoading = loading?.global && list.length === 0;
+
+  if (!authenticated) {
+    return (
+      <div className="mx-auto flex min-h-[85vh] max-w-7xl items-center justify-center px-4 py-8 sm:px-6 lg:px-8">
+        <div className="w-full max-w-lg rounded-2xl border border-dashed bg-card/50 px-6 py-12 text-center">
+          <h1 className="mb-2 text-2xl font-bold tracking-tight">Wishlist</h1>
+          <p className="mb-6 text-sm text-muted-foreground">
+            You haven't signed in yet. Please log in to view your wishlist.
+          </p>
+          <Button onClick={() => navigate("/login")}>Log in</Button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8 min-h-[85vh]">

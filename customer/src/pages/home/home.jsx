@@ -1,6 +1,8 @@
 import { useEffect } from "react";
 import { toast } from "sonner";
+import { useNavigate } from "react-router-dom";
 import { useApi } from "@/core/contexts/api.context";
+import { useAuth } from "@/core/contexts/auth.context";
 
 import HeroBanner from "./components/hero-banner";
 import TrustStrip from "./components/trust-strip";
@@ -13,6 +15,8 @@ import NewsletterBar from "./components/newsletter-bar";
 
 
 export default function Home() {
+  const navigate = useNavigate();
+  const { authenticated } = useAuth();
   const { products, wishlist, cart } = useApi();
   const list = products.list || [];
   const loading = products.loading || {};
@@ -23,17 +27,29 @@ export default function Home() {
   // Load products and wishlist on component mount
   useEffect(() => {
     products.getFeatured(12);
-    if (typeof wishlist.fetchAll === "function") {
+    if (authenticated && typeof wishlist.fetchAll === "function") {
       wishlist.fetchAll();
     }
-  }, []);
+  }, [authenticated]);
 
   const handleAddToCart = (product) => {
+    if (!authenticated) {
+      toast.info("Please sign in to add items to your cart");
+      navigate("/login");
+      return;
+    }
+
     cart.addToCart(product, 1);
     toast.success(`${product.name} added to cart`);
   };
 
   const handleToggleWishlist = (product) => {
+    if (!authenticated) {
+      toast.info("Please sign in to use your wishlist");
+      navigate("/login");
+      return;
+    }
+
     const isWish =
       wishlistedIds.includes(product._id) || Boolean(product?.is_in_wishlist);
     wishlist.toggle(product, isWish);
