@@ -45,6 +45,7 @@ import {
   ArrowUpDown,
   Filter,
   CheckCircle2,
+  Loader2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -336,7 +337,7 @@ export function WishlistBatchBar({
   );
 }
 
-// ─── Wishlist Card - Grid Mode ─────────────────────────────────────
+// ─── Wishlist Card - Grid Mode (e-commerce style) ──────────────────
 export function WishlistGridCard({
   product,
   isSelected,
@@ -346,8 +347,18 @@ export function WishlistGridCard({
   isAddingToCart,
 }) {
   const navigate = useNavigate();
-  const firstImage = product.images?.[0];
+
+  const images = product.images || [];
+  const firstImage = images[0];
+  const hoverImage = images[1];
+  const href = `/products/${product.slug || product._id}`;
+
   const price = Number(product.price || 0);
+  // Optional: only shows if your product has an original/MRP price field
+  const mrp = Number(product.mrp || product.compare_price || 0);
+  const hasDiscount = mrp > price && price > 0;
+  const discountPct = hasDiscount ? Math.round(((mrp - price) / mrp) * 100) : 0;
+
   const isOutOfStock = product.stock <= 0;
   const isLowStock = product.stock > 0 && product.stock <= 5;
 
@@ -360,125 +371,215 @@ export function WishlistGridCard({
       : null;
 
   return (
-    <Card
+    <article
       className={cn(
-        "group relative overflow-hidden border transition-all duration-300 hover:shadow-lg flex flex-col justify-between",
-        isSelected && "ring-2 ring-primary border-primary bg-primary/5"
+        "group relative flex h-full flex-col overflow-hidden rounded-xl border bg-card transition-all duration-300",
+        "hover:-translate-y-0.5 hover:shadow-xl hover:border-foreground/20",
+        isSelected && "ring-2 ring-primary border-primary"
       )}
     >
-      {/* Top Header Overlay Controls */}
-      <div className="absolute top-2 left-2 z-20 flex items-center gap-2">
-        <Checkbox
-          checked={isSelected}
-          onCheckedChange={() => onToggleSelect(product._id)}
-          className="size-5 rounded-md bg-background/90 backdrop-blur-xs border-muted-foreground/40 data-[state=checked]:bg-primary shadow-xs"
-        />
-      </div>
+      {/* ── Image ─────────────────────────────────────────── */}
+      <div className="relative aspect-square w-full overflow-hidden bg-white dark:bg-muted/30">
+        <button
+          type="button"
+          onClick={() => navigate(href)}
+          aria-label={`View ${product.name}`}
+          className="flex size-full items-center justify-center p-5 focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-primary"
+        >
+          {firstImage ? (
+            <>
+              <img
+                src={firstImage}
+                alt={product.name}
+                loading="lazy"
+                className={cn(
+                  "absolute inset-0 m-auto size-[calc(100%-2.5rem)] object-contain transition-all duration-500",
+                  hoverImage
+                    ? "group-hover:opacity-0"
+                    : "group-hover:scale-105",
+                  isOutOfStock && "opacity-50 grayscale"
+                )}
+              />
+              {hoverImage && (
+                <img
+                  src={hoverImage}
+                  alt=""
+                  loading="lazy"
+                  className={cn(
+                    "absolute inset-0 m-auto size-[calc(100%-2.5rem)] object-contain opacity-0 transition-all duration-500 group-hover:opacity-100 group-hover:scale-105",
+                    isOutOfStock && "grayscale"
+                  )}
+                />
+              )}
+            </>
+          ) : (
+            <span className="flex flex-col items-center gap-1 text-xs text-muted-foreground">
+              <ShoppingBag className="size-7 text-muted-foreground/40" />
+              No image
+            </span>
+          )}
+        </button>
 
-      <div className="absolute top-2 right-2 z-20">
-        <TooltipProvider delayDuration={150}>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                size="icon"
-                variant="secondary"
-                className="size-8 rounded-full bg-background/90 backdrop-blur-xs hover:bg-destructive hover:text-destructive-foreground shadow-xs transition-colors"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onRemove(product._id);
-                }}
-              >
-                <Trash2 className="size-4" />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>Remove from wishlist</TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
-      </div>
-
-      {/* Image Area */}
-      <div
-        className="relative aspect-square w-full bg-muted/40 overflow-hidden cursor-pointer flex items-center justify-center p-4"
-        onClick={() => navigate(`/products/${product.slug || product._id}`)}
-      >
-        {firstImage ? (
-          <img
-            src={firstImage}
-            alt={product.name}
-            className="size-full object-contain transition-transform duration-500 group-hover:scale-108"
-            loading="lazy"
-          />
-        ) : (
-          <div className="text-xs text-muted-foreground flex flex-col items-center gap-1">
-            <ShoppingBag className="size-6 text-muted-foreground/40" />
-            <span>No Image</span>
-          </div>
+        {/* Out-of-stock label */}
+        {isOutOfStock && (
+          <span className="pointer-events-none absolute inset-x-0 top-1/2 -translate-y-1/2 bg-foreground/80 py-1 text-center text-[11px] font-semibold uppercase tracking-widest text-background">
+            Currently unavailable
+          </span>
         )}
 
-        {/* Stock Badge Overlay */}
-        <div className="absolute bottom-2 left-2 flex flex-wrap gap-1">
-          {isOutOfStock ? (
-            <Badge variant="destructive" className="text-[10px] font-semibold px-2 py-0.5">
-              Out of stock
-            </Badge>
-          ) : isLowStock ? (
-            <Badge className="bg-amber-500 hover:bg-amber-600 text-white text-[10px] font-semibold px-2 py-0.5">
-              Only {product.stock} left
-            </Badge>
-          ) : (
-            <Badge className="bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] font-semibold px-2 py-0.5">
-              In stock
-            </Badge>
+        {/* Discount ribbon */}
+        {hasDiscount && !isOutOfStock && (
+          <span className="absolute left-0 top-9 rounded-r-md bg-rose-600 px-2 py-0.5 text-[11px] font-bold text-white shadow-sm">
+            {discountPct}% OFF
+          </span>
+        )}
+
+        {/* Select checkbox: always visible when selected / on touch, hover on desktop */}
+        <div
+          className={cn(
+            "absolute left-2 top-2 z-10 transition-opacity",
+            isSelected
+              ? "opacity-100"
+              : "opacity-100 md:opacity-0 md:group-hover:opacity-100 md:focus-within:opacity-100"
           )}
+        >
+          <Checkbox
+            checked={isSelected}
+            onCheckedChange={() => onToggleSelect(product._id)}
+            aria-label={`Select ${product.name}`}
+            className="size-5 rounded-md border-muted-foreground/50 bg-background shadow-sm data-[state=checked]:bg-primary"
+          />
         </div>
+
+        {/* Remove */}
+        <div className="absolute right-2 top-2 z-10">
+          <TooltipProvider delayDuration={150}>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  size="icon"
+                  variant="secondary"
+                  aria-label="Remove from wishlist"
+                  className="size-8 rounded-full bg-background/95 shadow-sm transition-colors hover:bg-destructive hover:text-destructive-foreground"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onRemove(product._id);
+                  }}
+                >
+                  <Trash2 className="size-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Remove from wishlist</TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        </div>
+
+        {/* Image dots (only when there are multiple images) */}
+        {images.length > 1 && (
+          <div className="pointer-events-none absolute bottom-2 left-1/2 flex -translate-x-1/2 gap-1">
+            {images.slice(0, 3).map((_, i) => (
+              <span
+                key={i}
+                className={cn(
+                  "h-1 rounded-full bg-foreground/25 transition-all duration-300",
+                  i === 0
+                    ? "w-4 bg-foreground/60 group-hover:w-1.5 group-hover:bg-foreground/25"
+                    : i === 1
+                    ? "w-1.5 group-hover:w-4 group-hover:bg-foreground/60"
+                    : "w-1.5"
+                )}
+              />
+            ))}
+          </div>
+        )}
       </div>
 
-      {/* Content Area */}
-      <CardContent className="p-4 flex-1 flex flex-col justify-between space-y-3">
-        <div className="space-y-1.5">
+      {/* ── Details ───────────────────────────────────────── */}
+      <div className="flex flex-1 flex-col gap-2 p-3.5 sm:p-4">
+        <div className="space-y-1">
           {product.category?.name && (
-            <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider block">
+            <span className="block text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
               {product.category.name}
             </span>
           )}
 
           <Link
-            to={`/products/${product.slug || product._id}`}
-            className="font-semibold text-sm line-clamp-2 hover:text-primary transition-colors leading-snug"
+            to={href}
+            title={product.name}
+            className="line-clamp-2 min-h-[2.5rem] text-sm font-medium leading-snug text-foreground transition-colors hover:text-primary"
           >
             {product.name}
           </Link>
+        </div>
 
-          {/* Rating */}
-          {avgRating && (
-            <div className="flex items-center gap-1 text-xs pt-0.5">
-              <Star className="size-3.5 fill-amber-400 text-amber-400" />
-              <span className="font-semibold">{avgRating}</span>
-              <span className="text-muted-foreground text-[11px]">({reviews.length})</span>
-            </div>
+        {/* Rating chip */}
+        {avgRating && (
+          <div className="flex items-center gap-2">
+            <span className="inline-flex items-center gap-0.5 rounded bg-emerald-600 px-1.5 py-0.5 text-[11px] font-bold text-white">
+              {avgRating}
+              <Star className="size-3 fill-white" />
+            </span>
+            <span className="text-xs text-muted-foreground">
+              ({reviews.length.toLocaleString("en-IN")})
+            </span>
+          </div>
+        )}
+
+        {/* Price block */}
+        <div className="flex flex-wrap items-baseline gap-x-2">
+          <span className="text-xl font-bold tracking-tight text-foreground">
+            ₹{price.toLocaleString("en-IN")}
+          </span>
+          {hasDiscount && (
+            <>
+              <span className="text-xs text-muted-foreground line-through">
+                ₹{mrp.toLocaleString("en-IN")}
+              </span>
+              <span className="text-xs font-semibold text-emerald-600 dark:text-emerald-400">
+                {discountPct}% off
+              </span>
+            </>
           )}
         </div>
 
-        {/* Price & Add to Cart Footer */}
-        <div className="pt-2 border-t flex items-center justify-between gap-2">
-          <div>
-            <span className="text-lg font-bold tracking-tight text-foreground">
-              ₹{price.toLocaleString("en-IN")}
-            </span>
-          </div>
+        {/* Availability line */}
+        <p
+          className={cn(
+            "flex items-center gap-1 text-xs font-medium",
+            isOutOfStock
+              ? "text-destructive"
+              : isLowStock
+              ? "text-rose-600 dark:text-rose-400"
+              : "text-emerald-600 dark:text-emerald-400"
+          )}
+        >
+          {isOutOfStock ? (
+            "Out of stock"
+          ) : isLowStock ? (
+            `Only ${product.stock} left, order soon`
+          ) : (
+            <>
+              <CheckCircle2 className="size-3.5" />
+              In stock
+            </>
+          )}
+        </p>
 
-          <Button
-            size="sm"
-            disabled={isOutOfStock || isAddingToCart}
-            onClick={() => onAddToCart(product)}
-            className="gap-1.5 text-xs font-semibold px-3 h-8 shadow-2xs"
-          >
-            <ShoppingCart className="size-3.5" />
-            Add to Cart
-          </Button>
-        </div>
-      </CardContent>
-    </Card>
+        {/* Action */}
+        <Button
+          disabled={isOutOfStock || isAddingToCart}
+          onClick={() => onAddToCart(product)}
+          className="mt-auto w-full gap-2 rounded-lg font-semibold shadow-sm"
+        >
+          {isAddingToCart ? (
+            <Loader2 className="size-4 animate-spin" />
+          ) : (
+            <ShoppingCart className="size-4" />
+          )}
+          {isOutOfStock ? "Unavailable" : isAddingToCart ? "Adding..." : "Add to Cart"}
+        </Button>
+      </div>
+    </article>
   );
 }
 
@@ -773,17 +874,16 @@ export function WishlistSkeleton({ viewMode = "grid" }) {
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
       {Array.from({ length: 8 }).map((_, i) => (
-        <Card key={i} className="overflow-hidden">
-          <Skeleton className="aspect-square w-full" />
-          <CardContent className="p-4 space-y-2">
+        <div key={i} className="overflow-hidden rounded-xl border bg-card">
+          <Skeleton className="aspect-square w-full rounded-none" />
+          <div className="space-y-2 p-4">
+            <Skeleton className="h-3 w-1/3" />
             <Skeleton className="h-4 w-3/4" />
-            <Skeleton className="h-3 w-1/2" />
-            <div className="pt-2 flex justify-between items-center">
-              <Skeleton className="h-6 w-16" />
-              <Skeleton className="h-8 w-24 rounded-md" />
-            </div>
-          </CardContent>
-        </Card>
+            <Skeleton className="h-4 w-1/2" />
+            <Skeleton className="h-6 w-20" />
+            <Skeleton className="h-9 w-full rounded-lg" />
+          </div>
+        </div>
       ))}
     </div>
   );
