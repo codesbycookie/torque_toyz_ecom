@@ -1,16 +1,11 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Separator } from "@/components/ui/separator";
 import { useApi } from "@/core/contexts/api.context";
 import { useAuth } from "@/core/contexts/auth.context";
 import { useLoader } from "@/core/hooks/useLoader";
@@ -20,16 +15,17 @@ import {
   Banknote,
   ShieldCheck,
   Truck,
-  MapPin,
-  CheckCircle2,
-  AlertCircle,
   ArrowLeft,
   ArrowRight,
   Lock,
   ShoppingBag,
-  Edit3,
+  Package,
 } from "lucide-react";
 import { CartStepper } from "@/modules/cart/cart.components";
+import {
+  ShippingAddressForm,
+  ShippingAddressConfirmedCard,
+} from "./shipping-address.components";
 import { cn } from "@/lib/utils";
 
 export default function Checkout() {
@@ -50,7 +46,8 @@ export default function Checkout() {
     lastName: "",
     email: "",
     phone: "",
-    address: "",
+    door: "",
+    street: "",
     city: "",
     state: "",
     zip: "",
@@ -61,6 +58,7 @@ export default function Checkout() {
   // Load Locations / Deliverable States via location module
   useEffect(() => {
     api.locations.fetchLocations();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Autofill user details if available
@@ -70,16 +68,14 @@ export default function Checkout() {
       const parts = user.name ? user.name.split(" ") : [""];
       const firstName = parts[0] || "";
       const lastName = parts.slice(1).join(" ") || "";
-      const address = user.address?.door
-        ? `${user.address.door} ${user.address.street || ""}`
-        : user.address?.street || "";
 
       const newFormData = {
         firstName,
         lastName,
         email: user.email || "",
         phone: user.phone || "",
-        address,
+        door: user.address?.door || "",
+        street: user.address?.street || "",
         city: user.address?.city || "",
         state: user.address?.state || "",
         zip: user.address?.pincode ? String(user.address.pincode) : "",
@@ -102,6 +98,7 @@ export default function Checkout() {
       }
       setFormData(newFormData);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, locations]);
 
   const selectedLocation = locations.find((l) => l._id === formData.state);
@@ -116,14 +113,17 @@ export default function Checkout() {
     }
 
     setFormData((prev) => ({ ...prev, state: val }));
-    const address = {
-      door: formData.address.split(" ")[0] || "",
-      street: formData.address,
-      city: formData.city,
-      state: val,
-      pincode: Number(formData.zip) || 0,
-    };
-    await updateShippingAddress(address);
+    const pincodeNum = Number(formData.zip);
+    if (pincodeNum >= 100000 && pincodeNum <= 999999) {
+      const address = {
+        door: formData.door ? formData.door.trim() : undefined,
+        street: formData.street ? formData.street.trim() : undefined,
+        city: formData.city ? formData.city.trim() : undefined,
+        state: val,
+        pincode: pincodeNum,
+      };
+      await updateShippingAddress(address);
+    }
   };
 
   const handleInputChange = (e) => {
@@ -134,8 +134,20 @@ export default function Checkout() {
   // Step 2 Submission -> Validate and Proceed to Step 3 (Payment)
   const handleProceedToPayment = async (e) => {
     e.preventDefault();
-    if (!formData.firstName || !formData.lastName || !formData.address || !formData.city || !formData.state || !formData.zip) {
+    if (
+      !formData.firstName.trim() ||
+      !formData.lastName.trim() ||
+      !formData.street.trim() ||
+      !formData.city.trim() ||
+      !formData.state ||
+      !formData.zip.trim()
+    ) {
       toast.error("Please fill in all required shipping fields.");
+      return;
+    }
+
+    if (!/^\d{6}$/.test(formData.zip.trim())) {
+      toast.error("PIN Code must be a valid 6-digit postal code.");
       return;
     }
 
@@ -147,14 +159,15 @@ export default function Checkout() {
     try {
       setIsUpdatingAddress(true);
       const address = {
-        door: formData.address.split(" ")[0] || "",
-        street: formData.address,
-        city: formData.city,
+        door: formData.door ? formData.door.trim() : undefined,
+        street: formData.street ? formData.street.trim() : undefined,
+        city: formData.city ? formData.city.trim() : undefined,
         state: formData.state,
-        pincode: Number(formData.zip) || 0,
+        pincode: Number(formData.zip),
       };
       await updateShippingAddress(address);
       setCheckoutStep(3);
+      window.scrollTo({ top: 0, behavior: "smooth" });
     } catch {
       toast.error("Failed to update shipping address");
     } finally {
@@ -165,13 +178,12 @@ export default function Checkout() {
   const { subtotal = 0, tax = 0, shipping_cost: shipping = 0, total = 0 } = pricing || {};
   const grandTotal = total > 0 ? total : subtotal + shipping + tax;
 
-
   const cancelOrderAndRestoreCart = async (orderId, cartBackup, errorMessage) => {
-    const currentAddress = formData.state
+    const currentAddress = formData.state && formData.zip
       ? {
-          door: formData.address.split(" ")[0] || "",
-          street: formData.address,
-          city: formData.city,
+          door: formData.door ? formData.door.trim() : undefined,
+          street: formData.street ? formData.street.trim() : undefined,
+          city: formData.city ? formData.city.trim() : undefined,
           state: formData.state,
           pincode: Number(formData.zip) || 0,
         }
@@ -203,11 +215,11 @@ export default function Checkout() {
     }));
 
     const currentAddress = {
-      door: formData.address.split(" ")[0] || "",
-      street: formData.address,
-      city: formData.city,
+      door: formData.door ? formData.door.trim() : undefined,
+      street: formData.street ? formData.street.trim() : undefined,
+      city: formData.city ? formData.city.trim() : undefined,
       state: formData.state,
-      pincode: Number(formData.zip) || 0,
+      pincode: Number(formData.zip),
     };
 
     try {
@@ -285,7 +297,7 @@ export default function Checkout() {
               contact: formData.phone || user?.phone || "9999999999",
             },
             theme: {
-              color: "#facc15",
+              color: "#e11d48", // Primary brand accent color
             },
           };
 
@@ -315,374 +327,310 @@ export default function Checkout() {
 
   if (items.length === 0) {
     return (
-      <div className="mx-auto max-w-4xl px-4 py-16 text-center">
-        <div className="size-20 rounded-full bg-muted flex items-center justify-center mx-auto mb-4 text-muted-foreground">
-          <ShoppingBag className="size-10 stroke-[1.5]" />
+      <div className="min-h-screen bg-background text-foreground flex items-center justify-center p-4">
+        <div className="max-w-md w-full text-center space-y-4">
+          <div className="size-20 rounded-2xl bg-muted/40 border border-border/80 flex items-center justify-center mx-auto text-muted-foreground shadow-2xs">
+            <ShoppingBag className="size-10 stroke-[1.5] text-primary" />
+          </div>
+          <h2 className="text-2xl font-black tracking-tight text-foreground">
+            No Items in Checkout
+          </h2>
+          <p className="text-xs text-muted-foreground leading-relaxed">
+            Your shopping cart is currently empty. Add precision scale models from our catalog before proceeding with checkout.
+          </p>
+          <Button
+            onClick={() => navigate("/products")}
+            className="h-10 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground font-bold text-xs gap-2 shadow-xs cursor-pointer"
+          >
+            <ShoppingBag className="size-4" />
+            <span>Browse Model Catalog</span>
+          </Button>
         </div>
-        <h2 className="text-2xl font-bold tracking-tight mb-2">No Items to Checkout</h2>
-        <p className="text-sm text-muted-foreground mb-6">Your cart is empty. Add products to your cart before proceeding.</p>
-        <Button onClick={() => navigate("/products")} className="gap-2 font-semibold">
-          <ShoppingBag className="size-4" /> Browse Store
-        </Button>
       </div>
     );
   }
 
   return (
-    <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8 min-h-[85vh]">
-      {/* Checkout Stepper Progress (Step 2 or 3) */}
-      <CartStepper currentStep={checkoutStep} />
+    <div className="min-h-screen bg-background text-foreground pb-12">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
 
-      {/* Navigation Header */}
-      <div className="flex items-center justify-between mb-6 pb-4 border-b">
-        <div className="flex items-center gap-3">
-          {checkoutStep === 2 ? (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => navigate("/cart")}
-              className="gap-1.5 text-xs font-medium text-muted-foreground hover:text-foreground"
-            >
-              <ArrowLeft className="size-3.5" /> Return to Cart
-            </Button>
-          ) : (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setCheckoutStep(2)}
-              className="gap-1.5 text-xs font-medium text-muted-foreground hover:text-foreground"
-            >
-              <ArrowLeft className="size-3.5" /> Back to Shipping Details
-            </Button>
-          )}
-          <Separator orientation="vertical" className="h-4" />
-          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">
-            {checkoutStep === 2 ? "Shipping Details" : "Payment & Order"}
-          </h1>
+        {/* ─── Breadcrumb Navigation ─── */}
+        <div className="flex items-center gap-1.5 text-xs text-muted-foreground flex-wrap">
+          <Link to="/profile" className="hover:text-primary transition-colors">
+            Your Account
+          </Link>
+          <span>›</span>
+          <Link to="/cart" className="hover:text-primary transition-colors">
+            Shopping Cart
+          </Link>
+          <span>›</span>
+          <span className="text-foreground font-bold">
+            Checkout {checkoutStep === 2 ? "› Shipping Details" : "› Payment & Review"}
+          </span>
         </div>
-        <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-          <Lock className="size-3.5 text-emerald-600" />
-          <span>Encrypted SSL Payment</span>
-        </div>
-      </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
-        {/* Left Form (Step 2 or Step 3) */}
-        <div className="lg:col-span-2 space-y-6">
-          {/* STEP 2: SHIPPING DETAILS FORM */}
-          {checkoutStep === 2 && (
-            <form onSubmit={handleProceedToPayment} className="space-y-6">
-              <Card className="border shadow-xs">
-                <CardHeader className="pb-4">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <span className="flex size-7 items-center justify-center rounded-full bg-primary text-primary-foreground font-bold text-xs">
-                        2
-                      </span>
-                      <CardTitle className="text-lg">Shipping Address</CardTitle>
-                    </div>
-                    <Badge variant="outline" className="text-xs font-normal">
-                      <MapPin className="size-3 mr-1 text-primary" /> Delivery Info
-                    </Badge>
-                  </div>
-                </CardHeader>
+        {/* ─── Stepper Progress ─── */}
+        <CartStepper currentStep={checkoutStep} />
 
-                <CardContent className="space-y-4">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div className="space-y-1.5">
-                      <Label htmlFor="firstName" className="text-xs font-medium">First Name *</Label>
-                      <Input id="firstName" value={formData.firstName} onChange={handleInputChange} required className="h-9 text-sm" />
-                    </div>
-                    <div className="space-y-1.5">
-                      <Label htmlFor="lastName" className="text-xs font-medium">Last Name *</Label>
-                      <Input id="lastName" value={formData.lastName} onChange={handleInputChange} required className="h-9 text-sm" />
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div className="space-y-1.5">
-                      <Label htmlFor="email" className="text-xs font-medium">Email Address</Label>
-                      <Input id="email" type="email" placeholder="you@example.com" value={formData.email} onChange={handleInputChange} className="h-9 text-sm" />
-                    </div>
-                    <div className="space-y-1.5">
-                      <Label htmlFor="phone" className="text-xs font-medium">Phone Number</Label>
-                      <Input id="phone" type="tel" placeholder="+91 9876543210" value={formData.phone} onChange={handleInputChange} className="h-9 text-sm" />
-                    </div>
-                  </div>
-
-                  <div className="space-y-1.5">
-                    <Label htmlFor="address" className="text-xs font-medium">Street Address / House No. *</Label>
-                    <Input id="address" placeholder="Flat No., Building, Street Name" value={formData.address} onChange={handleInputChange} required className="h-9 text-sm" />
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                    <div className="space-y-1.5">
-                      <Label htmlFor="city" className="text-xs font-medium">City *</Label>
-                      <Input id="city" value={formData.city} onChange={handleInputChange} required className="h-9 text-sm" />
-                    </div>
-
-                    <div className="space-y-1.5">
-                      <Label htmlFor="state" className="text-xs font-medium">State / Region *</Label>
-                      <Select value={formData.state} onValueChange={handleStateChange}>
-                        <SelectTrigger id="state" className="h-9 text-sm">
-                          <SelectValue placeholder="Select State" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {locations.map((loc) => (
-                            <SelectItem key={loc._id} value={loc._id}>
-                              {loc.state} {!loc.deliverable && "(Not Deliverable)"}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    <div className="space-y-1.5">
-                      <Label htmlFor="zip" className="text-xs font-medium">PIN Code *</Label>
-                      <Input id="zip" value={formData.zip} onChange={handleInputChange} required className="h-9 text-sm" />
-                    </div>
-                  </div>
-
-                  {/* Deliverability Warning */}
-                  {formData.state && !isStateDeliverable && (
-                    <Alert variant="destructive" className="mt-3">
-                      <AlertCircle className="size-4" />
-                      <AlertTitle className="text-xs font-semibold">Location Not Deliverable</AlertTitle>
-                      <AlertDescription className="text-xs">
-                        We currently do not ship to the selected state. Please select a deliverable state to continue.
-                      </AlertDescription>
-                    </Alert>
-                  )}
-
-                  {formData.state && isStateDeliverable && (
-                    <div className="flex items-center gap-2 p-2.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 text-xs font-medium">
-                      <CheckCircle2 className="size-4 shrink-0" />
-                      <span>Shipping available to this address via Express Logistics!</span>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-
+        {/* ─── Navigation Header Strip ─── */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-border/80">
+          <div className="flex items-center gap-3">
+            {checkoutStep === 2 ? (
               <Button
-                type="submit"
-                size="lg"
-                disabled={isUpdatingAddress || !formData.state || !isStateDeliverable}
-                className="w-full font-bold gap-2 text-base py-6 shadow-md hover:shadow-lg transition-all"
+                variant="outline"
+                size="sm"
+                onClick={() => navigate("/cart")}
+                className="h-8.5 rounded-xl text-xs gap-1.5 font-medium hover:border-primary hover:text-primary cursor-pointer"
               >
-                {isUpdatingAddress ? "Saving Address..." : "Continue to Payment"}
-                <ArrowRight className="size-5" />
+                <ArrowLeft className="size-3.5" />
+                <span>Return to Cart</span>
               </Button>
-            </form>
-          )}
+            ) : (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCheckoutStep(2)}
+                className="h-8.5 rounded-xl text-xs gap-1.5 font-medium hover:border-primary hover:text-primary cursor-pointer"
+              >
+                <ArrowLeft className="size-3.5" />
+                <span>Back to Shipping</span>
+              </Button>
+            )}
 
-          {/* STEP 3: PAYMENT & ORDER REVIEW */}
-          {checkoutStep === 3 && (
-            <form onSubmit={handleFinalCheckout} className="space-y-6">
-              {/* Confirmed Shipping Address Summary Card */}
-              <Card className="border bg-card shadow-2xs">
-                <CardContent className="p-4 sm:p-5 flex items-center justify-between gap-4">
-                  <div className="space-y-1">
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                        Delivering to:
-                      </span>
-                      <Badge variant="secondary" className="text-[10px] font-medium">
-                        {selectedLocation?.state}
-                      </Badge>
-                    </div>
-                    <p className="font-semibold text-sm">
-                      {formData.firstName} {formData.lastName}
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      {formData.address}, {formData.city}, {selectedLocation?.state} - {formData.zip}
-                    </p>
-                    {formData.phone && (
-                      <p className="text-xs text-muted-foreground">Phone: {formData.phone}</p>
-                    )}
-                  </div>
+            <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-foreground">
+              {checkoutStep === 2 ? "Shipping Destination" : "Payment & Order Finalization"}
+            </h1>
+          </div>
 
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setCheckoutStep(2)}
-                    className="gap-1.5 text-xs font-medium shrink-0"
-                  >
-                    <Edit3 className="size-3.5" /> Edit
-                  </Button>
-                </CardContent>
-              </Card>
+          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+            <Lock className="size-3.5 text-primary" />
+            <span className="font-medium text-foreground">256-Bit SSL Encrypted Garage Checkout</span>
+          </div>
+        </div>
 
-              {/* Payment Method Selector */}
-              <Card className="border shadow-xs">
-                <CardHeader className="pb-4">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <span className="flex size-7 items-center justify-center rounded-full bg-primary text-primary-foreground font-bold text-xs">
+        {/* ─── Checkout Main Grid ─── */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+          {/* Main Left Workspace (8 cols) */}
+          <div className="lg:col-span-8 space-y-6">
+            {checkoutStep === 2 ? (
+              <ShippingAddressForm
+                formData={formData}
+                onInputChange={handleInputChange}
+                locations={locations}
+                selectedLocation={selectedLocation}
+                isStateDeliverable={isStateDeliverable}
+                onStateChange={handleStateChange}
+                onSubmit={handleProceedToPayment}
+                isUpdating={isUpdatingAddress}
+              />
+            ) : (
+              <form onSubmit={handleFinalCheckout} className="space-y-6">
+                {/* Confirmed Shipping Address Summary Card */}
+                <ShippingAddressConfirmedCard
+                  formData={formData}
+                  selectedLocation={selectedLocation}
+                  onEditAddress={() => setCheckoutStep(2)}
+                />
+
+                {/* Payment Method Selector Card */}
+                <div className="rounded-2xl border border-border/80 bg-card overflow-hidden shadow-xs">
+                  <div className="bg-muted/40 dark:bg-muted/20 border-b border-border/80 px-5 sm:px-6 py-4 flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <span className="flex size-7 items-center justify-center rounded-full bg-primary text-primary-foreground font-bold text-xs shrink-0 shadow-2xs">
                         3
                       </span>
-                      <CardTitle className="text-lg">Select Payment Method</CardTitle>
+                      <div>
+                        <h2 className="text-base sm:text-lg font-bold tracking-tight text-foreground">
+                          Payment Method Selection
+                        </h2>
+                        <p className="text-xs text-muted-foreground">
+                          Select your preferred settlement channel for this dispatch
+                        </p>
+                      </div>
                     </div>
-                    <Badge variant="secondary" className="text-xs font-semibold">
-                      100% Encrypted
+
+                    <Badge className="bg-primary/10 text-primary border border-primary/20 text-xs font-semibold">
+                      Instant Verification
                     </Badge>
                   </div>
-                </CardHeader>
 
-                <CardContent className="space-y-4">
-                  <RadioGroup
-                    value={paymentMethod}
-                    onValueChange={setPaymentMethod}
-                    className="grid grid-cols-1 sm:grid-cols-2 gap-4"
-                  >
-                    {/* Razorpay Online */}
-                    <label
-                      className={cn(
-                        "flex items-start gap-3 p-4 rounded-xl border-2 cursor-pointer transition-all bg-card hover:border-primary/50",
-                        paymentMethod === "online" && "border-primary bg-primary/5 ring-1 ring-primary"
-                      )}
+                  <div className="p-5 sm:p-6 space-y-4">
+                    <RadioGroup
+                      value={paymentMethod}
+                      onValueChange={setPaymentMethod}
+                      className="grid grid-cols-1 sm:grid-cols-2 gap-4"
                     >
-                      <RadioGroupItem value="online" id="pay-online" className="mt-1" />
-                      <div className="space-y-1">
-                        <div className="flex items-center gap-2">
-                          <CreditCard className="size-4 text-primary" />
-                          <span className="font-semibold text-sm">Online Payment / UPI</span>
+                      {/* Razorpay Online */}
+                      <label
+                        className={cn(
+                          "flex items-start gap-3.5 p-4 rounded-xl border transition-all bg-card hover:border-primary/50 cursor-pointer",
+                          paymentMethod === "online"
+                            ? "border-primary bg-primary/5 ring-1 ring-primary shadow-xs"
+                            : "border-border/80"
+                        )}
+                      >
+                        <RadioGroupItem value="online" id="pay-online" className="mt-1" />
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-2">
+                            <CreditCard className="size-4 text-primary" />
+                            <span className="font-bold text-sm text-foreground">
+                              Online UPI / Cards
+                            </span>
+                          </div>
+                          <p className="text-xs text-muted-foreground leading-relaxed">
+                            Razorpay secure gateway. Supports UPI (Google Pay, PhonePe, Paytm), Netbanking, and Credit/Debit Cards.
+                          </p>
                         </div>
-                        <p className="text-xs text-muted-foreground leading-relaxed">
-                          Pay securely using Razorpay, Credit/Debit Card, Netbanking, or UPI apps.
-                        </p>
-                      </div>
-                    </label>
+                      </label>
 
-                    {/* Cash on Delivery */}
-                    <label
-                      className={cn(
-                        "flex items-start gap-3 p-4 rounded-xl border-2 cursor-pointer transition-all bg-card hover:border-primary/50",
-                        paymentMethod === "cod" && "border-primary bg-primary/5 ring-1 ring-primary"
-                      )}
-                    >
-                      <RadioGroupItem value="cod" id="pay-cod" className="mt-1" />
-                      <div className="space-y-1">
-                        <div className="flex items-center gap-2">
-                          <Banknote className="size-4 text-emerald-600" />
-                          <span className="font-semibold text-sm">Cash on Delivery (COD)</span>
+                      {/* Cash on Delivery */}
+                      <label
+                        className={cn(
+                          "flex items-start gap-3.5 p-4 rounded-xl border transition-all bg-card hover:border-primary/50 cursor-pointer",
+                          paymentMethod === "cod"
+                            ? "border-primary bg-primary/5 ring-1 ring-primary shadow-xs"
+                            : "border-border/80"
+                        )}
+                      >
+                        <RadioGroupItem value="cod" id="pay-cod" className="mt-1" />
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-2">
+                            <Banknote className="size-4 text-primary" />
+                            <span className="font-bold text-sm text-foreground">
+                              Cash on Delivery (COD)
+                            </span>
+                          </div>
+                          <p className="text-xs text-muted-foreground leading-relaxed">
+                            Pay directly upon physical delivery at your doorstep via cash or courier UPI.
+                          </p>
                         </div>
-                        <p className="text-xs text-muted-foreground leading-relaxed">
-                          Pay cash directly to the courier partner upon package delivery.
-                        </p>
-                      </div>
-                    </label>
-                  </RadioGroup>
-                </CardContent>
-              </Card>
+                      </label>
+                    </RadioGroup>
+                  </div>
+                </div>
 
-              {/* Final Submit Button */}
-              <Button
-                type="submit"
-                size="lg"
-                disabled={isProcessing}
-                className="w-full font-bold gap-2 text-base py-6 shadow-md hover:shadow-lg transition-all"
-              >
-                {isProcessing
-                  ? "Processing Order..."
-                  : paymentMethod === "cod"
-                  ? `Place Order (COD) - ₹${grandTotal.toLocaleString("en-IN", { maximumFractionDigits: 2 })}`
-                  : `Pay ₹${grandTotal.toLocaleString("en-IN", { maximumFractionDigits: 2 })} via Razorpay`}
-              </Button>
-            </form>
-          )}
-        </div>
+                {/* Final Submit CTA */}
+                <Button
+                  type="submit"
+                  disabled={isProcessing}
+                  className="w-full h-12 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground font-bold text-sm shadow-xs transition-all gap-2 cursor-pointer"
+                >
+                  {isProcessing
+                    ? "Securing Dispatch & Order..."
+                    : paymentMethod === "cod"
+                    ? `Confirm Order (COD) - ₹${grandTotal.toLocaleString("en-IN", { maximumFractionDigits: 2 })}`
+                    : `Pay ₹${grandTotal.toLocaleString("en-IN", { maximumFractionDigits: 2 })} via Razorpay`}
+                  <ArrowRight className="size-4" />
+                </Button>
+              </form>
+            )}
+          </div>
 
-        {/* Right Order Summary Sidebar */}
-        <div className="lg:col-span-1">
-          <Card className="sticky top-24 border shadow-xs overflow-hidden">
-            <CardHeader className="pb-3 border-b">
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-base font-bold">Order Items</CardTitle>
-                <Badge variant="secondary" className="text-xs font-semibold">
-                  {items.length} {items.length === 1 ? "item" : "items"}
+          {/* Right Order Items & Pricing Sidebar (4 cols) */}
+          <div className="lg:col-span-4 space-y-4">
+            <div className="rounded-2xl border border-border/80 bg-card overflow-hidden shadow-xs sticky top-24">
+              <div className="bg-muted/40 dark:bg-muted/20 border-b border-border/80 px-5 py-3.5 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Package className="size-4 text-primary" />
+                  <h3 className="font-bold text-xs uppercase tracking-wider text-muted-foreground">
+                    Order Summary
+                  </h3>
+                </div>
+                <Badge className="bg-primary/10 text-primary border border-primary/20 text-xs font-semibold">
+                  {items.length} {items.length === 1 ? "model" : "models"}
                 </Badge>
               </div>
-            </CardHeader>
 
-            <CardContent className="p-5 space-y-4">
-              {/* Product List */}
-              <div className="max-h-72 overflow-y-auto space-y-3 pr-1">
-                {items.map((item) => {
-                  const itemId = item.product || item.id || item._id;
-                  const price = Number(item.price || 0);
-                  const qty = Number(item.quantity || 1);
+              <div className="p-5 space-y-4">
+                {/* Items List */}
+                <div className="max-h-72 overflow-y-auto space-y-3 pr-1">
+                  {items.map((item) => {
+                    const itemId = item.product || item.id || item._id;
+                    const price = Number(item.price || 0);
+                    const qty = Number(item.quantity || 1);
 
-                  return (
-                    <div key={itemId} className="flex items-center gap-3">
-                      <div className="size-14 rounded-lg bg-muted/40 border shrink-0 overflow-hidden flex items-center justify-center p-1">
-                        {item.image ? (
-                          <img src={item.image} alt={item.name} className="size-full object-contain" />
-                        ) : (
-                          <ShoppingBag className="size-4 text-muted-foreground" />
-                        )}
+                    return (
+                      <div key={itemId} className="flex items-center gap-3">
+                        <div className="size-14 rounded-xl bg-muted/40 border border-border/80 shrink-0 overflow-hidden flex items-center justify-center p-1">
+                          {item.image ? (
+                            <img
+                              src={item.image}
+                              alt={item.name}
+                              className="size-full object-contain"
+                            />
+                          ) : (
+                            <ShoppingBag className="size-4 text-muted-foreground" />
+                          )}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <h4 className="font-bold text-xs truncate leading-snug text-foreground">
+                            {item.name}
+                          </h4>
+                          <p className="text-[11px] text-muted-foreground">
+                            Qty: {qty} × ₹{price.toLocaleString("en-IN")}
+                          </p>
+                        </div>
+                        <div className="font-mono font-bold text-xs text-foreground whitespace-nowrap">
+                          ₹{(price * qty).toLocaleString("en-IN")}
+                        </div>
                       </div>
-                      <div className="flex-1 min-w-0">
-                        <h4 className="font-semibold text-xs truncate leading-snug">{item.name}</h4>
-                        <p className="text-[11px] text-muted-foreground">Qty: {qty} × ₹{price.toLocaleString("en-IN")}</p>
-                      </div>
-                      <div className="font-bold text-xs whitespace-nowrap">
-                        ₹{(price * qty).toLocaleString("en-IN")}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-
-              <Separator />
-
-              {/* Pricing Breakdown */}
-              <div className="space-y-2.5 text-xs">
-                <div className="flex justify-between text-muted-foreground">
-                  <span>Subtotal</span>
-                  <span className="font-medium text-foreground">₹{subtotal.toLocaleString("en-IN")}</span>
+                    );
+                  })}
                 </div>
-                <div className="flex justify-between text-muted-foreground">
-                  <span>GST / Tax</span>
-                  <span className="font-medium text-foreground">
-                    ₹{tax.toLocaleString("en-IN", { maximumFractionDigits: 2 })}
+
+                <Separator className="bg-border/80" />
+
+                {/* Price Breakdown */}
+                <div className="space-y-2 text-xs">
+                  <div className="flex justify-between text-muted-foreground">
+                    <span>Subtotal</span>
+                    <span className="font-mono font-medium text-foreground">
+                      ₹{subtotal.toLocaleString("en-IN")}
+                    </span>
+                  </div>
+                  <div className="flex justify-between text-muted-foreground">
+                    <span>GST / Taxes</span>
+                    <span className="font-mono font-medium text-foreground">
+                      ₹{tax.toLocaleString("en-IN", { maximumFractionDigits: 2 })}
+                    </span>
+                  </div>
+                  <div className="flex justify-between text-muted-foreground">
+                    <span>Shipping Charges</span>
+                    <span className="font-mono font-medium text-foreground">
+                      {shipping > 0 ? `₹${shipping.toLocaleString("en-IN")}` : "Free"}
+                    </span>
+                  </div>
+                </div>
+
+                <Separator className="bg-border/80" />
+
+                {/* Total Payable */}
+                <div className="flex items-baseline justify-between pt-1">
+                  <div>
+                    <span className="font-bold text-sm block text-foreground">Total Payable</span>
+                    <span className="text-[10px] text-muted-foreground">All taxes included</span>
+                  </div>
+                  <span className="font-mono text-xl font-extrabold tracking-tight text-primary">
+                    ₹{grandTotal.toLocaleString("en-IN", { maximumFractionDigits: 2 })}
                   </span>
                 </div>
-                <div className="flex justify-between text-muted-foreground">
-                  <span>Shipping Charges</span>
-                  <span className="font-medium text-foreground">
-                    {shipping > 0 ? `₹${shipping.toLocaleString("en-IN")}` : "Free"}
-                  </span>
+
+                {/* Trust and Safety Badges */}
+                <div className="pt-3 border-t border-border/80 space-y-2 text-[11px] text-muted-foreground">
+                  <div className="flex items-center gap-2">
+                    <ShieldCheck className="size-3.5 text-primary shrink-0" />
+                    <span>Buyer Protection & Garage Quality Assurance</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Truck className="size-3.5 text-primary shrink-0" />
+                    <span>Tracked Express Carrier Logistics</span>
+                  </div>
                 </div>
               </div>
-
-              <Separator />
-
-              {/* Grand Total */}
-              <div className="flex items-baseline justify-between pt-1">
-                <div>
-                  <span className="font-bold text-base block">Total Payable</span>
-                  <span className="text-[10px] text-muted-foreground">All taxes included</span>
-                </div>
-                <span className="text-xl font-extrabold tracking-tight text-primary">
-                  ₹{grandTotal.toLocaleString("en-IN", { maximumFractionDigits: 2 })}
-                </span>
-              </div>
-
-              {/* Security & Support Guarantee */}
-              <div className="pt-3 border-t space-y-2 text-[11px] text-muted-foreground">
-                <div className="flex items-center gap-2">
-                  <ShieldCheck className="size-3.5 text-emerald-600 shrink-0" />
-                  <span>Buyer Protection Guaranteed</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Truck className="size-3.5 text-primary shrink-0" />
-                  <span>Tracked Express Shipping</span>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
         </div>
+
       </div>
     </div>
   );

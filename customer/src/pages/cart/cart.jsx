@@ -32,8 +32,6 @@ export default function Cart() {
   const { items = [], updateQuantity, removeFromCart, pricing, fetchCart, clearCart, loading } = api.cart;
   const { addProduct: addToWishlist } = api.wishlist;
 
-  const [promoCode, setPromoCode] = useState("");
-  const [appliedPromo, setAppliedPromo] = useState("");
   const [isUpdatingId, setIsUpdatingId] = useState(null);
   const [isClearing, setIsClearing] = useState(false);
 
@@ -93,16 +91,6 @@ export default function Cart() {
       toast.error("Failed to clear cart");
     } finally {
       setIsClearing(false);
-    }
-  };
-
-  const handleApplyPromo = () => {
-    if (!promoCode.trim()) return;
-    if (promoCode.trim().toUpperCase() === "TORQUE10") {
-      setAppliedPromo("TORQUE10");
-      toast.success("Coupon code TORQUE10 applied successfully! (10% Off)");
-    } else {
-      toast.error("Invalid coupon code");
     }
   };
 
@@ -216,10 +204,6 @@ export default function Cart() {
                 pricing={pricing}
                 itemCount={items.reduce((sum, i) => sum + (i.quantity || 1), 0)}
                 onProceedToCheckout={() => navigate("/checkout")}
-                promoCode={promoCode}
-                onPromoCodeChange={setPromoCode}
-                onApplyPromo={handleApplyPromo}
-                appliedPromo={appliedPromo}
               />
             </div>
           </div>

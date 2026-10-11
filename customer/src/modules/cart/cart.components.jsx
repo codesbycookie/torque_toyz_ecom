@@ -3,7 +3,6 @@ import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import {
   Tooltip,
@@ -21,11 +20,8 @@ import {
   ShieldCheck,
   Truck,
   RotateCcw,
-  Sparkles,
-  Tag,
   Check,
   Weight,
-  Sparkle,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -252,10 +248,6 @@ export function CartOrderSummary({
   pricing,
   itemCount,
   onProceedToCheckout,
-  promoCode,
-  onPromoCodeChange,
-  onApplyPromo,
-  appliedPromo,
 }) {
   const { subtotal = 0, tax = 0, total_weight = 0, shipping_cost = 0, total = 0 } = pricing || {};
   const grandTotal = total > 0 ? total : subtotal + shipping_cost + tax;
@@ -285,36 +277,6 @@ export function CartOrderSummary({
             </p>
           </div>
         </div>
-
-        {/* Promo Code Input */}
-        <div className="space-y-2">
-          <label className="text-xs font-semibold text-muted-foreground flex items-center gap-1.5">
-            <Tag className="size-3.5 text-primary" /> Promo / Coupon Code
-          </label>
-          <div className="flex gap-2">
-            <Input
-              placeholder="e.g. TORQUE10"
-              value={promoCode}
-              onChange={(e) => onPromoCodeChange(e.target.value)}
-              className="h-9 text-xs rounded-xl bg-background border-border/80"
-            />
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={onApplyPromo}
-              className="h-9 text-xs font-bold px-3 shrink-0 rounded-xl hover:border-primary hover:text-primary cursor-pointer"
-            >
-              Apply
-            </Button>
-          </div>
-          {appliedPromo && (
-            <p className="text-[11px] text-primary font-semibold flex items-center gap-1">
-              <Sparkles className="size-3" /> Coupon "{appliedPromo}" activated!
-            </p>
-          )}
-        </div>
-
-        <Separator />
 
         {/* Pricing Breakdown */}
         <div className="space-y-2.5 text-xs">
