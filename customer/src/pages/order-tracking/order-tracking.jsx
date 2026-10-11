@@ -25,10 +25,8 @@ import {
 import { toast } from "sonner";
 import {
   CheckCircle2,
-  Circle,
   Truck,
   Package,
-  PackageCheck,
   ExternalLink,
   AlertTriangle,
   CreditCard,
@@ -45,7 +43,9 @@ import {
   FileText,
   ShieldCheck,
   Check,
-  MessageSquare,
+  ChevronRight,
+  HelpCircle,
+  Phone,
   Sparkles,
 } from "lucide-react";
 import { useApi } from "@/core/contexts/api.context";
@@ -61,7 +61,7 @@ export default function OrderTracking() {
   const { orders, cart } = useApi();
   const { loadOnly, loading } = useLoader();
 
-  const [showAllUpdates, setShowAllUpdates] = useState(false);
+  const [showAllUpdates, setShowAllUpdates] = useState(true);
   const [cancelReason, setCancelReason] = useState("Changed my mind");
   const [isCancelling, setIsCancelling] = useState(false);
 
@@ -132,16 +132,16 @@ export default function OrderTracking() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
           <Skeleton className="h-4 w-48 rounded" />
           <div className="flex justify-between items-center pb-3 border-b border-border/80">
-            <Skeleton className="h-8 w-64 rounded-lg" />
+            <Skeleton className="h-9 w-64 rounded-xl" />
             <div className="flex gap-2">
-              <Skeleton className="h-9 w-28 rounded-lg" />
-              <Skeleton className="h-9 w-28 rounded-lg" />
+              <Skeleton className="h-9 w-28 rounded-xl" />
+              <Skeleton className="h-9 w-28 rounded-xl" />
             </div>
           </div>
-          <Skeleton className="h-64 w-full rounded-xl" />
+          <Skeleton className="h-56 w-full rounded-2xl" />
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-            <Skeleton className="lg:col-span-8 h-80 rounded-xl" />
-            <Skeleton className="lg:col-span-4 h-80 rounded-xl" />
+            <Skeleton className="lg:col-span-8 h-96 rounded-2xl" />
+            <Skeleton className="lg:col-span-4 h-96 rounded-2xl" />
           </div>
         </div>
       </div>
@@ -161,7 +161,6 @@ export default function OrderTracking() {
           </p>
           <Button
             onClick={() => navigate("/orders")}
-            variant="default"
             className="w-full mt-2 h-9 rounded-xl text-xs font-semibold cursor-pointer"
           >
             <ArrowLeft className="mr-2 size-3.5" /> Return to Your Orders
@@ -239,22 +238,30 @@ export default function OrderTracking() {
   const pipelineSteps = [
     {
       key: "placed",
-      label: "Ordered",
+      label: "Order Placed",
+      subLabel: "Verified online",
+      icon: Package,
       note: historyMap.placed?.note || "Order placed & verified by Torque Toyzz",
     },
     {
       key: "confirmed",
-      label: "Confirmed",
+      label: "Boxed & Ready",
+      subLabel: "Inspected in garage",
+      icon: ShieldCheck,
       note: historyMap.confirmed?.note || "Order confirmed & inspection prepped in garage",
     },
     {
       key: "shipped",
-      label: "Shipped",
+      label: "Dispatched",
+      subLabel: "In carrier transit",
+      icon: Truck,
       note: historyMap.shipped?.note || "Package in transit with express courier partner",
     },
     {
       key: "delivered",
       label: "Delivered",
+      subLabel: "At your doorstep",
+      icon: CheckCircle2,
       note: historyMap.delivered?.note || "Package delivered to shipping destination",
     },
   ];
@@ -282,32 +289,32 @@ export default function OrderTracking() {
     switch (status?.toLowerCase()) {
       case "delivered":
         return (
-          <Badge className="bg-primary text-primary-foreground font-semibold gap-1 text-xs">
-            <CheckCircle2 className="size-3" /> Delivered
+          <Badge className="bg-primary text-primary-foreground font-semibold gap-1.5 px-2.5 py-0.5 text-xs">
+            <CheckCircle2 className="size-3.5" /> Delivered
           </Badge>
         );
       case "shipped":
         return (
-          <Badge className="bg-primary/80 text-primary-foreground font-semibold gap-1 text-xs">
-            <Truck className="size-3" /> Dispatched
+          <Badge className="bg-primary/80 text-primary-foreground font-semibold gap-1.5 px-2.5 py-0.5 text-xs">
+            <Truck className="size-3.5" /> In Transit
           </Badge>
         );
       case "confirmed":
         return (
-          <Badge className="bg-primary/20 text-primary border border-primary/30 font-semibold gap-1 text-xs">
-            <Check className="size-3" /> Confirmed
+          <Badge className="bg-primary/20 text-primary border border-primary/30 font-semibold gap-1.5 px-2.5 py-0.5 text-xs">
+            <Check className="size-3.5" /> Confirmed
           </Badge>
         );
       case "placed":
         return (
-          <Badge className="bg-primary/10 text-primary border border-primary/20 font-semibold gap-1 text-xs">
-            <Clock className="size-3" /> Placed
+          <Badge className="bg-primary/10 text-primary border border-primary/20 font-semibold gap-1.5 px-2.5 py-0.5 text-xs">
+            <Clock className="size-3.5" /> Placed
           </Badge>
         );
       case "cancelled":
         return (
-          <Badge className="bg-destructive/10 text-destructive border border-destructive/20 font-semibold gap-1 text-xs">
-            <Ban className="size-3" /> Cancelled
+          <Badge className="bg-destructive/10 text-destructive border border-destructive/20 font-semibold gap-1.5 px-2.5 py-0.5 text-xs">
+            <Ban className="size-3.5" /> Cancelled
           </Badge>
         );
       default:
@@ -324,7 +331,7 @@ export default function OrderTracking() {
     orderDetails.shipping_address?.name ||
     (typeof orderDetails.user === "object" ? orderDetails.user?.name : String(orderDetails.user || "Customer"));
 
-  // Build Chronological Tracking Scans for Expandable Accordion
+  // Build Chronological Tracking Scans for Live Log
   let trackingScans = [];
   if (Array.isArray(orderDetails.status_history) && orderDetails.status_history.length > 0) {
     trackingScans = [...orderDetails.status_history]
@@ -344,105 +351,68 @@ export default function OrderTracking() {
       }))
       .reverse();
   } else {
-    // Default fallback milestones
     if (isDelivered) {
       trackingScans.push({
         status: "delivered",
         title: "Delivered",
         date: formatStepDate("delivered"),
-        note: "Package was handed directly to resident or left at doorstep",
+        note: "Package was safely delivered to your shipping address and confirmed.",
       });
     }
     if (isShipped || isDelivered) {
       trackingScans.push({
         status: "shipped",
-        title: "Dispatched / In Transit",
+        title: "Dispatched / Out for Delivery",
         date: formatStepDate("shipped"),
-        note: "Package departed local sorting hub and is en route with express courier",
+        note: "Package departed local logistics hub and is en route with express carrier.",
       });
     }
     if (isConfirmed || isShipped || isDelivered) {
       trackingScans.push({
         status: "confirmed",
-        title: "Order Confirmed & Packaged",
+        title: "Quality Inspected & Packaged",
         date: formatStepDate("confirmed"),
-        note: "Precision collectible model inspected, bubble wrapped & boxed in Torque Garage",
+        note: "Scale models inspected, bubble-wrapped in reinforced Torque Garage packaging.",
       });
     }
     trackingScans.push({
       status: "placed",
-      title: "Order Received",
+      title: "Order Placed & Verified",
       date: formatStepDate("placed"),
-      note: "Order confirmed and verified online by customer",
+      note: "Payment authorized and order entry registered in system.",
     });
   }
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
-      {/* ─── Centered Page Container (max-w-7xl) ─── */}
+    <div className="min-h-screen bg-background text-foreground pb-12">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
-        
-        {/* Amazon Breadcrumb Navigation */}
-        <div className="flex items-center gap-1.5 text-xs text-muted-foreground flex-wrap">
-          <Link to="/profile" className="hover:text-primary transition-colors">
-            Your Account
-          </Link>
-          <span>›</span>
-          <Link to="/orders" className="hover:text-primary transition-colors">
-            Your Orders
-          </Link>
-          <span>›</span>
-          <span className="font-mono text-foreground font-medium">#{orderCode}</span>
-          <span>›</span>
-          <span className="text-foreground font-bold">
-            {activeView === "invoice" ? "Order Details & Invoice" : "Track Package"}
-          </span>
-        </div>
 
-        {/* Amazon Header Bar: Title, Status Badge, Order Code & Top Actions */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-3 border-b border-border/80">
-          <div>
-            <div className="flex items-center gap-3 flex-wrap">
-              <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground">
-                {activeView === "invoice"
-                  ? "Order Details & Invoice"
-                  : isDelivered
-                  ? `Delivered ${orderDateShort}`
-                  : isShipped
-                  ? "Arriving Soon • Dispatched"
-                  : isConfirmed
-                  ? "Preparing for Dispatch"
-                  : isCancelled
-                  ? "Order Cancelled"
-                  : "Order Placed"}
-              </h1>
-              {getStatusBadge(orderDetails.status)}
-            </div>
-
-            <div className="flex items-center gap-2 flex-wrap text-xs text-muted-foreground mt-1">
-              <span>Ordered on {orderDate}</span>
-              <span className="text-border">•</span>
-              <span className="font-mono font-bold text-foreground">Order # {orderCode}</span>
-              <button
-                type="button"
-                onClick={() => copyToClipboard(orderCode, "Order Code")}
-                className="hover:text-foreground cursor-pointer transition-colors p-0.5"
-                title="Copy order code"
-              >
-                <Copy className="size-3" />
-              </button>
-            </div>
+        {/* ─── Breadcrumbs & Action Bar ─── */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="flex items-center gap-1.5 text-xs text-muted-foreground flex-wrap">
+            <Link to="/profile" className="hover:text-primary transition-colors">
+              Your Account
+            </Link>
+            <span>›</span>
+            <Link to="/orders" className="hover:text-primary transition-colors">
+              Your Orders
+            </Link>
+            <span>›</span>
+            <span className="font-mono text-foreground font-semibold">#{orderCode}</span>
+            <span>›</span>
+            <span className="text-foreground font-bold">
+              {activeView === "invoice" ? "Invoice" : "Delivery Tracker"}
+            </span>
           </div>
 
-          {/* Top Quick Actions */}
           <div className="flex items-center gap-2 flex-wrap">
             <Button
               variant="outline"
               size="sm"
               onClick={handleShareTracking}
-              className="h-9 rounded-lg text-xs gap-1.5 font-medium cursor-pointer"
+              className="h-8.5 rounded-xl text-xs gap-1.5 font-medium cursor-pointer"
             >
-              <Share2 className="size-3.5" />
+              <Share2 className="size-3.5 text-primary" />
               <span>Share</span>
             </Button>
 
@@ -450,25 +420,181 @@ export default function OrderTracking() {
               variant="outline"
               size="sm"
               onClick={() => window.print()}
-              className="h-9 rounded-lg text-xs gap-1.5 font-medium cursor-pointer"
+              className="h-8.5 rounded-xl text-xs gap-1.5 font-medium cursor-pointer"
             >
-              <Printer className="size-3.5" />
-              <span>Print Invoice</span>
+              <Printer className="size-3.5 text-muted-foreground" />
+              <span>Print</span>
             </Button>
 
             <Button
               variant="outline"
               size="sm"
               onClick={() => navigate("/orders")}
-              className="h-9 rounded-lg text-xs gap-1.5 font-medium cursor-pointer"
+              className="h-8.5 rounded-xl text-xs gap-1.5 font-medium cursor-pointer"
             >
               <ArrowLeft className="size-3.5" />
-              <span>Back to Orders</span>
+              <span>All Orders</span>
             </Button>
           </div>
         </div>
 
-        {/* ─── Amazon Sub-Tabs: [ Track Package ] | [ Order Details & Invoice ] ─── */}
+        {/* ─── Hero Header & Status Banner ─── */}
+        <div className="rounded-2xl border border-border/80 bg-card overflow-hidden shadow-xs">
+          {/* Top Headline Strip */}
+          <div className="p-6 sm:p-8 border-b border-border/70 flex flex-col md:flex-row md:items-center justify-between gap-6">
+            <div className="space-y-2">
+              <div className="flex items-center gap-3 flex-wrap">
+                <span className="text-xs font-mono font-bold uppercase tracking-wider text-muted-foreground">
+                  Order #{orderCode}
+                </span>
+                {getStatusBadge(orderDetails.status)}
+              </div>
+
+              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold tracking-tight text-foreground">
+                {isDelivered
+                  ? `Delivered on ${orderDateShort}`
+                  : isShipped
+                  ? "Dispatched & In Transit"
+                  : isConfirmed
+                  ? "Boxed & Preparing for Courier"
+                  : isCancelled
+                  ? "Order Cancelled"
+                  : "Order Received & Verified"}
+              </h1>
+
+              <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed max-w-2xl">
+                {isDelivered
+                  ? `Package was delivered directly to your doorstep on ${orderDate}. All items have passed garage verification.`
+                  : isShipped
+                  ? "Your order has been handed to our express courier partner and is en route to your city sorting hub."
+                  : isCancelled
+                  ? "This order was cancelled and scale model allocations were released back to garage inventory."
+                  : "We have registered your order and our collectors are preparing precision models for factory inspection."}
+              </p>
+            </div>
+
+            {/* AWB & Dispatch Badge */}
+            <div className="bg-muted/40 dark:bg-muted/20 border border-border/80 rounded-xl p-4 shrink-0 space-y-2 text-xs md:min-w-[240px]">
+              <div className="flex items-center justify-between text-muted-foreground">
+                <span>Courier Partner</span>
+                <strong className="text-foreground font-semibold">Express Carrier</strong>
+              </div>
+              <div className="flex items-center justify-between text-muted-foreground">
+                <span>AWB / Tracking ID</span>
+                <div className="flex items-center gap-1.5 font-mono font-bold text-foreground">
+                  <span>{orderDetails.tracking_number || orderCode}</span>
+                  <button
+                    type="button"
+                    onClick={() => copyToClipboard(orderDetails.tracking_number || orderCode, "Tracking ID")}
+                    className="hover:text-primary transition-colors cursor-pointer"
+                    title="Copy Tracking ID"
+                  >
+                    <Copy className="size-3" />
+                  </button>
+                </div>
+              </div>
+              <div className="flex items-center justify-between text-muted-foreground pt-1 border-t border-border/60">
+                <span>Package Date</span>
+                <span className="text-foreground">{orderDateShort}</span>
+              </div>
+            </div>
+          </div>
+
+          {/* ─── 4-Stage Visual Delivery Stepper ─── */}
+          {!isCancelled && (
+            <div className="p-6 sm:p-8 bg-muted/10">
+              <div className="relative">
+                {/* Connecting Track Line */}
+                <div className="hidden sm:block absolute left-[10%] right-[10%] top-5 h-1 bg-border rounded-full" />
+
+                {/* Active Colored Fill Line */}
+                <div
+                  className={cn(
+                    "hidden sm:block absolute left-[10%] top-5 h-1 rounded-full transition-all duration-700 bg-primary",
+                    isDelivered
+                      ? "right-[10%]"
+                      : currentRank === 3
+                      ? "w-[60%]"
+                      : currentRank === 2
+                      ? "w-[30%]"
+                      : "w-0"
+                  )}
+                />
+
+                {/* 4 Pipeline Step Nodes */}
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-6 sm:gap-2">
+                  {pipelineSteps.map((step) => {
+                    const state = getStepState(step.key);
+                    const isCompleted = state.status === "completed";
+                    const isCurrent = state.status === "current";
+                    const StepIcon = step.icon;
+
+                    return (
+                      <div key={step.key} className="flex flex-col items-center text-center relative z-10 group">
+                        <div
+                          className={cn(
+                            "size-10 sm:size-11 rounded-2xl flex items-center justify-center border-2 transition-all shadow-xs",
+                            isCompleted
+                              ? "bg-primary border-primary text-primary-foreground"
+                              : isCurrent
+                              ? "bg-background border-primary text-primary ring-4 ring-primary/20 font-bold"
+                              : "bg-background border-border text-muted-foreground"
+                          )}
+                        >
+                          {isCompleted ? (
+                            <Check className="size-5 stroke-[2.5]" />
+                          ) : isCurrent ? (
+                            <StepIcon className="size-5 text-primary animate-pulse" />
+                          ) : (
+                            <StepIcon className="size-4.5 text-muted-foreground/60" />
+                          )}
+                        </div>
+
+                        <span
+                          className={cn(
+                            "text-xs sm:text-sm font-bold mt-2.5",
+                            isCompleted
+                              ? "text-foreground"
+                              : isCurrent
+                              ? "text-primary font-extrabold"
+                              : "text-muted-foreground"
+                          )}
+                        >
+                          {step.label}
+                        </span>
+
+                        <span className="text-[11px] text-muted-foreground hidden sm:block mt-0.5">
+                          {state.date !== "Pending" ? state.date : step.subLabel}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* ─── Cancelled Order Banner ─── */}
+        {isCancelled && (
+          <div className="rounded-2xl border border-destructive/30 bg-destructive/10 p-5 sm:p-6 flex items-start gap-4 shadow-2xs">
+            <AlertTriangle className="size-6 text-destructive shrink-0 mt-0.5" />
+            <div className="space-y-1">
+              <h3 className="font-bold text-destructive text-base">Order Was Cancelled</h3>
+              <p className="text-xs sm:text-sm text-muted-foreground">
+                {historyMap.cancelled?.note ||
+                  "This order was cancelled and inventory quantities were restored to the catalog."}
+              </p>
+              {historyMap.cancelled?.timestamp && (
+                <p className="text-xs text-muted-foreground pt-1">
+                  Cancellation processed on: {new Date(historyMap.cancelled.timestamp).toLocaleString("en-IN")}
+                </p>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* ─── Navigation Tabs: [ Delivery Journey ] | [ Invoice & Details ] ─── */}
         <div className="flex items-center gap-6 border-b border-border/80 text-sm font-semibold">
           <button
             type="button"
@@ -481,7 +607,7 @@ export default function OrderTracking() {
             )}
           >
             <Truck className="size-4" />
-            <span>Track Package</span>
+            <span>Delivery Tracking & Package</span>
           </button>
 
           <button
@@ -495,485 +621,379 @@ export default function OrderTracking() {
             )}
           >
             <FileText className="size-4" />
-            <span>Order Details & Invoice</span>
+            <span>Official Invoice & Summary</span>
           </button>
         </div>
 
-        {/* ─── Cancelled Order Banner ─── */}
-        {isCancelled && (
-          <div className="rounded-xl border border-destructive/40 bg-destructive/10 p-5 flex items-start gap-4 shadow-2xs">
-            <AlertTriangle className="size-6 text-destructive shrink-0 mt-0.5" />
-            <div className="space-y-1">
-              <h3 className="font-bold text-destructive text-base">Order Cancelled</h3>
-              <p className="text-xs sm:text-sm text-muted-foreground">
-                {historyMap.cancelled?.note || "This order was cancelled and inventory items have been restocked."}
-              </p>
-              {historyMap.cancelled?.timestamp && (
-                <p className="text-xs text-muted-foreground pt-1">
-                  Cancelled on: {new Date(historyMap.cancelled.timestamp).toLocaleString("en-IN")}
-                </p>
-              )}
-            </div>
-          </div>
-        )}
-
         {/* ════════════════════════════════════════════════════════════════════
-            VIEW 1: TRACK PACKAGE (Signature Amazon Tracking Flow)
+            VIEW 1: TRACKING & DASHBOARD
             ════════════════════════════════════════════════════════════════════ */}
         {activeView === "tracking" && (
-          <div className="space-y-6">
-            {/* ─── Signature Amazon Hero Milestone Box ─── */}
-            <div className="border border-border/80 rounded-xl bg-card overflow-hidden shadow-2xs">
-              {/* Shaded Header Strip */}
-              <div className="bg-muted/40 dark:bg-muted/20 border-b border-border/80 px-5 sm:px-6 py-3.5 flex flex-wrap items-center justify-between gap-3 text-xs">
-                <div className="flex items-center gap-2 font-medium">
-                  <Truck className="size-4 text-primary" />
-                  <span className="text-foreground font-semibold">Package 1 of 1</span>
-                  <span className="text-muted-foreground/60">•</span>
-                  <span className="text-muted-foreground">
-                    Carrier: <strong className="text-foreground">Express Courier Direct</strong>
-                  </span>
-                </div>
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
 
-                <div className="flex items-center gap-2 text-muted-foreground font-mono text-[11px]">
-                  <span>AWB / Tracking ID:</span>
-                  <strong className="text-foreground font-bold">{orderDetails.tracking_number || orderCode}</strong>
+            {/* Left 8 Columns: Live Activity Timeline & Scale Model Showcase */}
+            <div className="lg:col-span-8 space-y-6">
+
+              {/* 1. Live Checkpoint Journey Log */}
+              <div className="rounded-2xl border border-border/80 bg-card overflow-hidden shadow-xs">
+                <div className="bg-muted/40 dark:bg-muted/20 border-b border-border/70 px-5 sm:px-6 py-4 flex items-center justify-between">
+                  <div className="flex items-center gap-2.5">
+                    <Clock className="size-4 text-primary" />
+                    <h3 className="font-bold text-sm text-foreground">
+                      Live Delivery Checkpoints
+                    </h3>
+                  </div>
                   <button
                     type="button"
-                    onClick={() => copyToClipboard(orderDetails.tracking_number || orderCode, "Tracking ID")}
-                    className="hover:text-foreground cursor-pointer p-0.5"
-                    title="Copy tracking number"
+                    onClick={() => setShowAllUpdates((prev) => !prev)}
+                    className="text-xs font-semibold text-primary hover:underline flex items-center gap-1 cursor-pointer"
                   >
-                    <Copy className="size-3" />
+                    <span>{showAllUpdates ? "Collapse History" : "Expand All Checkpoints"}</span>
+                    {showAllUpdates ? <ChevronUp className="size-3.5" /> : <ChevronDown className="size-3.5" />}
                   </button>
                 </div>
-              </div>
 
-              {/* Box Body */}
-              <div className="p-5 sm:p-6 space-y-6">
-                {/* Headline status message */}
-                <div>
-                  <h3 className="text-xl sm:text-2xl font-bold text-foreground flex items-center gap-2.5">
-                    {isDelivered ? (
-                      <>
-                        <CheckCircle2 className="size-6 text-primary" />
-                        <span>Delivered {orderDate}</span>
-                      </>
-                    ) : isShipped ? (
-                      <>
-                        <Truck className="size-6 text-primary animate-pulse" />
-                        <span>On the way • Dispatched with express courier</span>
-                      </>
-                    ) : isConfirmed ? (
-                      <>
-                        <Clock className="size-6 text-primary" />
-                        <span>Preparing for dispatch • Inspected in Torque Garage</span>
-                      </>
-                    ) : isCancelled ? (
-                      <>
-                        <Ban className="size-6 text-destructive" />
-                        <span>Shipment Voided</span>
-                      </>
-                    ) : (
-                      <>
-                        <Package className="size-6 text-primary" />
-                        <span>Order Received & Placed</span>
-                      </>
-                    )}
-                  </h3>
-
-                  <p className="text-xs sm:text-sm text-muted-foreground mt-1.5 leading-relaxed">
-                    {isDelivered
-                      ? "Package was delivered directly to your destination address or handed to resident."
-                      : isShipped
-                      ? "Your order has departed our fulfillment center and is in transit to your city hub."
-                      : isCancelled
-                      ? "This package was cancelled and the items restocked into garage inventory."
-                      : "We are carefully verifying and packaging your precision scale collectible models."}
-                  </p>
-                </div>
-
-                {/* ─── Amazon 4-Stage Horizontal Progress Tracker ─── */}
-                {!isCancelled && (
-                  <div className="pt-2 pb-6 px-2 sm:px-6">
-                    <div className="relative flex items-center justify-between">
-                      {/* Background Track Line */}
-                      <div className="absolute left-6 right-6 top-4 sm:top-4.5 h-1.5 bg-muted rounded-full" />
-
-                      {/* Active Fill Line */}
-                      <div
-                        className={cn(
-                          "absolute left-6 top-4 sm:top-4.5 h-1.5 rounded-full transition-all duration-700 bg-primary",
-                          isDelivered
-                            ? "right-6"
-                            : currentRank === 3
-                            ? "w-2/3"
-                            : currentRank === 2
-                            ? "w-1/3"
-                            : "w-0"
-                        )}
-                      />
-
-                      {pipelineSteps.map((step) => {
-                        const state = getStepState(step.key);
-                        const isCompleted = state.status === "completed";
-                        const isCurrent = state.status === "current";
-
+                {showAllUpdates && (
+                  <div className="p-5 sm:p-6">
+                    <div className="relative border-l-2 border-border/80 ml-4 sm:ml-5 space-y-6 pb-2">
+                      {trackingScans.map((scan, i) => {
+                        const isLatest = i === 0 && !isCancelled;
                         return (
-                          <div key={step.key} className="relative z-10 flex flex-col items-center">
+                          <div key={i} className="relative flex items-start pl-6 group">
                             <div
                               className={cn(
-                                "size-8 sm:size-9 rounded-full flex items-center justify-center border-2 transition-all shadow-xs",
-                                isCompleted
-                                  ? "bg-primary border-primary text-primary-foreground"
-                                  : isCurrent
-                                  ? "bg-background border-primary text-primary ring-4 ring-primary/20 font-bold"
-                                  : "bg-background border-muted-foreground/30 text-muted-foreground"
+                                "absolute -left-[9px] top-1 size-4 rounded-full border-2 bg-background flex items-center justify-center transition-all",
+                                isLatest
+                                  ? "border-primary ring-4 ring-primary/20"
+                                  : "border-muted-foreground/50"
                               )}
                             >
-                              {isCompleted ? (
-                                <Check className="size-4 stroke-[3]" />
-                              ) : isCurrent ? (
-                                <span className="size-2.5 rounded-full bg-primary animate-ping" />
-                              ) : (
-                                <span className="size-2 rounded-full bg-muted-foreground/40" />
-                              )}
+                              <span
+                                className={cn(
+                                  "size-1.5 rounded-full",
+                                  isLatest ? "bg-primary" : "bg-muted-foreground/60"
+                                )}
+                              />
                             </div>
-                            <span
-                              className={cn(
-                                "text-xs sm:text-sm font-semibold mt-2 text-center whitespace-nowrap",
-                                isCompleted
-                                  ? "text-foreground"
-                                  : isCurrent
-                                  ? "text-primary font-bold"
-                                  : "text-muted-foreground"
-                              )}
-                            >
-                              {step.label}
-                            </span>
-                            <span className="text-[11px] text-muted-foreground hidden sm:block text-center mt-0.5">
-                              {state.date !== "Pending" ? state.date : ""}
-                            </span>
+
+                            <div className="space-y-1 text-xs flex-1">
+                              <div className="flex items-center justify-between gap-2 flex-wrap">
+                                <div className="flex items-center gap-2">
+                                  <span className="font-bold text-sm text-foreground">
+                                    {scan.title}
+                                  </span>
+                                  {isLatest && (
+                                    <Badge className="bg-primary/10 text-primary border border-primary/20 text-[10px] py-0 px-1.5 font-bold">
+                                      Latest Update
+                                    </Badge>
+                                  )}
+                                </div>
+                                <span className="text-muted-foreground text-[11px] font-medium">
+                                  {scan.date}
+                                </span>
+                              </div>
+                              <p className="text-muted-foreground leading-relaxed">
+                                {scan.note}
+                              </p>
+                            </div>
                           </div>
                         );
                       })}
                     </div>
                   </div>
                 )}
+              </div>
 
-                <Separator />
+              {/* 2. Shipment Items Showcase Card */}
+              <div className="rounded-2xl border border-border/80 bg-card overflow-hidden shadow-xs">
+                <div className="bg-muted/40 dark:bg-muted/20 border-b border-border/70 px-5 sm:px-6 py-4 flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Package className="size-4 text-primary" />
+                    <h3 className="font-bold text-sm text-foreground">
+                      Scale Models in Shipment ({items.length} {items.length === 1 ? "item" : "items"})
+                    </h3>
+                  </div>
+                  <span className="text-xs text-muted-foreground font-mono">
+                    Ref: #{orderCode}
+                  </span>
+                </div>
 
-                {/* ─── Expandable "See all updates" Accordion ─── */}
-                <div>
-                  <button
-                    type="button"
-                    onClick={() => setShowAllUpdates((prev) => !prev)}
-                    className="flex items-center gap-1.5 text-xs font-semibold text-primary hover:underline cursor-pointer"
-                  >
-                    <span>{showAllUpdates ? "Hide tracking updates" : "See all tracking updates"}</span>
-                    {showAllUpdates ? (
-                      <ChevronUp className="size-3.5" />
-                    ) : (
-                      <ChevronDown className="size-3.5" />
-                    )}
-                  </button>
+                <div className="p-5 sm:p-6 divide-y divide-border/60">
+                  {items.map((item, idx) => {
+                    const prod = item.product || item;
+                    const img =
+                      item.image ||
+                      prod.images?.[0] ||
+                      prod.image ||
+                      "/logo.png";
+                    const slug = prod.slug || prod._id;
+                    const qty = item.quantity || 1;
+                    const price = Number(item.price || prod.price || 0);
 
-                  {showAllUpdates && (
-                    <div className="mt-4 pt-4 border-t border-border/70 space-y-4">
-                      <div className="relative border-l-2 border-border ml-3 space-y-5 pb-1">
-                        {trackingScans.map((scan, i) => (
-                          <div key={i} className="relative flex items-start pl-6 group">
-                            <div className="absolute -left-[9px] top-1 size-4 rounded-full border-2 border-primary bg-background flex items-center justify-center">
-                              <span className="size-1.5 rounded-full bg-primary" />
+                    return (
+                      <div
+                        key={idx}
+                        className="flex flex-col sm:flex-row sm:items-center justify-between gap-5 py-5 first:pt-0 last:pb-0"
+                      >
+                        <div className="flex gap-4 sm:gap-5 flex-1 min-w-0">
+                          <Link
+                            to={slug ? `/products/${slug}` : "#"}
+                            className="size-20 sm:size-24 rounded-xl bg-background border border-border/80 p-2 flex items-center justify-center shrink-0 hover:border-primary transition-all overflow-hidden shadow-2xs"
+                          >
+                            <img
+                              src={img}
+                              alt={item.name || prod.name}
+                              className="size-full object-contain hover:scale-105 transition-transform duration-300"
+                            />
+                          </Link>
+
+                          <div className="space-y-1.5 flex-1 min-w-0">
+                            <Link
+                              to={slug ? `/products/${slug}` : "#"}
+                              className="font-bold text-sm sm:text-base text-foreground hover:text-primary transition-colors line-clamp-1 block"
+                            >
+                              {item.name || prod.name || "Precision Diecast Scale Model"}
+                            </Link>
+
+                            <div className="flex items-center gap-3 text-xs text-muted-foreground flex-wrap">
+                              <span>
+                                Qty: <strong className="text-foreground font-semibold">{qty}</strong>
+                              </span>
+                              <span>•</span>
+                              <span>
+                                ₹{price.toLocaleString("en-IN", { minimumFractionDigits: 2 })} each
+                              </span>
                             </div>
-                            <div className="space-y-0.5 text-xs">
-                              <div className="flex items-center gap-2 flex-wrap">
-                                <span className="font-bold text-foreground">{scan.title}</span>
-                                <span className="text-muted-foreground text-[11px]">• {scan.date}</span>
-                              </div>
-                              <p className="text-muted-foreground leading-relaxed">{scan.note}</p>
+
+                            <div className="text-[11px] text-muted-foreground flex items-center gap-1.5 pt-0.5">
+                              <span className="inline-flex items-center gap-1 text-primary font-semibold">
+                                <ShieldCheck className="size-3.5" /> Certified Authentic Scale Collectible
+                              </span>
+                              <span>•</span>
+                              <span>Torque Toyzz Garage Guaranteed</span>
                             </div>
                           </div>
-                        ))}
+                        </div>
+
+                        {/* Item Quick Actions */}
+                        <div className="flex sm:flex-col items-center gap-2 shrink-0 sm:w-40 pt-1 sm:pt-0">
+                          <Button
+                            size="sm"
+                            onClick={() => handleBuyAgain(item)}
+                            className="w-full h-8.5 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground text-xs font-semibold gap-1.5 shadow-2xs cursor-pointer"
+                          >
+                            <RotateCcw className="size-3" />
+                            <span>Buy Again</span>
+                          </Button>
+
+                          <Button
+                            asChild
+                            variant="outline"
+                            size="sm"
+                            className="w-full h-8 rounded-xl text-xs font-medium cursor-pointer"
+                          >
+                            <Link to={slug ? `/products/${slug}` : "#"}>
+                              View Item Details
+                            </Link>
+                          </Button>
+                        </div>
                       </div>
+                    );
+                  })}
+                </div>
+
+                <div className="bg-muted/20 border-t border-border/70 p-4 px-5 sm:px-6 flex items-center justify-between text-xs text-muted-foreground">
+                  <div className="flex items-center gap-2">
+                    <Sparkles className="size-4 text-primary shrink-0" />
+                    <span>Every model comes packed in reinforced shock-proof bubble wrapping.</span>
+                  </div>
+                  <span className="hidden sm:inline font-medium text-foreground">7-Day Return Policy</span>
+                </div>
+              </div>
+
+              {/* 3. Live Courier Feed Iframe (if delivery_partner_url exists) */}
+              {orderDetails.delivery_partner_url && !isCancelled && (
+                <div className="rounded-2xl border border-border/80 bg-card overflow-hidden shadow-xs">
+                  <div className="bg-muted/40 dark:bg-muted/20 border-b border-border/80 px-5 sm:px-6 py-3.5 flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-2">
+                      <Truck className="size-4 text-primary" />
+                      <h4 className="font-bold text-sm text-foreground">Live Logistics Portal</h4>
                     </div>
+                    <Button asChild variant="outline" size="sm" className="h-7 text-xs rounded-lg gap-1">
+                      <a href={orderDetails.delivery_partner_url} target="_blank" rel="noopener noreferrer">
+                        Carrier Tracking <ExternalLink className="size-3" />
+                      </a>
+                    </Button>
+                  </div>
+                  <div className="p-4">
+                    <div className="relative w-full h-96 bg-muted/20 rounded-xl overflow-hidden border border-border">
+                      <iframe
+                        src={orderDetails.delivery_partner_url}
+                        title="Carrier Tracking Map"
+                        className="w-full h-full border-0"
+                        allow="geolocation; autoplay; clipboard-write"
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Right 4 Columns: Destination, Billing, Garage Assistance */}
+            <div className="lg:col-span-4 space-y-6">
+
+              {/* 1. Shipping Destination Card */}
+              <div className="rounded-2xl border border-border/80 bg-card overflow-hidden shadow-xs">
+                <div className="bg-muted/40 dark:bg-muted/20 border-b border-border/80 px-5 py-3.5 flex items-center gap-2">
+                  <MapPin className="size-4 text-primary" />
+                  <h4 className="font-bold text-xs uppercase tracking-wider text-muted-foreground">
+                    Shipping Destination
+                  </h4>
+                </div>
+                <div className="p-5 space-y-1.5 text-xs">
+                  <p className="font-bold text-sm text-foreground">{shippingName}</p>
+                  {orderDetails.shipping_address ? (
+                    <div className="text-muted-foreground space-y-1 leading-relaxed pt-1">
+                      <p>
+                        {[orderDetails.shipping_address.door, orderDetails.shipping_address.street]
+                          .filter(Boolean)
+                          .join(", ")}
+                      </p>
+                      <p>
+                        {[
+                          orderDetails.shipping_address.city,
+                          typeof orderDetails.shipping_address.state === "object"
+                            ? orderDetails.shipping_address.state?.name
+                            : orderDetails.shipping_address.state,
+                        ]
+                          .filter(Boolean)
+                          .join(", ")}{" "}
+                        {orderDetails.shipping_address.pincode
+                          ? `- ${orderDetails.shipping_address.pincode}`
+                          : ""}
+                      </p>
+                      <p className="font-medium text-foreground">India</p>
+                      {orderDetails.user?.phone && (
+                        <p className="pt-1.5 text-[11px] flex items-center gap-1.5 border-t border-border/60">
+                          <Phone className="size-3 text-primary" />
+                          <span>Contact: <strong className="text-foreground">{orderDetails.user.phone}</strong></span>
+                        </p>
+                      )}
+                    </div>
+                  ) : (
+                    <p className="text-muted-foreground">Address details not recorded</p>
                   )}
                 </div>
               </div>
-            </div>
 
-            {/* ─── 2-Column Split: Items (Left 8 Cols) | Address & Summary (Right 4 Cols) ─── */}
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-              {/* Left Column: Shipment Items & Carrier Frame */}
-              <div className="lg:col-span-8 space-y-6">
-                {/* Items in this shipment */}
-                <div className="border border-border/80 rounded-xl bg-card overflow-hidden shadow-2xs">
-                  <div className="bg-muted/40 dark:bg-muted/20 border-b border-border/80 px-5 sm:px-6 py-3.5 flex items-center justify-between">
-                    <h4 className="font-bold text-sm text-foreground">
-                      Items in this shipment ({items.length} {items.length === 1 ? "model" : "models"})
-                    </h4>
-                    <span className="text-xs text-muted-foreground font-mono">
-                      Ref: #{orderCode}
+              {/* 2. Order Financial Breakdown Card */}
+              <div className="rounded-2xl border border-border/80 bg-card overflow-hidden shadow-xs">
+                <div className="bg-muted/40 dark:bg-muted/20 border-b border-border/80 px-5 py-3.5 flex items-center gap-2">
+                  <CreditCard className="size-4 text-primary" />
+                  <h4 className="font-bold text-xs uppercase tracking-wider text-muted-foreground">
+                    Payment & Summary
+                  </h4>
+                </div>
+                <div className="p-5 space-y-2.5 text-xs">
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Item(s) Subtotal:</span>
+                    <span className="font-medium text-foreground">
+                      ₹
+                      {(orderDetails.pricing?.subtotal || orderTotal).toLocaleString("en-IN", {
+                        minimumFractionDigits: 2,
+                      })}
                     </span>
                   </div>
 
-                  <div className="p-5 sm:p-6 divide-y divide-border/60">
-                    {items.map((item, idx) => {
-                      const prod = item.product || item;
-                      const img =
-                        item.image ||
-                        prod.images?.[0] ||
-                        prod.image ||
-                        "/logo.png";
-                      const slug = prod.slug || prod._id;
-                      const qty = item.quantity || 1;
-                      const price = Number(item.price || prod.price || 0);
-
-                      return (
-                        <div
-                          key={idx}
-                          className={cn(
-                            "flex flex-col sm:flex-row items-start justify-between gap-5 py-4 first:pt-0 last:pb-0"
-                          )}
-                        >
-                          <div className="flex gap-4 sm:gap-5 flex-1 min-w-0">
-                            <Link
-                              to={slug ? `/products/${slug}` : "#"}
-                              className="size-20 sm:size-24 rounded-lg bg-white dark:bg-muted/30 border border-border/70 p-2 flex items-center justify-center shrink-0 hover:border-primary transition-colors overflow-hidden"
-                            >
-                              <img
-                                src={img}
-                                alt={item.name || prod.name}
-                                className="size-full object-contain hover:scale-105 transition-transform duration-200"
-                              />
-                            </Link>
-
-                            <div className="space-y-1.5 flex-1 min-w-0">
-                              <Link
-                                to={slug ? `/products/${slug}` : "#"}
-                                className="font-medium text-sm sm:text-base text-foreground hover:text-primary transition-colors line-clamp-2 block"
-                              >
-                                {item.name || prod.name || "Precision Scale Model"}
-                              </Link>
-                              
-                              <p className="text-xs text-muted-foreground">
-                                Qty: <strong className="text-foreground">{qty}</strong> • ₹
-                                {price.toLocaleString("en-IN", { minimumFractionDigits: 2 })} each
-                              </p>
-
-                              <div className="text-[11px] text-muted-foreground flex items-center gap-1.5 flex-wrap">
-                                <span className="inline-flex items-center gap-1 text-primary font-medium">
-                                  <ShieldCheck className="size-3.5" /> Authentic Scale Collectible
-                                </span>
-                                <span>•</span>
-                                <span>Sold by: Torque Toyzz Official</span>
-                              </div>
-
-                              <p className="text-[11px] text-muted-foreground">
-                                {isDelivered
-                                  ? "Eligible for return or replacement within 7 days from delivery date"
-                                  : "Factory inspection passed • 1-Year limited manufacturer warranty"}
-                              </p>
-                            </div>
-                          </div>
-
-                          {/* Amazon Quick Action Stack */}
-                          <div className="flex sm:flex-col items-center gap-2 shrink-0 w-full sm:w-44 pt-2 sm:pt-0">
-                            <Button
-                              size="sm"
-                              onClick={() => handleBuyAgain(item)}
-                              className="flex-1 sm:flex-none w-full h-8.5 rounded-lg bg-primary hover:bg-primary/90 text-primary-foreground text-xs font-semibold gap-1.5 shadow-2xs cursor-pointer"
-                            >
-                              <RotateCcw className="size-3" />
-                              <span>Buy it again</span>
-                            </Button>
-
-                            <Button
-                              asChild
-                              variant="outline"
-                              size="sm"
-                              className="flex-1 sm:flex-none w-full h-8 rounded-lg text-xs font-medium cursor-pointer"
-                            >
-                              <Link to={slug ? `/products/${slug}` : "#"}>
-                                View your item
-                              </Link>
-                            </Button>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                {/* ─── Live Courier Feed (if available) ─── */}
-                {orderDetails.delivery_partner_url && !isCancelled && (
-                  <div className="border border-border/80 rounded-xl bg-card overflow-hidden shadow-2xs">
-                    <div className="bg-muted/40 dark:bg-muted/20 border-b border-border/80 px-5 sm:px-6 py-3.5 flex items-center justify-between gap-3">
-                      <div className="flex items-center gap-2">
-                        <Truck className="size-4 text-primary" />
-                        <h4 className="font-bold text-sm text-foreground">Live Courier Feed</h4>
-                      </div>
-                      <Button asChild variant="outline" size="sm" className="h-7 text-xs rounded-lg gap-1">
-                        <a href={orderDetails.delivery_partner_url} target="_blank" rel="noopener noreferrer">
-                          Open Carrier Portal <ExternalLink className="size-3" />
-                        </a>
-                      </Button>
-                    </div>
-                    <div className="p-4">
-                      <div className="relative w-full h-96 bg-muted/20 rounded-lg overflow-hidden border border-border">
-                        <iframe
-                          src={orderDetails.delivery_partner_url}
-                          title="Carrier Tracking Map"
-                          className="w-full h-full border-0"
-                          allow="geolocation; autoplay; clipboard-write"
-                        />
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* Right Column: Address, Order Summary & Help Actions */}
-              <div className="lg:col-span-4 space-y-6">
-                {/* 1. Shipping Address */}
-                <div className="border border-border/80 rounded-xl bg-card overflow-hidden shadow-2xs">
-                  <div className="bg-muted/40 dark:bg-muted/20 border-b border-border/80 px-4 py-3 flex items-center gap-2">
-                    <MapPin className="size-4 text-primary" />
-                    <h4 className="font-bold text-xs uppercase tracking-wider text-muted-foreground">
-                      Shipping Address
-                    </h4>
-                  </div>
-                  <div className="p-4 space-y-1 text-xs">
-                    <p className="font-bold text-sm text-foreground">{shippingName}</p>
-                    {orderDetails.shipping_address ? (
-                      <div className="text-muted-foreground space-y-0.5 leading-relaxed pt-1">
-                        <p>
-                          {[orderDetails.shipping_address.door, orderDetails.shipping_address.street]
-                            .filter(Boolean)
-                            .join(", ")}
-                        </p>
-                        <p>
-                          {[
-                            orderDetails.shipping_address.city,
-                            typeof orderDetails.shipping_address.state === "object"
-                              ? orderDetails.shipping_address.state?.name
-                              : orderDetails.shipping_address.state,
-                          ]
-                            .filter(Boolean)
-                            .join(", ")}{" "}
-                          {orderDetails.shipping_address.pincode
-                            ? `- ${orderDetails.shipping_address.pincode}`
-                            : ""}
-                        </p>
-                        <p>India</p>
-                        {orderDetails.user?.phone && (
-                          <p className="pt-1 text-[11px]">
-                            Phone: <span className="font-medium text-foreground">{orderDetails.user.phone}</span>
-                          </p>
-                        )}
-                      </div>
-                    ) : (
-                      <p className="text-muted-foreground">Address not specified</p>
-                    )}
-                  </div>
-                </div>
-
-                {/* 2. Order Summary & Payment */}
-                <div className="border border-border/80 rounded-xl bg-card overflow-hidden shadow-2xs">
-                  <div className="bg-muted/40 dark:bg-muted/20 border-b border-border/80 px-4 py-3 flex items-center gap-2">
-                    <CreditCard className="size-4 text-primary" />
-                    <h4 className="font-bold text-xs uppercase tracking-wider text-muted-foreground">
-                      Payment & Order Summary
-                    </h4>
-                  </div>
-                  <div className="p-4 space-y-2 text-xs">
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Item(s) Subtotal:</span>
-                      <span>
-                        ₹
-                        {(orderDetails.pricing?.subtotal || orderTotal).toLocaleString("en-IN", {
+                  <div className="flex justify-between items-center">
+                    <span className="text-muted-foreground">Shipping:</span>
+                    {orderDetails.pricing?.shipping_cost > 0 ? (
+                      <span className="font-medium text-foreground">
+                        ₹{orderDetails.pricing.shipping_cost.toLocaleString("en-IN", {
                           minimumFractionDigits: 2,
                         })}
                       </span>
-                    </div>
-
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Shipping:</span>
-                      <span>
-                        {orderDetails.pricing?.shipping_cost > 0
-                          ? `₹${orderDetails.pricing.shipping_cost.toLocaleString("en-IN", {
-                              minimumFractionDigits: 2,
-                            })}`
-                          : "FREE Delivery"}
-                      </span>
-                    </div>
-
-                    {orderDetails.pricing?.tax > 0 && (
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">Estimated GST:</span>
-                        <span>₹{orderDetails.pricing.tax.toLocaleString("en-IN", { minimumFractionDigits: 2 })}</span>
-                      </div>
-                    )}
-
-                    <Separator className="my-1.5" />
-
-                    <div className="flex justify-between font-bold text-sm">
-                      <span>Grand Total:</span>
-                      <span className="text-primary font-black">
-                        ₹{orderTotal.toLocaleString("en-IN", { minimumFractionDigits: 2 })}
-                      </span>
-                    </div>
-
-                    <div className="pt-2 border-t border-border/60 flex items-center justify-between text-[11px]">
-                      <span className="text-muted-foreground">Payment Method:</span>
-                      <Badge
-                        variant={orderDetails.payment?.status === "paid" ? "secondary" : "outline"}
-                        className="capitalize font-semibold text-[11px]"
-                      >
-                        {orderDetails.payment?.method || "Prepaid"}
+                    ) : (
+                      <Badge className="bg-primary/10 text-primary border border-primary/20 text-[10px] font-bold">
+                        FREE Delivery
                       </Badge>
+                    )}
+                  </div>
+
+                  {orderDetails.pricing?.tax > 0 && (
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Estimated GST (18%):</span>
+                      <span className="font-medium text-foreground">
+                        ₹{orderDetails.pricing.tax.toLocaleString("en-IN", { minimumFractionDigits: 2 })}
+                      </span>
                     </div>
+                  )}
+
+                  <Separator className="my-2" />
+
+                  <div className="flex justify-between items-center text-sm">
+                    <span className="font-bold text-foreground">Grand Total:</span>
+                    <span className="text-base font-black text-primary">
+                      ₹{orderTotal.toLocaleString("en-IN", { minimumFractionDigits: 2 })}
+                    </span>
+                  </div>
+
+                  <div className="pt-2 border-t border-border/60 flex items-center justify-between text-[11px]">
+                    <span className="text-muted-foreground">Payment Status:</span>
+                    <Badge
+                      className={cn(
+                        "capitalize font-semibold text-[10px]",
+                        orderDetails.payment?.status === "paid"
+                          ? "bg-primary text-primary-foreground"
+                          : "bg-muted text-muted-foreground"
+                      )}
+                    >
+                      {orderDetails.payment?.method || "Prepaid"} • {orderDetails.payment?.status || "Authorized"}
+                    </Badge>
                   </div>
                 </div>
+              </div>
 
-                {/* 3. Need Help with This Order? (Actions & Cancellation) */}
-                <div className="border border-border/80 rounded-xl bg-card overflow-hidden shadow-2xs p-4 space-y-2.5">
-                  <h4 className="font-bold text-xs uppercase tracking-wider text-muted-foreground">
-                    Order Assistance
-                  </h4>
+              {/* 3. Garage Assistance & Cancellation Card */}
+              <div className="rounded-2xl border border-border/80 bg-card p-5 space-y-3 shadow-xs">
+                <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                  <HelpCircle className="size-4 text-primary" />
+                  <span>Garage Assistance</span>
+                </div>
 
+                <div className="space-y-2">
                   <Button
                     variant="outline"
                     size="sm"
                     onClick={() => setSearchParams({ view: "invoice" })}
-                    className="w-full h-8 text-xs justify-start font-medium cursor-pointer"
+                    className="w-full h-8.5 text-xs justify-start font-medium rounded-xl cursor-pointer"
                   >
-                    <FileText className="size-3.5 mr-2 text-muted-foreground" />
-                    View Detailed Invoice
+                    <FileText className="size-3.5 mr-2 text-primary" />
+                    <span>View Formal Tax Invoice</span>
                   </Button>
 
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => window.print()}
-                    className="w-full h-8 text-xs justify-start font-medium cursor-pointer"
+                    onClick={() => copyToClipboard(orderCode, "Order ID")}
+                    className="w-full h-8.5 text-xs justify-start font-medium rounded-xl cursor-pointer"
                   >
-                    <Printer className="size-3.5 mr-2 text-muted-foreground" />
-                    Print Shipment Details
+                    <Copy className="size-3.5 mr-2 text-muted-foreground" />
+                    <span>Copy Order ID (#{orderCode})</span>
                   </Button>
 
-                  {/* Cancel Order Action Trigger */}
+                  {/* Cancel Button if eligible */}
                   {canCancel && (
                     <AlertDialog>
                       <AlertDialogTrigger asChild>
                         <Button
-                          variant="outline"
+                          variant="ghost"
                           size="sm"
                           disabled={isCancelling}
-                          className="w-full h-8 text-xs justify-start text-destructive hover:bg-destructive/10 hover:text-destructive border-destructive/30 font-medium cursor-pointer"
+                          className="w-full h-8.5 text-xs justify-start text-destructive hover:bg-destructive/10 hover:text-destructive rounded-xl font-medium cursor-pointer"
                         >
                           <Ban className="size-3.5 mr-2" />
-                          Cancel this Order
+                          <span>Cancel Order</span>
                         </Button>
                       </AlertDialogTrigger>
                       <AlertDialogContent className="rounded-2xl border-border bg-popover shadow-xl">
@@ -984,8 +1004,7 @@ export default function OrderTracking() {
                           </AlertDialogTitle>
                           <AlertDialogDescription className="space-y-3 pt-2">
                             <span>
-                              Are you sure you want to cancel this order? This action cannot be undone and model
-                              quantities will be restocked immediately.
+                              Are you sure you want to cancel this order? This action will restock all scale models back to the garage collection.
                             </span>
                             <div className="space-y-1.5 text-left pt-2">
                               <label className="text-xs font-semibold text-foreground">
@@ -1030,26 +1049,49 @@ export default function OrderTracking() {
                   )}
                 </div>
               </div>
+
             </div>
           </div>
         )}
 
         {/* ════════════════════════════════════════════════════════════════════
-            VIEW 2: ORDER DETAILS & INVOICE (Complete Amazon Invoice Layout)
+            VIEW 2: FORMAL TAX INVOICE
             ════════════════════════════════════════════════════════════════════ */}
         {activeView === "invoice" && (
           <div className="space-y-6">
-            {/* Amazon 3-Part Information Box */}
-            <div className="border border-border/80 rounded-xl bg-card overflow-hidden shadow-2xs">
-              <div className="grid grid-cols-1 md:grid-cols-3 divide-y md:divide-y-0 md:divide-x divide-border/80 p-5 sm:p-6 gap-6 md:gap-0">
-                {/* 1. Shipping Address */}
-                <div className="md:pr-6 space-y-1.5">
-                  <h4 className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
-                    Shipping Address
-                  </h4>
-                  <p className="font-bold text-sm text-foreground pt-1">{shippingName}</p>
-                  {orderDetails.shipping_address ? (
-                    <div className="text-xs text-muted-foreground space-y-0.5 leading-relaxed">
+            <div className="rounded-2xl border border-border/80 bg-card overflow-hidden shadow-xs">
+              {/* Invoice Header */}
+              <div className="p-6 sm:p-8 border-b border-border/70 flex flex-col sm:flex-row justify-between gap-6">
+                <div>
+                  <h2 className="text-2xl font-black text-foreground tracking-tight">
+                    Torque Toyzz
+                  </h2>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Precision Diecast & RC Automotive Collectibles
+                  </p>
+                  <p className="text-xs text-muted-foreground">GSTIN: 33AAAAA0000A1Z5</p>
+                </div>
+
+                <div className="sm:text-right space-y-1 text-xs">
+                  <Badge className="bg-primary text-primary-foreground font-semibold text-xs">
+                    Tax Invoice
+                  </Badge>
+                  <p className="font-mono font-bold text-sm text-foreground pt-1">
+                    Invoice #{orderCode}
+                  </p>
+                  <p className="text-muted-foreground">Date: {orderDate}</p>
+                </div>
+              </div>
+
+              {/* Bill to & Ship to */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-6 sm:p-8 border-b border-border/70 text-xs">
+                <div className="space-y-1">
+                  <span className="font-bold text-muted-foreground uppercase text-[11px] tracking-wider">
+                    Customer / Delivery To
+                  </span>
+                  <p className="font-bold text-sm text-foreground">{shippingName}</p>
+                  {orderDetails.shipping_address && (
+                    <div className="text-muted-foreground space-y-0.5">
                       <p>
                         {[orderDetails.shipping_address.door, orderDetails.shipping_address.street]
                           .filter(Boolean)
@@ -1064,171 +1106,115 @@ export default function OrderTracking() {
                         ]
                           .filter(Boolean)
                           .join(", ")}{" "}
-                        {orderDetails.shipping_address.pincode ? `- ${orderDetails.shipping_address.pincode}` : ""}
+                        {orderDetails.shipping_address.pincode
+                          ? `- ${orderDetails.shipping_address.pincode}`
+                          : ""}
                       </p>
                       <p>India</p>
-                      {orderDetails.user?.phone && (
-                        <p className="pt-1 text-[11px]">
-                          Phone: <span className="font-medium text-foreground">{orderDetails.user.phone}</span>
-                        </p>
-                      )}
                     </div>
-                  ) : (
-                    <p className="text-xs text-muted-foreground">Address not specified</p>
                   )}
                 </div>
 
-                {/* 2. Payment Method */}
-                <div className="md:px-6 space-y-1.5 pt-4 md:pt-0">
-                  <h4 className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
-                    Payment Method
-                  </h4>
-                  <div className="pt-1 space-y-2">
-                    <div className="flex items-center gap-2">
-                      <CreditCard className="size-4 text-primary" />
-                      <span className="font-semibold text-sm capitalize">
-                        {orderDetails.payment?.method || "Prepaid Online"}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-2 text-xs">
-                      <span className="text-muted-foreground">Status:</span>
-                      <Badge
-                        variant={orderDetails.payment?.status === "paid" ? "secondary" : "outline"}
-                        className="capitalize text-[11px] font-semibold"
-                      >
-                        {orderDetails.payment?.status || "Confirmed"}
-                      </Badge>
-                    </div>
-                    {orderDetails.payment?.transaction_id && (
-                      <p className="text-xs text-muted-foreground font-mono text-[11px] truncate pt-0.5">
-                        Ref: {orderDetails.payment.transaction_id}
-                      </p>
-                    )}
-                  </div>
-                </div>
-
-                {/* 3. Order Summary */}
-                <div className="md:pl-6 space-y-2 pt-4 md:pt-0">
-                  <h4 className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
-                    Order Summary
-                  </h4>
-                  <div className="pt-1 text-xs space-y-1.5">
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Item(s) Subtotal:</span>
-                      <span>
-                        ₹
-                        {(orderDetails.pricing?.subtotal || orderTotal).toLocaleString("en-IN", {
-                          minimumFractionDigits: 2,
-                        })}
-                      </span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Shipping:</span>
-                      <span>
-                        {orderDetails.pricing?.shipping_cost > 0
-                          ? `₹${orderDetails.pricing.shipping_cost.toLocaleString("en-IN", {
-                              minimumFractionDigits: 2,
-                            })}`
-                          : "FREE Delivery"}
-                      </span>
-                    </div>
-                    {orderDetails.pricing?.tax > 0 && (
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">Estimated GST / Tax:</span>
-                        <span>₹{orderDetails.pricing.tax.toLocaleString("en-IN", { minimumFractionDigits: 2 })}</span>
-                      </div>
-                    )}
-                    <Separator className="my-1.5" />
-                    <div className="flex justify-between font-bold text-sm">
-                      <span>Grand Total:</span>
-                      <span className="text-primary font-black">
-                        ₹{orderTotal.toLocaleString("en-IN", { minimumFractionDigits: 2 })}
-                      </span>
-                    </div>
-                  </div>
+                <div className="space-y-1 md:text-right">
+                  <span className="font-bold text-muted-foreground uppercase text-[11px] tracking-wider">
+                    Payment Details
+                  </span>
+                  <p className="font-semibold text-foreground capitalize">
+                    {orderDetails.payment?.method || "Prepaid Online"}
+                  </p>
+                  <p className="text-muted-foreground capitalize">
+                    Status: {orderDetails.payment?.status || "Captured"}
+                  </p>
+                  {orderDetails.payment?.transaction_id && (
+                    <p className="font-mono text-[11px] text-muted-foreground">
+                      Txn: {orderDetails.payment.transaction_id}
+                    </p>
+                  )}
                 </div>
               </div>
-            </div>
 
-            {/* Itemized Invoice Table Card */}
-            <div className="border border-border/80 rounded-xl bg-card overflow-hidden shadow-2xs">
-              <div className="bg-muted/40 dark:bg-muted/20 border-b border-border/80 px-5 sm:px-6 py-3.5 flex items-center justify-between">
+              {/* Items Breakdown Table */}
+              <div className="p-6 sm:p-8 space-y-4">
                 <h4 className="font-bold text-sm text-foreground">
-                  Itemized Order Breakdown
+                  Order Breakdown
                 </h4>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => window.print()}
-                  className="h-8 text-xs rounded-lg gap-1.5"
-                >
-                  <Printer className="size-3.5" /> Print this invoice
-                </Button>
-              </div>
+                <div className="divide-y divide-border/60">
+                  {items.map((item, idx) => {
+                    const prod = item.product || item;
+                    const qty = item.quantity || 1;
+                    const unitPrice = Number(item.price || prod.price || 0);
+                    const lineTotal = unitPrice * qty;
 
-              <div className="p-5 sm:p-6 divide-y divide-border/60">
-                {items.map((item, idx) => {
-                  const prod = item.product || item;
-                  const img =
-                    item.image ||
-                    prod.images?.[0] ||
-                    prod.image ||
-                    "/logo.png";
-                  const slug = prod.slug || prod._id;
-                  const qty = item.quantity || 1;
-                  const unitPrice = Number(item.price || prod.price || 0);
-                  const lineTotal = unitPrice * qty;
-
-                  return (
-                    <div key={idx} className="flex items-center justify-between gap-4 py-4 first:pt-0 last:pb-0">
-                      <div className="flex items-center gap-4">
-                        <Link
-                          to={slug ? `/products/${slug}` : "#"}
-                          className="size-16 rounded-lg bg-white dark:bg-muted/30 border border-border/70 p-1.5 flex items-center justify-center shrink-0 overflow-hidden"
-                        >
-                          <img
-                            src={img}
-                            alt={item.name || prod.name}
-                            className="size-full object-contain"
-                          />
-                        </Link>
+                    return (
+                      <div key={idx} className="flex items-center justify-between py-3.5 text-xs first:pt-0 last:pb-0">
                         <div className="space-y-0.5">
-                          <Link
-                            to={slug ? `/products/${slug}` : "#"}
-                            className="font-medium text-sm text-foreground hover:text-primary transition-colors line-clamp-1"
-                          >
-                            {item.name || prod.name || "Precision Model"}
-                          </Link>
-                          <p className="text-xs text-muted-foreground">
-                            Qty: <strong className="text-foreground">{qty}</strong> • Unit Price: ₹
-                            {unitPrice.toLocaleString("en-IN", { minimumFractionDigits: 2 })}
+                          <p className="font-bold text-foreground">
+                            {item.name || prod.name || "Scale Model"}
+                          </p>
+                          <p className="text-muted-foreground">
+                            Qty: {qty} × ₹{unitPrice.toLocaleString("en-IN", { minimumFractionDigits: 2 })}
                           </p>
                         </div>
-                      </div>
-
-                      <div className="text-right shrink-0">
-                        <span className="font-bold text-sm text-foreground">
+                        <div className="font-bold text-sm text-foreground">
                           ₹{lineTotal.toLocaleString("en-IN", { minimumFractionDigits: 2 })}
-                        </span>
+                        </div>
                       </div>
+                    );
+                  })}
+                </div>
+
+                <Separator />
+
+                {/* Totals */}
+                <div className="space-y-2 text-xs max-w-xs ml-auto pt-2">
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Subtotal:</span>
+                    <span className="font-medium">
+                      ₹
+                      {(orderDetails.pricing?.subtotal || orderTotal).toLocaleString("en-IN", {
+                        minimumFractionDigits: 2,
+                      })}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Shipping Cost:</span>
+                    <span>
+                      {orderDetails.pricing?.shipping_cost > 0
+                        ? `₹${orderDetails.pricing.shipping_cost.toLocaleString("en-IN", {
+                            minimumFractionDigits: 2,
+                          })}`
+                        : "FREE"}
+                    </span>
+                  </div>
+                  {orderDetails.pricing?.tax > 0 && (
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">GST (18%):</span>
+                      <span>₹{orderDetails.pricing.tax.toLocaleString("en-IN", { minimumFractionDigits: 2 })}</span>
                     </div>
-                  );
-                })}
+                  )}
+                  <Separator />
+                  <div className="flex justify-between font-black text-base text-primary">
+                    <span>Total Amount:</span>
+                    <span>₹{orderTotal.toLocaleString("en-IN", { minimumFractionDigits: 2 })}</span>
+                  </div>
+                </div>
               </div>
 
-              <div className="bg-muted/20 dark:bg-muted/10 border-t border-border/70 p-5 sm:p-6 text-xs text-muted-foreground space-y-1">
-                <p>
-                  <strong>Torque Toyzz Guarantee:</strong> All precision collectible scale models come certified
-                  with factory inspection and return eligibility within 7 days of package delivery.
-                </p>
-                <p>
-                  For returns, inquiries, or warranty support, contact customer support quoting order{" "}
-                  <strong className="text-foreground font-mono">#{orderCode}</strong>.
-                </p>
+              {/* Invoice Footer Strip */}
+              <div className="bg-muted/30 border-t border-border/70 p-5 sm:p-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-muted-foreground">
+                <p>This is a computer-generated tax invoice and requires no physical signature.</p>
+                <Button
+                  size="sm"
+                  onClick={() => window.print()}
+                  className="rounded-xl text-xs gap-1.5 font-semibold bg-primary hover:bg-primary/90 text-primary-foreground shadow-2xs"
+                >
+                  <Printer className="size-3.5" /> Print Tax Invoice
+                </Button>
               </div>
             </div>
           </div>
         )}
+
       </div>
     </div>
   );
