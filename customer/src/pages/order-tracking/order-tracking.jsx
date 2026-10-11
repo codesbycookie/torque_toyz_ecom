@@ -48,6 +48,7 @@ import {
   Weight,
   Sparkles,
   HelpCircle,
+  Loader2,
 } from "lucide-react";
 import { useApi } from "@/core/contexts/api.context";
 import { useLoader } from "@/core/hooks/useLoader";
@@ -65,6 +66,7 @@ export default function OrderTracking() {
   const [showAllUpdates, setShowAllUpdates] = useState(true);
   const [cancelReason, setCancelReason] = useState("Changed my mind");
   const [isCancelling, setIsCancelling] = useState(false);
+  const [isReorderingAll, setIsReorderingAll] = useState(false);
 
   useEffect(() => {
     if (id) {
@@ -101,6 +103,44 @@ export default function OrderTracking() {
       toast.success(`"${item.name || product.name}" added back to your cart!`);
     } catch {
       toast.error("Failed to re-add item to cart");
+    }
+  };
+
+  const handleBuyAgainAll = async () => {
+    const items = Array.isArray(orderDetails?.items) ? orderDetails.items : [];
+    if (items.length === 0) {
+      toast.error("No models found in this order to re-add to cart");
+      return;
+    }
+
+    try {
+      setIsReorderingAll(true);
+      let successCount = 0;
+      let totalUnits = 0;
+
+      for (const item of items) {
+        const product = item.product || item;
+        const qty = Number(item.quantity) || 1;
+        try {
+          await cart.addToCart(product, qty);
+          successCount++;
+          totalUnits += qty;
+        } catch (err) {
+          console.error("Failed to re-add item to cart:", item, err);
+        }
+      }
+
+      if (successCount > 0) {
+        toast.success(
+          `Added all ${items.length} ${items.length === 1 ? "model" : "models"} (${totalUnits} ${totalUnits === 1 ? "unit" : "units"}) to your cart!`
+        );
+      } else {
+        toast.error("Could not add models to cart. They may be out of stock.");
+      }
+    } catch {
+      toast.error("Failed to re-add models to cart");
+    } finally {
+      setIsReorderingAll(false);
     }
   };
 
@@ -448,6 +488,21 @@ export default function OrderTracking() {
           </div>
 
           <div className="flex items-center gap-2 flex-wrap">
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={isReorderingAll}
+              onClick={handleBuyAgainAll}
+              className="h-8.5 rounded-xl text-xs gap-1.5 font-medium hover:border-primary hover:text-primary cursor-pointer"
+            >
+              {isReorderingAll ? (
+                <Loader2 className="size-3.5 animate-spin text-primary" />
+              ) : (
+                <RotateCcw className="size-3.5 text-primary" />
+              )}
+              <span>Buy Order Again</span>
+            </Button>
+
             <Button
               variant="outline"
               size="sm"

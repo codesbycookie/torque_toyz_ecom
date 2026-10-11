@@ -44,6 +44,7 @@ import {
   Check,
   Calendar,
   FileText,
+  Loader2,
 } from "lucide-react";
 import { useApi } from "@/core/contexts/api.context";
 import { toast } from "sonner";
@@ -96,6 +97,7 @@ export default function Orders() {
   const [selectedTime, setSelectedTime] = useState("all");
   const [cancellingOrderId, setCancellingOrderId] = useState(null);
   const [cancelReason, setCancelReason] = useState("Changed my mind");
+  const [reorderingOrderId, setReorderingOrderId] = useState(null);
 
   const ordersTopRef = useRef(null);
 
@@ -195,14 +197,44 @@ export default function Orders() {
     }
   };
 
-  // Buy it again
-  const handleBuyAgain = async (item) => {
-    const product = item.product || item;
+  // Buy Again: Adds EVERY product in the order into the cart
+  const handleBuyAgain = async (order) => {
+    const items = Array.isArray(order?.items) ? order.items : [];
+    if (items.length === 0) {
+      toast.error("No models found in this order to re-add to cart");
+      return;
+    }
+
+    const orderId = order._id || order.id;
     try {
-      await cart.addToCart(product, 1);
-      toast.success(`"${item.name || product.name}" added back to cart!`);
+      setReorderingOrderId(orderId);
+      let successCount = 0;
+      let totalUnits = 0;
+
+      for (const item of items) {
+        const product = item.product || item;
+        const qty = Number(item.quantity) || 1;
+        try {
+          await cart.addToCart(product, qty);
+          successCount++;
+          totalUnits += qty;
+        } catch (err) {
+          console.error("Failed to re-add item to cart:", item, err);
+        }
+      }
+
+      if (successCount > 0) {
+        const orderRef = order.code || (orderId ? `#${String(orderId).slice(-6)}` : "");
+        toast.success(
+          `Added all ${items.length} ${items.length === 1 ? "model" : "models"} (${totalUnits} ${totalUnits === 1 ? "unit" : "units"}) from order ${orderRef} to your cart!`
+        );
+      } else {
+        toast.error("Could not add models to cart. They may be out of stock.");
+      }
     } catch {
-      toast.error("Failed to re-add model to cart");
+      toast.error("Failed to re-add models to cart");
+    } finally {
+      setReorderingOrderId(null);
     }
   };
 
@@ -695,18 +727,28 @@ export default function Orders() {
                     </div>
 
                     <div className="flex items-center gap-2 flex-wrap justify-end">
-                      {/* Secondary: Buy Again */}
+                      {/* Secondary: Buy Again (Re-adds all models in the order) */}
                       <Button
                         size="sm"
                         variant="outline"
+                        disabled={reorderingOrderId === orderId}
                         onClick={(e) => {
                           e.stopPropagation();
-                          handleBuyAgain(primaryItem);
+                          handleBuyAgain(order);
                         }}
                         className="h-8.5 rounded-xl text-xs gap-1.5 hover:border-primary hover:text-primary cursor-pointer"
                       >
-                        <RotateCcw className="size-3 text-primary" />
-                        <span>Buy Again</span>
+                        {reorderingOrderId === orderId ? (
+                          <>
+                            <Loader2 className="size-3 animate-spin text-primary" />
+                            <span>Adding Models...</span>
+                          </>
+                        ) : (
+                          <>
+                            <RotateCcw className="size-3 text-primary" />
+                            <span>Buy Again {items.length > 1 ? `(${items.length})` : ""}</span>
+                          </>
+                        )}
                       </Button>
 
                       {/* Secondary: Invoice */}
