@@ -5,6 +5,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { useApi } from "@/core/contexts/api.context";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import {
   AlertDialog,
   AlertDialogTrigger,
@@ -75,7 +76,7 @@ export default function Cart() {
       setIsUpdatingId(productId);
       await addToWishlist(productId);
       await removeFromCart(productId);
-      toast.success(`Saved "${item.name}" to wishlist`);
+      toast.success(`Saved "${item.name}" to your wishlist`);
     } catch {
       toast.error("Could not save item to wishlist");
     } finally {
@@ -87,7 +88,7 @@ export default function Cart() {
     try {
       setIsClearing(true);
       await clearCart();
-      toast.success("Your cart has been cleared");
+      toast.success("Your garage cart has been cleared");
     } catch {
       toast.error("Failed to clear cart");
     } finally {
@@ -99,7 +100,7 @@ export default function Cart() {
     if (!promoCode.trim()) return;
     if (promoCode.trim().toUpperCase() === "TORQUE10") {
       setAppliedPromo("TORQUE10");
-      toast.success("Coupon code TORQUE10 applied successfully!");
+      toast.success("Coupon code TORQUE10 applied successfully! (10% Off)");
     } else {
       toast.error("Invalid coupon code");
     }
@@ -108,105 +109,123 @@ export default function Cart() {
   const isInitialLoading = loading && items.length === 0;
 
   return (
-    <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8 min-h-[85vh]">
-      {/* Checkout Stepper Progress */}
-      <CartStepper currentStep={1} />
+    <div className="min-h-screen bg-background text-foreground pb-12">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
 
-      {/* Main Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 pb-4 border-b">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Shopping Cart</h1>
-          <p className="text-sm text-muted-foreground mt-0.5">
-            {items.length > 0
-              ? `You have ${items.length} ${items.length === 1 ? "item" : "items"} in your cart`
-              : "Your cart is currently empty"}
-          </p>
+        {/* ─── Breadcrumb Navigation ─── */}
+        <div className="flex items-center gap-1.5 text-xs text-muted-foreground flex-wrap">
+          <Link to="/profile" className="hover:text-primary transition-colors">
+            Your Account
+          </Link>
+          <span>›</span>
+          <span className="text-foreground font-bold">Shopping Cart</span>
         </div>
 
-        {items.length > 0 && (
-          <div className="flex items-center gap-3">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => navigate("/products")}
-              className="gap-1.5 text-xs font-medium text-muted-foreground hover:text-foreground"
-            >
-              <ArrowLeft className="size-3.5" />
-              Continue Shopping
-            </Button>
+        {/* ─── Checkout Stepper Progress ─── */}
+        <CartStepper currentStep={1} />
 
-            <AlertDialog>
-              <AlertDialogTrigger asChild>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  disabled={isClearing}
-                  className="gap-1.5 text-xs text-destructive border-destructive/30 hover:bg-destructive/10 hover:text-destructive"
-                >
-                  <Trash2 className="size-3.5" />
-                  Clear Cart
-                </Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>Clear your cart?</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    This will remove all items from your shopping cart.
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>Cancel</AlertDialogCancel>
-                  <AlertDialogAction
-                    onClick={handleClearCart}
-                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+        {/* ─── Page Header Strip ─── */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-border/80">
+          <div className="flex items-center gap-3">
+            <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-foreground">
+              Shopping Cart
+            </h1>
+            {items.length > 0 && (
+              <Badge className="bg-primary/10 text-primary border border-primary/20 font-bold text-xs">
+                {items.length} {items.length === 1 ? "model" : "models"}
+              </Badge>
+            )}
+          </div>
+
+          {items.length > 0 && (
+            <div className="flex items-center gap-2.5 flex-wrap">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => navigate("/products")}
+                className="h-8.5 rounded-xl text-xs gap-1.5 font-medium hover:border-primary hover:text-primary cursor-pointer"
+              >
+                <ArrowLeft className="size-3.5" />
+                <span>Continue Shopping</span>
+              </Button>
+
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    disabled={isClearing}
+                    className="h-8.5 rounded-xl text-xs gap-1.5 text-destructive hover:bg-destructive/10 hover:text-destructive cursor-pointer"
                   >
-                    Clear Cart
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
+                    <Trash2 className="size-3.5" />
+                    <span>Clear Cart</span>
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent className="rounded-2xl border-border bg-popover shadow-xl">
+                  <AlertDialogHeader>
+                    <AlertDialogTitle className="text-destructive flex items-center gap-2">
+                      <Trash2 className="size-5" />
+                      Clear all items from your cart?
+                    </AlertDialogTitle>
+                    <AlertDialogDescription className="text-xs text-muted-foreground leading-relaxed pt-1">
+                      This will remove all precision scale models from your shopping cart. You can always add them back later from the catalog.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter className="pt-2">
+                    <AlertDialogCancel className="rounded-xl text-xs">Cancel</AlertDialogCancel>
+                    <AlertDialogAction
+                      onClick={handleClearCart}
+                      className="rounded-xl bg-destructive hover:bg-destructive/90 text-destructive-foreground font-bold text-xs"
+                    >
+                      Clear Cart
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            </div>
+          )}
+        </div>
+
+        {/* ─── Cart Content Grid ─── */}
+        {isInitialLoading ? (
+          <CartSkeleton />
+        ) : items.length === 0 ? (
+          <CartEmptyState />
+        ) : (
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+            {/* Cart Item List (Left 8 Columns) */}
+            <div className="lg:col-span-8 space-y-4">
+              {items.map((item) => {
+                const productId = item.product || item.id || item._id;
+                return (
+                  <CartItemCard
+                    key={productId}
+                    item={item}
+                    onUpdateQuantity={handleUpdateQuantity}
+                    onRemove={handleRemove}
+                    onMoveToWishlist={handleMoveToWishlist}
+                    isUpdating={isUpdatingId === productId}
+                  />
+                );
+              })}
+            </div>
+
+            {/* Order Summary Sidebar (Right 4 Columns) */}
+            <div className="lg:col-span-4">
+              <CartOrderSummary
+                pricing={pricing}
+                itemCount={items.reduce((sum, i) => sum + (i.quantity || 1), 0)}
+                onProceedToCheckout={() => navigate("/checkout")}
+                promoCode={promoCode}
+                onPromoCodeChange={setPromoCode}
+                onApplyPromo={handleApplyPromo}
+                appliedPromo={appliedPromo}
+              />
+            </div>
           </div>
         )}
+
       </div>
-
-      {/* Content Grid */}
-      {isInitialLoading ? (
-        <CartSkeleton />
-      ) : items.length === 0 ? (
-        <CartEmptyState />
-      ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
-          {/* Cart Item List (Left) */}
-          <div className="lg:col-span-2 space-y-4">
-            {items.map((item) => {
-              const productId = item.product || item.id || item._id;
-              return (
-                <CartItemCard
-                  key={productId}
-                  item={item}
-                  onUpdateQuantity={handleUpdateQuantity}
-                  onRemove={handleRemove}
-                  onMoveToWishlist={handleMoveToWishlist}
-                  isUpdating={isUpdatingId === productId}
-                />
-              );
-            })}
-          </div>
-
-          {/* Summary Sidebar (Right) */}
-          <div className="lg:col-span-1">
-            <CartOrderSummary
-              pricing={pricing}
-              itemCount={items.reduce((sum, i) => sum + (i.quantity || 1), 0)}
-              onProceedToCheckout={() => navigate("/checkout")}
-              promoCode={promoCode}
-              onPromoCodeChange={setPromoCode}
-              onApplyPromo={handleApplyPromo}
-              appliedPromo={appliedPromo}
-            />
-          </div>
-        </div>
-      )}
     </div>
   );
 }
