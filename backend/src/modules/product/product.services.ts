@@ -12,8 +12,28 @@ export const createProduct = async (data: CreateProductPayload) => {
 };
 
 export const getAllProducts = async (queries: Record<string, unknown>, role?: Role) => {
+  const rawQuery: Record<string, any> = {};
+
+  if (queries.minPrice !== undefined || queries.maxPrice !== undefined) {
+    const priceFilter: Record<string, number> = {};
+    if (queries.minPrice !== undefined && queries.minPrice !== '') {
+      priceFilter.$gte = Number(queries.minPrice);
+    }
+    if (queries.maxPrice !== undefined && queries.maxPrice !== '') {
+      priceFilter.$lte = Number(queries.maxPrice);
+    }
+    if (Object.keys(priceFilter).length > 0) {
+      rawQuery.price = priceFilter;
+    }
+  }
+
+  if (queries.inStock === 'true' || queries.inStock === true) {
+    rawQuery.stock = { $gt: 0 };
+  }
+
   return dynamicFilter(Product, productFilterConfig, queries, {
     visibility: getVisibility(role),
+    rawQuery,
     forcePopulate: [
       {
         path: 'reviews',

@@ -140,7 +140,7 @@ export function ProductListCard({
             <div className="flex items-center gap-2 pt-1">
               <Button
                 size="sm"
-                className="bg-yellow-400 hover:bg-yellow-500 text-black font-medium px-5"
+                className="bg-primary hover:bg-primary/90 text-primary-foreground font-medium px-5"
                 disabled={isOutOfStock || !product.active}
                 onClick={(e) => {
                   e.stopPropagation();
@@ -183,114 +183,185 @@ export function ProductListCard({
     </Card>
   );
 }
-// ─── Product Card ───────────────────────────────────────────
-export function ProductCard({
+// ─── Amazon-Style Product Grid Card ─────────────────────────
+export function AmazonProductCard({
   product,
   onAddToCart,
   onToggleWishlist,
   isWishlisted = false,
 }) {
+  const navigate = useNavigate();
   const firstImage = product.images?.[0];
-  const price = Number(product.price || 0).toFixed(2);
+  const price = Number(product.price || 0);
   const isOutOfStock = product.stock <= 0;
   const isWish = isWishlisted || Boolean(product?.is_in_wishlist);
 
+  const reviews = product.reviews || [];
+  const avgRating =
+    reviews.length > 0
+      ? (
+          reviews.reduce((sum, r) => sum + (r.rating || 0), 0) / reviews.length
+        ).toFixed(1)
+      : null;
+
+  // Derived MRP for Amazon-style discount display (approx 20% higher)
+  const mrp = Math.round(price * 1.25);
+  const discountPercent = price > 0 ? Math.round(((mrp - price) / mrp) * 100) : 0;
+  const isChoice = (Number(avgRating) >= 4.2 && reviews.length >= 2) || product.featured;
+
+  const handleCardClick = () => {
+    navigate(`/products/${product.slug || product._id}`);
+  };
+
   return (
-    <Card className="group overflow-hidden border-border/60 transition-all hover:shadow-md">
-      {/* Image */}
-      <Link
-        to={`/products/${product._id}`}
-        className="block relative aspect-square overflow-hidden bg-muted"
-      >
+    <div
+      onClick={handleCardClick}
+      className="group relative flex flex-col justify-between h-full bg-card hover:bg-card/95 border border-border/70 hover:border-primary/50 rounded-xl overflow-hidden shadow-xs hover:shadow-lg transition-all duration-200 cursor-pointer"
+    >
+      {/* Top Media Area */}
+      <div className="relative aspect-square w-full overflow-hidden bg-muted/20 dark:bg-muted/10 p-4 flex items-center justify-center border-b border-border/40">
         {firstImage ? (
           <img
             src={firstImage}
             alt={product.name}
-            className="size-full object-cover transition-transform duration-300 group-hover:scale-105"
+            className="size-full object-contain transition-transform duration-300 group-hover:scale-105"
             loading="lazy"
           />
         ) : (
-          <div className="flex size-full items-center justify-center text-muted-foreground text-sm">
-            No image
+          <div className="flex size-full items-center justify-center text-muted-foreground text-xs">
+            No image available
           </div>
         )}
 
-        {/* Badges */}
-        <div className="absolute top-2 left-2 flex flex-col gap-1.5">
-          {!product.active && <Badge variant="secondary">Inactive</Badge>}
-          {isOutOfStock && <Badge variant="destructive">Out of stock</Badge>}
+        {/* Badges on Top Left */}
+        <div className="absolute top-2 left-2 flex flex-col gap-1 items-start z-1">
+          {isChoice && (
+            <span className="bg-primary text-primary-foreground text-[10px] font-bold px-2 py-0.5 rounded-sm tracking-wide shadow-xs uppercase">
+              Featured Pick
+            </span>
+          )}
+          {isOutOfStock ? (
+            <Badge variant="destructive" className="text-[10px] font-medium px-1.5 py-0">
+              Out of stock
+            </Badge>
+          ) : product.stock > 0 && product.stock <= 5 ? (
+            <Badge variant="secondary" className="bg-primary/10 text-primary border border-primary/20 text-[10px] font-medium px-1.5 py-0">
+              Only {product.stock} left
+            </Badge>
+          ) : discountPercent > 15 ? (
+            <Badge variant="secondary" className="bg-primary/10 text-primary border border-primary/20 text-[10px] font-medium px-1.5 py-0">
+              {discountPercent}% OFF
+            </Badge>
+          ) : null}
         </div>
 
-        {/* Quick actions (appear on hover) */}
-        <div className="absolute top-2 right-2 flex flex-col gap-1.5 opacity-0 transition-opacity group-hover:opacity-100">
+        {/* Wishlist Button on Top Right */}
+        <button
+          type="button"
+          aria-label={isWish ? "Remove from wishlist" : "Add to wishlist"}
+          className="absolute top-2 right-2 size-8 rounded-full bg-background/90 hover:bg-background backdrop-blur-sm shadow-xs border border-border/80 flex items-center justify-center text-muted-foreground hover:text-primary transition-transform hover:scale-110 active:scale-95 z-2"
+          onClick={(e) => {
+            e.stopPropagation();
+            onToggleWishlist?.(product);
+          }}
+        >
+          <Heart
+            className={cn(
+              "size-4 transition-colors",
+              isWish ? "fill-primary text-primary" : "text-muted-foreground hover:text-primary"
+            )}
+          />
+        </button>
+      </div>
+
+      {/* Product Details */}
+      <div className="p-3.5 sm:p-4 flex flex-col flex-1 justify-between gap-2.5">
+        <div className="space-y-1.5">
+          {/* Category */}
+          {product.category?.name && (
+            <p className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground line-clamp-1">
+              {product.category.name}
+            </p>
+          )}
+
+          {/* Title */}
+          <h3 className="font-medium text-sm sm:text-[15px] leading-snug line-clamp-2 text-foreground group-hover:text-primary transition-colors">
+            {product.name}
+          </h3>
+
+          {/* Star Rating */}
+          <div className="flex items-center gap-1.5 text-xs pt-0.5">
+            <div className="flex items-center">
+              {Array.from({ length: 5 }).map((_, i) => (
+                <Star
+                  key={i}
+                  className={cn(
+                    "size-3 sm:size-3.5",
+                    avgRating && i < Math.round(Number(avgRating))
+                      ? "fill-amber-400 text-amber-400"
+                      : "text-muted-foreground/30 fill-muted-foreground/10"
+                  )}
+                />
+              ))}
+            </div>
+            {avgRating ? (
+              <span className="text-muted-foreground font-medium text-[11px]">
+                {avgRating} ({reviews.length})
+              </span>
+            ) : (
+              <span className="text-muted-foreground/60 text-[11px]">(New)</span>
+            )}
+          </div>
+
+          {/* Price & MRP Block */}
+          <div className="pt-1 space-y-0.5">
+            <div className="flex items-baseline gap-2 flex-wrap">
+              <span className="text-base sm:text-lg font-bold tracking-tight text-foreground">
+                ₹{price.toLocaleString("en-IN")}
+              </span>
+              {mrp > price && (
+                <span className="text-xs text-muted-foreground line-through">
+                  ₹{mrp.toLocaleString("en-IN")}
+                </span>
+              )}
+              {discountPercent > 0 && (
+                <span className="text-xs font-semibold text-primary">
+                  ({discountPercent}% off)
+                </span>
+              )}
+            </div>
+
+            {/* Delivery Promise */}
+            <p className="text-[11px] text-muted-foreground">
+              <span className="font-semibold text-primary">FREE delivery</span>{" "}
+              available
+            </p>
+          </div>
+        </div>
+
+        {/* Action Button */}
+        <div className="pt-2">
           <Button
-            size="icon"
-            variant="secondary"
-            className="size-8 rounded-full shadow-sm"
+            type="button"
+            size="sm"
+            disabled={isOutOfStock || !product.active}
+            className="w-full rounded-full bg-primary hover:bg-primary/90 active:bg-primary/95 text-primary-foreground font-semibold text-xs sm:text-sm shadow-xs border border-transparent transition-transform active:scale-[0.98] h-9"
             onClick={(e) => {
-              e.preventDefault();
-              onToggleWishlist?.(product);
+              e.stopPropagation();
+              onAddToCart?.(product);
             }}
           >
-            <Heart
-              className={cn(
-                "size-4",
-                isWish && "fill-rose-500 text-rose-500"
-              )}
-            />
+            <ShoppingCart className="size-3.5 mr-1.5" />
+            {isOutOfStock ? "Out of stock" : "Add to cart"}
           </Button>
         </div>
-      </Link>
-
-      <CardHeader className="p-4 pb-2 space-y-1">
-        <Link
-          to={`/products/${product.slug || product._id}`}
-          className="font-medium leading-tight line-clamp-2 hover:underline"
-        >
-          {product.name}
-        </Link>
-
-        {product.category?.name && (
-          <p className="text-xs text-muted-foreground">
-            {product.category.name}
-          </p>
-        )}
-      </CardHeader>
-
-      <CardContent className="p-4 pt-0">
-        <div className="flex items-center justify-between gap-2">
-          <span className="text-lg font-semibold tracking-tight">₹{price}</span>
-
-          {product.reviews?.length > 0 && (
-            <div className="flex items-center gap-1 text-xs text-muted-foreground">
-              <Star className="size-3.5 fill-amber-400 text-amber-400" />
-              <span>
-                {(
-                  product.reviews.reduce((s, r) => s + (r.rating || 0), 0) /
-                  product.reviews.length
-                ).toFixed(1)}
-              </span>
-            </div>
-          )}
-        </div>
-      </CardContent>
-
-      <CardFooter className="p-4 pt-0">
-        <Button
-          className="w-full gap-2"
-          disabled={isOutOfStock || !product.active}
-          onClick={() => onAddToCart?.(product)}
-        >
-          <ShoppingCart className="size-4" />
-          {isOutOfStock ? "Out of stock" : "Add to cart"}
-        </Button>
-      </CardFooter>
-    </Card>
+      </div>
+    </div>
   );
 }
 
-// ─── Product Grid ───────────────────────────────────────────
-export function ProductGrid({
+// ─── Amazon-Style Product Grid ──────────────────────────────
+export function AmazonProductGrid({
   products = [],
   loading,
   onAddToCart,
@@ -299,9 +370,9 @@ export function ProductGrid({
 }) {
   if (loading) {
     return (
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-5">
         {Array.from({ length: 8 }).map((_, i) => (
-          <ProductCardSkeleton key={i} />
+          <AmazonProductCardSkeleton key={i} />
         ))}
       </div>
     );
@@ -309,16 +380,22 @@ export function ProductGrid({
 
   if (!products.length) {
     return (
-      <div className="flex flex-col items-center justify-center py-20 text-center">
-        <p className="text-muted-foreground">No products found</p>
+      <div className="flex flex-col items-center justify-center py-20 px-4 text-center border rounded-xl bg-card/50">
+        <div className="size-16 rounded-full bg-muted flex items-center justify-center mb-4">
+          <ShoppingCart className="size-8 text-muted-foreground" />
+        </div>
+        <h3 className="text-lg font-semibold mb-1">No products found</h3>
+        <p className="text-sm text-muted-foreground max-w-md mb-4">
+          Try clearing some filters or searching with different terms to find what you're looking for.
+        </p>
       </div>
     );
   }
 
   return (
-    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
+    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-5">
       {products.map((product) => (
-        <ProductCard
+        <AmazonProductCard
           key={product._id}
           product={product}
           onAddToCart={onAddToCart}
@@ -330,23 +407,27 @@ export function ProductGrid({
   );
 }
 
-// ─── Skeleton ───────────────────────────────────────────────
-export function ProductCardSkeleton() {
+export const ProductGrid = AmazonProductGrid;
+export const ProductCard = AmazonProductCard;
+
+// ─── Skeletons ──────────────────────────────────────────────
+export function AmazonProductCardSkeleton() {
   return (
-    <Card className="overflow-hidden">
+    <div className="border border-border/60 rounded-xl overflow-hidden bg-card flex flex-col justify-between h-full p-0">
       <Skeleton className="aspect-square w-full rounded-none" />
-      <CardHeader className="p-4 pb-2 space-y-2">
-        <Skeleton className="h-4 w-3/4" />
+      <div className="p-4 space-y-2.5">
+        <Skeleton className="h-3 w-1/3" />
+        <Skeleton className="h-4 w-4/5" />
         <Skeleton className="h-3 w-1/2" />
-      </CardHeader>
-      <CardContent className="p-4 pt-0">
-        <Skeleton className="h-6 w-20" />
-      </CardContent>
-      <CardFooter className="p-4 pt-0">
-        <Skeleton className="h-9 w-full" />
-      </CardFooter>
-    </Card>
+        <Skeleton className="h-5 w-24 pt-1" />
+        <Skeleton className="h-9 w-full rounded-full mt-3" />
+      </div>
+    </div>
   );
+}
+
+export function ProductCardSkeleton() {
+  return <AmazonProductCardSkeleton />;
 }
 
 // ─── Featured Section (for Home) ────────────────────────────

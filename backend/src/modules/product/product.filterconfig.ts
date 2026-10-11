@@ -6,7 +6,7 @@ export const productFilterConfig: FilterConfig<IProduct> = {
   searchableRefs: [
     { field: 'category', ref: 'Category', matchOn: 'name' }
   ],
-  filterable: ['active', 'deleted', "category"],
-  sortable: ['name', 'code', 'createdAt', 'active'],
+  filterable: ['active', 'deleted', "category", "price", "stock"],
+  sortable: ['name', 'code', 'createdAt', 'active', 'price', 'stock', 'weight'],
   defaultSort: 'name',
 };

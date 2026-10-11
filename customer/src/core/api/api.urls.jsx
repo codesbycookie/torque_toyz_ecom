@@ -61,6 +61,15 @@ const apiurls = {
     },
   },
 
+  categories: {
+    getAll: { method: "get", url: () => `${base_url}/categories` },
+    getOne: { method: "get", url: (id) => `${base_url}/categories/${id}` },
+    getBySlug: {
+      method: "get",
+      url: (slug) => `${base_url}/categories/slug/${slug}`,
+    },
+  },
+
   recommendations: {
     get: {
       method: "get",

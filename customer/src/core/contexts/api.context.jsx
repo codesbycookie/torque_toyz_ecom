@@ -1,5 +1,6 @@
 import { createContext, useContext } from "react";
 import { useProductModule } from "@/modules/product/product.module";
+import { useCategoryModule } from "@/modules/category/category.module";
 import { useCartModule } from "@/modules/cart/cart.module";
 import { useWishlistModule } from "@/modules/wishlist/wishlist.module";
 import { useOrderModule } from "@/modules/order/order.module";
@@ -23,6 +24,7 @@ export const ApiProvider = ({ children }) => {
   const exported = {};
 
   const productModule = useProductModule(exported);
+  const categoryModule = useCategoryModule(exported);
   const cartModule = useCartModule(exported);
   const wishlistModule = useWishlistModule(exported);
   const orderModule = useOrderModule(exported);
@@ -34,6 +36,7 @@ export const ApiProvider = ({ children }) => {
   Object.assign(exported, {
     // Singular aliases
     product: productModule,
+    category: categoryModule,
     cart: cartModule,
     wishlist: wishlistModule,
     order: orderModule,
@@ -44,6 +47,7 @@ export const ApiProvider = ({ children }) => {
 
     // Plural aliases
     products: productModule,
+    categories: categoryModule,
     orders: orderModule,
     users: userModule,
     payments: paymentModule,
@@ -52,6 +56,7 @@ export const ApiProvider = ({ children }) => {
 
     // Module name aliases
     productModule,
+    categoryModule,
     cartModule,
     wishlistModule,
     orderModule,
