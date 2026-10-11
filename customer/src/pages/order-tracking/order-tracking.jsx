@@ -129,7 +129,7 @@ export default function OrderTracking() {
   if (loading) {
     return (
       <div className="min-h-screen bg-background text-foreground">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
           <Skeleton className="h-4 w-48 rounded" />
           <div className="flex justify-between items-center pb-3 border-b border-border/80">
             <Skeleton className="h-8 w-64 rounded-lg" />
@@ -379,8 +379,8 @@ export default function OrderTracking() {
 
   return (
     <div className="min-h-screen bg-background text-foreground">
-      {/* ─── Centered Amazon-Style Page Container (max-w-5xl) ─── */}
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
+      {/* ─── Centered Page Container (max-w-7xl) ─── */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
         
         {/* Amazon Breadcrumb Navigation */}
         <div className="flex items-center gap-1.5 text-xs text-muted-foreground flex-wrap">

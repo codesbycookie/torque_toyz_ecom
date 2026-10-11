@@ -267,7 +267,7 @@ export default function Orders() {
 
   return (
     <div className="min-h-screen bg-background text-foreground" ref={ordersTopRef}>
-      {/* ─── Authentic Amazon Orders Container (Centered, Focused max-w-5xl) ─── */}
+      {/* ─── Orders Container (max-w-7xl) ─── */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
         {/* Breadcrumb Navigation */}
         <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
