@@ -1,9 +1,18 @@
 'use client';
 
+import { useState } from "react";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import {
   Select,
   SelectContent,
@@ -14,7 +23,6 @@ import {
 import {
   MapPin,
   Truck,
-  User,
   Phone,
   Mail,
   Building,
@@ -23,24 +31,543 @@ import {
   AlertCircle,
   Edit3,
   ArrowRight,
+  Plus,
+  Trash2,
+  Check,
+  Ban,
 } from "lucide-react";
+import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 
 /**
- * Shipping Address Input Form (Step 2 of Checkout)
- * Built to match the precision garage design aesthetic of Torque Toyzz.
+ * Dialog Popup for Adding or Editing an Address
  */
-export function ShippingAddressForm({
-  formData,
-  onInputChange,
+export function AddressModalDialog({
+  isOpen,
+  onOpenChange,
+  onSaveAddress,
   locations = [],
-  selectedLocation,
-  isStateDeliverable,
-  onStateChange,
+  initialData = null,
+}) {
+  const [modalForm, setModalForm] = useState({
+    label: initialData?.label || "Home",
+    firstName: initialData?.firstName || "",
+    lastName: initialData?.lastName || "",
+    email: initialData?.email || "",
+    phone: initialData?.phone || "",
+    door: initialData?.door || "",
+    street: initialData?.street || "",
+    city: initialData?.city || "",
+    state: initialData?.state || "",
+    zip: initialData?.zip || initialData?.pincode ? String(initialData.zip || initialData.pincode) : "",
+    isDefault: initialData?.isDefault || false,
+  });
+
+  const selectedLoc = locations.find((l) => l._id === modalForm.state);
+  const isDeliverable = selectedLoc ? selectedLoc.deliverable : true;
+
+  const handleChange = (e) => {
+    const { id, value, type, checked } = e.target;
+    setModalForm((prev) => ({
+      ...prev,
+      [id]: type === "checkbox" ? checked : value,
+    }));
+  };
+
+  const handleStateChange = (val) => {
+    setModalForm((prev) => ({ ...prev, state: val }));
+  };
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (
+      !modalForm.firstName.trim() ||
+      !modalForm.lastName.trim() ||
+      !modalForm.street.trim() ||
+      !modalForm.city.trim() ||
+      !modalForm.state ||
+      !modalForm.zip.trim()
+    ) {
+      toast.error("Please fill in all required address fields.");
+      return;
+    }
+
+    if (!/^\d{6}$/.test(modalForm.zip.trim())) {
+      toast.error("PIN Code must be exactly 6 digits.");
+      return;
+    }
+
+    const payload = {
+      id: initialData?.id || initialData?._id || `addr_${Date.now()}`,
+      label: modalForm.label.trim() || "Home",
+      firstName: modalForm.firstName.trim(),
+      lastName: modalForm.lastName.trim(),
+      name: `${modalForm.firstName.trim()} ${modalForm.lastName.trim()}`.trim(),
+      email: modalForm.email.trim(),
+      phone: modalForm.phone.trim(),
+      door: modalForm.door.trim(),
+      street: modalForm.street.trim(),
+      city: modalForm.city.trim(),
+      state: modalForm.state,
+      stateName: selectedLoc?.state || "",
+      zip: modalForm.zip.trim(),
+      pincode: Number(modalForm.zip.trim()),
+      isDefault: modalForm.isDefault,
+    };
+
+    onSaveAddress(payload);
+    onOpenChange(false);
+  };
+
+  return (
+    <Dialog open={isOpen} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-xl w-[95vw] rounded-2xl p-6 max-h-[90vh] overflow-y-auto">
+        <DialogHeader className="pb-2 border-b border-border/70">
+          <div className="flex items-center gap-2.5">
+            <div className="size-9 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary">
+              <MapPin className="size-4.5" />
+            </div>
+            <div>
+              <DialogTitle className="text-base sm:text-lg font-bold">
+                {initialData ? "Edit Shipping Address" : "Add New Shipping Address"}
+              </DialogTitle>
+              <DialogDescription className="text-xs text-muted-foreground">
+                Enter delivery and recipient details for garage logistics dispatch
+              </DialogDescription>
+            </div>
+          </div>
+        </DialogHeader>
+
+        <form onSubmit={handleSubmit} className="space-y-4 pt-2">
+          {/* Label selector */}
+          <div className="space-y-1.5">
+            <Label htmlFor="label" className="text-xs font-medium">
+              Address Label
+            </Label>
+            <div className="flex items-center gap-2 flex-wrap">
+              {["Home", "Office", "Garage / Studio", "Other"].map((tag) => (
+                <button
+                  type="button"
+                  key={tag}
+                  onClick={() => setModalForm((prev) => ({ ...prev, label: tag }))}
+                  className={cn(
+                    "text-xs px-3 py-1.5 rounded-lg border font-medium transition-all cursor-pointer",
+                    modalForm.label === tag
+                      ? "border-primary bg-primary/10 text-primary font-bold shadow-2xs"
+                      : "border-border/80 bg-muted/30 text-muted-foreground hover:border-primary/40"
+                  )}
+                >
+                  {tag}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Recipient names */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+            <div className="space-y-1.5">
+              <Label htmlFor="firstName" className="text-xs font-medium">
+                First Name <span className="text-primary font-bold">*</span>
+              </Label>
+              <Input
+                id="firstName"
+                value={modalForm.firstName}
+                onChange={handleChange}
+                required
+                placeholder="e.g. Bruce"
+                className="h-9.5 text-xs rounded-xl"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="lastName" className="text-xs font-medium">
+                Last Name <span className="text-primary font-bold">*</span>
+              </Label>
+              <Input
+                id="lastName"
+                value={modalForm.lastName}
+                onChange={handleChange}
+                required
+                placeholder="e.g. Wayne"
+                className="h-9.5 text-xs rounded-xl"
+              />
+            </div>
+          </div>
+
+          {/* Contact email & phone */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+            <div className="space-y-1.5">
+              <Label htmlFor="email" className="text-xs font-medium">
+                Email Address
+              </Label>
+              <div className="relative">
+                <Input
+                  id="email"
+                  type="email"
+                  value={modalForm.email}
+                  onChange={handleChange}
+                  placeholder="bruce@waynecorp.com"
+                  className="h-9.5 text-xs rounded-xl pl-8"
+                />
+                <Mail className="size-3.5 text-muted-foreground absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+              </div>
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="phone" className="text-xs font-medium">
+                Phone Number <span className="text-primary font-bold">*</span>
+              </Label>
+              <div className="relative">
+                <Input
+                  id="phone"
+                  type="tel"
+                  value={modalForm.phone}
+                  onChange={handleChange}
+                  required
+                  placeholder="9876543210"
+                  className="h-9.5 text-xs rounded-xl pl-8"
+                />
+                <Phone className="size-3.5 text-muted-foreground absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+              </div>
+            </div>
+          </div>
+
+          {/* Door & Street */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
+            <div className="space-y-1.5 sm:col-span-1">
+              <Label htmlFor="door" className="text-xs font-medium">
+                Flat / Door No.
+              </Label>
+              <div className="relative">
+                <Input
+                  id="door"
+                  value={modalForm.door}
+                  onChange={handleChange}
+                  placeholder="e.g. Flat 101"
+                  className="h-9.5 text-xs rounded-xl pl-8"
+                />
+                <Building className="size-3.5 text-muted-foreground absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+              </div>
+            </div>
+            <div className="space-y-1.5 sm:col-span-2">
+              <Label htmlFor="street" className="text-xs font-medium">
+                Street / Area / Landmark <span className="text-primary font-bold">*</span>
+              </Label>
+              <div className="relative">
+                <Input
+                  id="street"
+                  value={modalForm.street}
+                  onChange={handleChange}
+                  required
+                  placeholder="e.g. 100 Feet Road, Indiranagar"
+                  className="h-9.5 text-xs rounded-xl pl-8"
+                />
+                <Navigation className="size-3.5 text-muted-foreground absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+              </div>
+            </div>
+          </div>
+
+          {/* City, State, PIN Code */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
+            <div className="space-y-1.5">
+              <Label htmlFor="city" className="text-xs font-medium">
+                City / Town <span className="text-primary font-bold">*</span>
+              </Label>
+              <Input
+                id="city"
+                value={modalForm.city}
+                onChange={handleChange}
+                required
+                placeholder="e.g. Bengaluru"
+                className="h-9.5 text-xs rounded-xl"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="modal-state" className="text-xs font-medium">
+                State / Region <span className="text-primary font-bold">*</span>
+              </Label>
+              <Select value={modalForm.state} onValueChange={handleStateChange}>
+                <SelectTrigger id="modal-state" className="h-9.5 text-xs rounded-xl">
+                  <SelectValue placeholder="Select State" />
+                </SelectTrigger>
+                <SelectContent className="rounded-xl border-border bg-popover shadow-lg max-h-56">
+                  {locations.map((loc) => (
+                    <SelectItem key={loc._id} value={loc._id} className="text-xs py-1.5">
+                      <div className="flex items-center justify-between w-full gap-2">
+                        <span>{loc.state}</span>
+                        {!loc.deliverable && (
+                          <span className="text-[10px] text-destructive font-semibold">
+                            (Restricted)
+                          </span>
+                        )}
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="zip" className="text-xs font-medium">
+                PIN Code <span className="text-primary font-bold">*</span>
+              </Label>
+              <Input
+                id="zip"
+                value={modalForm.zip}
+                onChange={handleChange}
+                maxLength={6}
+                required
+                placeholder="560038"
+                className="h-9.5 text-xs font-mono rounded-xl"
+              />
+            </div>
+          </div>
+
+          {/* Live Deliverability Warning inside Dialog */}
+          {modalForm.state && !isDeliverable && (
+            <div className="flex items-start gap-2.5 p-3 rounded-xl bg-destructive/10 border border-destructive/20 text-destructive text-xs">
+              <AlertCircle className="size-4 shrink-0 mt-0.5" />
+              <div>
+                <span className="font-bold">Logistics Alert: </span>
+                <span>
+                  Orders cannot currently be dispatched to {selectedLoc?.state}. You can still save this address, but orders will require a deliverable location.
+                </span>
+              </div>
+            </div>
+          )}
+
+          {/* Checkbox: Set as default */}
+          <label className="flex items-center gap-2 cursor-pointer text-xs font-medium text-foreground select-none pt-1">
+            <input
+              type="checkbox"
+              id="isDefault"
+              checked={modalForm.isDefault}
+              onChange={handleChange}
+              className="size-4 rounded border-border accent-primary cursor-pointer"
+            />
+            <span>Set as default shipping address</span>
+          </label>
+
+          <DialogFooter className="pt-2 gap-2 sm:gap-0">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => onOpenChange(false)}
+              className="rounded-xl text-xs h-9 cursor-pointer"
+            >
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              size="sm"
+              className="rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground font-bold text-xs h-9 gap-1.5 cursor-pointer"
+            >
+              <Check className="size-3.5" />
+              <span>{initialData ? "Update Address" : "Save Address"}</span>
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+/**
+ * Single Selectable Address Card
+ */
+export function SavedAddressCard({
+  address,
+  isSelected,
+  onSelect,
+  onEdit,
+  onDelete,
+  locations = [],
+}) {
+  const loc = locations.find((l) => l._id === address.state);
+  const stateLabel = loc?.state || address.stateName || "State";
+  const isDeliverable = loc ? loc.deliverable : true;
+
+  const fullName = address.name || [address.firstName, address.lastName].filter(Boolean).join(" ") || "Saved Contact";
+
+  return (
+    <div
+      onClick={() => onSelect(address)}
+      className={cn(
+        "relative rounded-xl border p-4.5 transition-all cursor-pointer flex flex-col justify-between gap-3 text-left group",
+        isSelected
+          ? isDeliverable
+            ? "border-primary bg-primary/5 ring-1.5 ring-primary shadow-xs"
+            : "border-destructive bg-destructive/5 ring-1.5 ring-destructive shadow-xs"
+          : isDeliverable
+          ? "border-border/80 bg-card hover:border-primary/50 hover:bg-muted/30"
+          : "border-destructive/30 bg-card/60 hover:border-destructive/60"
+      )}
+    >
+      <div className="space-y-2.5">
+        {/* Top Header: Radio mark, Tag, and Deliverability Pill */}
+        <div className="flex items-center justify-between gap-2 flex-wrap">
+          <div className="flex items-center gap-2">
+            <div
+              className={cn(
+                "size-4.5 rounded-full border flex items-center justify-center transition-all",
+                isSelected
+                  ? isDeliverable
+                    ? "border-primary bg-primary text-primary-foreground"
+                    : "border-destructive bg-destructive text-destructive-foreground"
+                  : "border-muted-foreground/60 group-hover:border-primary"
+              )}
+            >
+              {isSelected && <Check className="size-3 stroke-[3]" />}
+            </div>
+
+            <Badge
+              variant="outline"
+              className={cn(
+                "text-[10px] font-bold uppercase tracking-wider px-2 py-0.5",
+                isSelected ? "border-primary/40 text-primary" : "text-muted-foreground"
+              )}
+            >
+              {address.label || "Home"}
+            </Badge>
+
+            {address.isDefault && (
+              <Badge className="bg-primary/10 text-primary border border-primary/20 text-[10px] font-semibold py-0 px-1.5">
+                Default
+              </Badge>
+            )}
+          </div>
+
+          <div className="flex items-center gap-1.5">
+            {isDeliverable ? (
+              <Badge className="bg-primary/10 text-primary border border-primary/20 text-[10px] font-semibold gap-1 py-0.5 px-2">
+                <Truck className="size-3" />
+                <span>Deliverable</span>
+              </Badge>
+            ) : (
+              <Badge className="bg-destructive/10 text-destructive border border-destructive/20 text-[10px] font-bold gap-1 py-0.5 px-2">
+                <Ban className="size-3" />
+                <span>Not Deliverable</span>
+              </Badge>
+            )}
+
+            {/* Quick edit */}
+            {onEdit && (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onEdit(address);
+                }}
+                title="Edit address"
+                className="size-6.5 rounded-md flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted transition-colors cursor-pointer"
+              >
+                <Edit3 className="size-3" />
+              </button>
+            )}
+
+            {/* Delete button */}
+            {onDelete && (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onDelete(address.id || address._id);
+                }}
+                title="Remove address"
+                className="size-6.5 rounded-md flex items-center justify-center text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors cursor-pointer"
+              >
+                <Trash2 className="size-3" />
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* Recipient Details */}
+        <div>
+          <h4 className="font-bold text-sm text-foreground leading-snug">
+            {fullName}
+          </h4>
+          {address.phone && (
+            <p className="text-xs text-muted-foreground flex items-center gap-1 pt-0.5">
+              <Phone className="size-3 text-primary shrink-0" />
+              <span>{address.phone}</span>
+            </p>
+          )}
+        </div>
+
+        {/* Formatted Address Lines */}
+        <div className="text-xs text-muted-foreground space-y-0.5 leading-relaxed">
+          {address.door && <p className="truncate">{address.door}</p>}
+          {address.street && <p className="line-clamp-2">{address.street}</p>}
+          <p className="font-medium text-foreground">
+            {[address.city, stateLabel].filter(Boolean).join(", ")}
+            {address.zip ? ` - ${address.zip}` : address.pincode ? ` - ${address.pincode}` : ""}
+          </p>
+        </div>
+      </div>
+
+      {/* Warning banner if not deliverable */}
+      {!isDeliverable && (
+        <div className="pt-2 border-t border-destructive/30 flex items-center gap-1.5 text-[11px] font-medium text-destructive">
+          <AlertCircle className="size-3.5 shrink-0" />
+          <span>Cannot dispatch to this state. Orders blocked.</span>
+        </div>
+      )}
+
+      {/* Footer hint */}
+      <div className="pt-2 border-t border-border/50 flex items-center justify-between text-xs">
+        <span
+          className={cn(
+            "text-[11px] font-semibold",
+            isSelected
+              ? isDeliverable
+                ? "text-primary"
+                : "text-destructive"
+              : "text-muted-foreground group-hover:text-primary"
+          )}
+        >
+          {isSelected
+            ? isDeliverable
+              ? "Selected Delivery Destination"
+              : "Selected (Not Deliverable)"
+            : "Click to Select This Address"}
+        </span>
+        <ArrowRight className="size-3 text-muted-foreground group-hover:translate-x-0.5 transition-transform" />
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Main Shipping Address Component for Step 2 of Checkout
+ * Uses clean card selection and modal popup for adding new addresses.
+ */
+export function ShippingAddressManager({
+  savedAddresses = [],
+  selectedAddress,
+  onSelectAddress,
+  onDeleteAddress,
+  onSaveNewAddress,
+  locations = [],
   onSubmit,
   isUpdating,
 }) {
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingAddress, setEditingAddress] = useState(null);
+
+  const selectedLoc = locations.find((l) => l._id === selectedAddress?.state);
+  const isSelectedDeliverable = selectedLoc ? selectedLoc.deliverable : true;
+
+  const handleOpenAddModal = () => {
+    setEditingAddress(null);
+    setIsModalOpen(true);
+  };
+
+  const handleOpenEditModal = (addr) => {
+    setEditingAddress(addr);
+    setIsModalOpen(true);
+  };
+
   return (
-    <form onSubmit={onSubmit} className="space-y-6">
+    <div className="space-y-6">
       <div className="rounded-2xl border border-border/80 bg-card overflow-hidden shadow-xs">
         {/* Header Strip */}
         <div className="bg-muted/40 dark:bg-muted/20 border-b border-border/80 px-5 sm:px-6 py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
@@ -50,258 +577,146 @@ export function ShippingAddressForm({
             </span>
             <div>
               <h2 className="text-base sm:text-lg font-bold tracking-tight text-foreground">
-                Shipping Destination & Contact
+                Shipping Destination
               </h2>
               <p className="text-xs text-muted-foreground">
-                Enter your delivery address for reinforced scale model dispatch
+                Select your delivery address for reinforced scale model packaging
               </p>
             </div>
           </div>
 
-          <Badge className="bg-primary/10 text-primary border border-primary/20 text-xs font-semibold self-start sm:self-auto gap-1.5 px-2.5 py-1">
-            <Truck className="size-3.5" />
-            <span>Express Courier Logistics</span>
-          </Badge>
+          <Button
+            type="button"
+            onClick={handleOpenAddModal}
+            className="h-8.5 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground text-xs gap-1.5 font-bold shadow-2xs cursor-pointer self-start sm:self-auto"
+          >
+            <Plus className="size-3.5" />
+            <span>Add New Address</span>
+          </Button>
         </div>
 
         <div className="p-5 sm:p-6 space-y-6">
-          {/* Section 1: Recipient Information */}
-          <div className="space-y-3.5">
-            <div className="flex items-center gap-2 pb-1 border-b border-border/50">
-              <User className="size-3.5 text-primary" />
-              <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
-                01 / Recipient Information
-              </span>
-            </div>
-
+          {/* Address Cards Grid */}
+          {savedAddresses.length > 0 ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="space-y-1.5">
-                <Label htmlFor="firstName" className="text-xs font-medium text-foreground">
-                  First Name <span className="text-primary font-bold">*</span>
-                </Label>
-                <Input
-                  id="firstName"
-                  value={formData.firstName}
-                  onChange={onInputChange}
-                  required
-                  placeholder="e.g. Bruce"
-                  className="h-10 text-xs sm:text-sm rounded-xl bg-background border-border/80 focus-visible:ring-primary/30"
-                />
-              </div>
-
-              <div className="space-y-1.5">
-                <Label htmlFor="lastName" className="text-xs font-medium text-foreground">
-                  Last Name <span className="text-primary font-bold">*</span>
-                </Label>
-                <Input
-                  id="lastName"
-                  value={formData.lastName}
-                  onChange={onInputChange}
-                  required
-                  placeholder="e.g. Wayne"
-                  className="h-10 text-xs sm:text-sm rounded-xl bg-background border-border/80 focus-visible:ring-primary/30"
-                />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="space-y-1.5">
-                <Label htmlFor="email" className="text-xs font-medium text-foreground">
-                  Email Address <span className="text-muted-foreground text-[10px]">(for tracking links)</span>
-                </Label>
-                <div className="relative">
-                  <Input
-                    id="email"
-                    type="email"
-                    placeholder="you@domain.com"
-                    value={formData.email}
-                    onChange={onInputChange}
-                    className="h-10 text-xs sm:text-sm rounded-xl bg-background border-border/80 pl-9 focus-visible:ring-primary/30"
+              {savedAddresses.map((addr) => {
+                const addrId = addr.id || addr._id;
+                const isSelected = (selectedAddress?.id || selectedAddress?._id) === addrId;
+                return (
+                  <SavedAddressCard
+                    key={addrId}
+                    address={addr}
+                    isSelected={isSelected}
+                    onSelect={onSelectAddress}
+                    onEdit={handleOpenEditModal}
+                    onDelete={onDeleteAddress}
+                    locations={locations}
                   />
-                  <Mail className="size-4 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
-                </div>
-              </div>
-
-              <div className="space-y-1.5">
-                <Label htmlFor="phone" className="text-xs font-medium text-foreground">
-                  Phone Number <span className="text-muted-foreground text-[10px]">(for delivery updates)</span>
-                </Label>
-                <div className="relative">
-                  <Input
-                    id="phone"
-                    type="tel"
-                    placeholder="9876543210"
-                    value={formData.phone}
-                    onChange={onInputChange}
-                    className="h-10 text-xs sm:text-sm rounded-xl bg-background border-border/80 pl-9 focus-visible:ring-primary/30"
-                  />
-                  <Phone className="size-4 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
-                </div>
-              </div>
+                );
+              })}
             </div>
-          </div>
-
-          {/* Section 2: Delivery Address & Region */}
-          <div className="space-y-3.5">
-            <div className="flex items-center gap-2 pb-1 border-b border-border/50">
-              <MapPin className="size-3.5 text-primary" />
-              <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
-                02 / Delivery Address & Logistics
-              </span>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <div className="space-y-1.5 sm:col-span-1">
-                <Label htmlFor="door" className="text-xs font-medium text-foreground">
-                  Door / Flat / House No.
-                </Label>
-                <div className="relative">
-                  <Input
-                    id="door"
-                    placeholder="e.g. Flat 402, B-Block"
-                    value={formData.door}
-                    onChange={onInputChange}
-                    className="h-10 text-xs sm:text-sm rounded-xl bg-background border-border/80 pl-9 focus-visible:ring-primary/30"
-                  />
-                  <Building className="size-4 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
-                </div>
+          ) : (
+            <div className="text-center py-10 px-4 border border-dashed border-border/80 rounded-2xl bg-muted/20 space-y-3">
+              <div className="size-12 rounded-full bg-muted flex items-center justify-center mx-auto text-muted-foreground">
+                <MapPin className="size-6 text-primary" />
               </div>
-
-              <div className="space-y-1.5 sm:col-span-2">
-                <Label htmlFor="street" className="text-xs font-medium text-foreground">
-                  Street / Area / Landmark <span className="text-primary font-bold">*</span>
-                </Label>
-                <div className="relative">
-                  <Input
-                    id="street"
-                    placeholder="e.g. 100 Feet Road, Indiranagar"
-                    value={formData.street}
-                    onChange={onInputChange}
-                    required
-                    className="h-10 text-xs sm:text-sm rounded-xl bg-background border-border/80 pl-9 focus-visible:ring-primary/30"
-                  />
-                  <Navigation className="size-4 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
-                </div>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <div className="space-y-1.5">
-                <Label htmlFor="city" className="text-xs font-medium text-foreground">
-                  City / Town <span className="text-primary font-bold">*</span>
-                </Label>
-                <Input
-                  id="city"
-                  placeholder="e.g. Bengaluru"
-                  value={formData.city}
-                  onChange={onInputChange}
-                  required
-                  className="h-10 text-xs sm:text-sm rounded-xl bg-background border-border/80 focus-visible:ring-primary/30"
-                />
-              </div>
-
-              <div className="space-y-1.5">
-                <Label htmlFor="state" className="text-xs font-medium text-foreground">
-                  State / Region <span className="text-primary font-bold">*</span>
-                </Label>
-                <Select value={formData.state} onValueChange={onStateChange}>
-                  <SelectTrigger
-                    id="state"
-                    className="h-10 text-xs sm:text-sm rounded-xl bg-background border-border/80 focus:ring-primary/30"
-                  >
-                    <SelectValue placeholder="Select Destination State" />
-                  </SelectTrigger>
-                  <SelectContent className="rounded-xl border-border bg-popover shadow-lg max-h-60">
-                    {locations.map((loc) => (
-                      <SelectItem
-                        key={loc._id}
-                        value={loc._id}
-                        className="text-xs sm:text-sm py-2 cursor-pointer"
-                      >
-                        <div className="flex items-center justify-between w-full gap-2">
-                          <span>{loc.state}</span>
-                          {!loc.deliverable && (
-                            <span className="text-[10px] text-destructive font-semibold">
-                              (Restricted)
-                            </span>
-                          )}
-                        </div>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-1.5">
-                <Label htmlFor="zip" className="text-xs font-medium text-foreground">
-                  PIN Code (6 Digits) <span className="text-primary font-bold">*</span>
-                </Label>
-                <Input
-                  id="zip"
-                  placeholder="e.g. 560038"
-                  value={formData.zip}
-                  onChange={onInputChange}
-                  maxLength={6}
-                  required
-                  className="h-10 text-xs sm:text-sm font-mono rounded-xl bg-background border-border/80 focus-visible:ring-primary/30"
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Deliverability Status Feedback */}
-          {formData.state && !isStateDeliverable && (
-            <div className="flex items-start gap-3 p-4 rounded-xl bg-destructive/10 border border-destructive/20 text-destructive text-xs leading-relaxed">
-              <AlertCircle className="size-4 shrink-0 mt-0.5" />
               <div>
-                <p className="font-bold">Logistics Restriction for {selectedLocation?.state}</p>
-                <p className="text-destructive/90 text-[11px] pt-0.5">
-                  Our fragile express logistics partners cannot deliver precision scale models to this state currently. Please select an alternate address.
+                <h3 className="font-bold text-sm text-foreground">No Delivery Addresses Found</h3>
+                <p className="text-xs text-muted-foreground pt-1 max-w-sm mx-auto">
+                  Add a delivery address to verify route logistics and proceed with checkout.
                 </p>
               </div>
+              <Button
+                type="button"
+                onClick={handleOpenAddModal}
+                className="h-9 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground text-xs font-bold gap-1.5 cursor-pointer"
+              >
+                <Plus className="size-3.5" />
+                <span>Add Your First Address</span>
+              </Button>
             </div>
           )}
 
-          {formData.state && isStateDeliverable && (
-            <div className="flex items-start gap-3 p-4 rounded-xl bg-primary/5 border border-primary/20 text-foreground text-xs leading-relaxed">
-              <CheckCircle2 className="size-4 shrink-0 text-primary mt-0.5" />
-              <div>
-                <p className="font-bold text-foreground">
-                  Delivery Route Active to {selectedLocation?.state}
-                </p>
-                <p className="text-muted-foreground text-[11px] pt-0.5">
-                  Pre-inspected scale models are sealed in anti-shock garage boxes and shipped with end-to-end milestone tracking.
-                </p>
-              </div>
+          {/* Active Deliverability Callout */}
+          {selectedAddress && (
+            <div>
+              {!isSelectedDeliverable ? (
+                <div className="flex items-start gap-3 p-4 rounded-xl bg-destructive/10 border border-destructive/20 text-destructive text-xs leading-relaxed animate-in fade-in duration-200">
+                  <AlertCircle className="size-4.5 shrink-0 mt-0.5 text-destructive" />
+                  <div className="space-y-1">
+                    <p className="font-bold text-sm">
+                      Logistics Restriction: Delivery Not Available to {selectedLoc?.state || "Selected State"}
+                    </p>
+                    <p className="text-destructive/90 text-xs">
+                      We cannot dispatch precision scale models to this location currently. You cannot proceed to payment with this address. Please choose another address or add a deliverable destination.
+                    </p>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex items-start gap-3 p-4 rounded-xl bg-primary/5 border border-primary/20 text-foreground text-xs leading-relaxed animate-in fade-in duration-200">
+                  <CheckCircle2 className="size-4.5 shrink-0 text-primary mt-0.5" />
+                  <div className="space-y-0.5">
+                    <p className="font-bold text-foreground">
+                      Delivery Route Active to {selectedLoc?.state || "Destination"}
+                    </p>
+                    <p className="text-muted-foreground text-xs">
+                      Express carrier logistics confirmed. Precision scale models will be sealed in custom foam garage crates.
+                    </p>
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </div>
       </div>
 
-      {/* CTA Submit Button */}
+      {/* CTA Submit Button (DISABLED / NOT PROCEEDABLE when not deliverable or no address selected) */}
       <Button
-        type="submit"
-        disabled={isUpdating || !formData.state || !isStateDeliverable}
-        className="w-full h-12 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground font-bold text-sm shadow-xs transition-all gap-2 cursor-pointer"
+        type="button"
+        onClick={onSubmit}
+        disabled={isUpdating || !selectedAddress || !isSelectedDeliverable}
+        className={cn(
+          "w-full h-12 rounded-xl font-bold text-sm shadow-xs transition-all gap-2 cursor-pointer",
+          !isSelectedDeliverable && selectedAddress
+            ? "bg-destructive/80 hover:bg-destructive text-destructive-foreground opacity-90 cursor-not-allowed"
+            : "bg-primary hover:bg-primary/90 text-primary-foreground"
+        )}
       >
-        {isUpdating ? "Saving Shipping Address..." : "Continue to Payment & Order Review"}
+        {isUpdating
+          ? "Securing Shipping Destination..."
+          : !selectedAddress
+          ? "Please Select an Address to Continue"
+          : !isSelectedDeliverable
+          ? "Cannot Proceed - Destination Not Deliverable"
+          : "Continue to Payment & Order Review"}
         <ArrowRight className="size-4" />
       </Button>
-    </form>
+
+      {/* Address Dialog Modal */}
+      <AddressModalDialog
+        isOpen={isModalOpen}
+        onOpenChange={setIsModalOpen}
+        onSaveAddress={onSaveNewAddress}
+        locations={locations}
+        initialData={editingAddress}
+      />
+    </div>
   );
 }
 
 /**
  * Confirmed Shipping Address Card (Step 3 Summary)
- * Matches the Delivery Destination card from order-tracking.jsx
  */
 export function ShippingAddressConfirmedCard({
-  formData,
+  address,
   selectedLocation,
   onEditAddress,
 }) {
-  const customerName = `${formData.firstName} ${formData.lastName}`.trim() || "Customer";
-  const stateLabel = selectedLocation?.state || formData.state || "";
+  const customerName =
+    address?.name ||
+    [address?.firstName, address?.lastName].filter(Boolean).join(" ") ||
+    "Customer";
+  const stateLabel = selectedLocation?.state || address?.stateName || address?.state || "";
 
   return (
     <div className="rounded-2xl border border-border/80 bg-card overflow-hidden shadow-xs">
@@ -321,15 +736,23 @@ export function ShippingAddressConfirmedCard({
           className="h-8 rounded-xl text-xs gap-1.5 font-medium hover:border-primary hover:text-primary cursor-pointer"
         >
           <Edit3 className="size-3 text-primary" />
-          <span>Change Address</span>
+          <span>Change Destination</span>
         </Button>
       </div>
 
       <div className="p-5 sm:p-6 space-y-3">
         <div className="flex items-center justify-between gap-2 flex-wrap">
-          <span className="font-bold text-sm sm:text-base text-foreground">
-            {customerName}
-          </span>
+          <div className="flex items-center gap-2">
+            <span className="font-bold text-sm sm:text-base text-foreground">
+              {customerName}
+            </span>
+            {address?.label && (
+              <Badge variant="outline" className="text-[10px] font-bold uppercase tracking-wider">
+                {address.label}
+              </Badge>
+            )}
+          </div>
+
           {stateLabel && (
             <Badge className="bg-primary/10 text-primary border border-primary/20 text-xs font-semibold">
               {stateLabel}
@@ -338,26 +761,26 @@ export function ShippingAddressConfirmedCard({
         </div>
 
         <div className="text-xs text-muted-foreground space-y-0.5 leading-relaxed">
-          {formData.door && <p>{formData.door}</p>}
-          {formData.street && <p>{formData.street}</p>}
+          {address?.door && <p>{address.door}</p>}
+          {address?.street && <p>{address.street}</p>}
           <p>
-            {[formData.city, stateLabel].filter(Boolean).join(", ")}
-            {formData.zip ? ` - ${formData.zip}` : ""}
+            {[address?.city, stateLabel].filter(Boolean).join(", ")}
+            {address?.zip ? ` - ${address.zip}` : address?.pincode ? ` - ${address.pincode}` : ""}
           </p>
           <p className="font-medium text-foreground">India</p>
         </div>
 
         <div className="pt-2 border-t border-border/60 flex items-center gap-4 text-xs text-muted-foreground flex-wrap">
-          {formData.phone && (
+          {address?.phone && (
             <div className="flex items-center gap-1.5">
               <Phone className="size-3 text-primary" />
-              <span>{formData.phone}</span>
+              <span>{address.phone}</span>
             </div>
           )}
-          {formData.email && (
+          {address?.email && (
             <div className="flex items-center gap-1.5">
               <Mail className="size-3 text-primary" />
-              <span>{formData.email}</span>
+              <span>{address.email}</span>
             </div>
           )}
         </div>

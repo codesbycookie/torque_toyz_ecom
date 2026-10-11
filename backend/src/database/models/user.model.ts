@@ -3,6 +3,19 @@ import { getNextSequence } from "@core/utils/getsequence.util.ts";
 import bcrypt from "bcryptjs";
 import mongoose, { Document, Model, Schema } from "mongoose";
 
+export interface IUserAddress {
+  _id?: mongoose.Types.ObjectId;
+  label?: string;
+  name?: string;
+  phone?: string;
+  door?: string;
+  street?: string;
+  city?: string;
+  state?: mongoose.Types.ObjectId;
+  pincode?: number;
+  is_default?: boolean;
+}
+
 export interface IUser extends Document {
   name: string;
   login_id: string;
@@ -16,6 +29,7 @@ export interface IUser extends Document {
     state?: mongoose.Types.ObjectId;
     pincode?: number;
   };
+  addresses?: IUserAddress[];
   password: string;
   role: "admin" | "user";
   accepted_terms_at?: Date;
@@ -59,6 +73,19 @@ const UserSchema = new Schema<IUser, IUserModel>(
       state: { type: Schema.Types.ObjectId, ref: "location" },
       pincode: { type: Number },
     },
+    addresses: [
+      {
+        label: { type: String, default: "Home" },
+        name: { type: String },
+        phone: { type: String },
+        door: { type: String },
+        street: { type: String },
+        city: { type: String },
+        state: { type: Schema.Types.ObjectId, ref: "location" },
+        pincode: { type: Number },
+        is_default: { type: Boolean, default: false },
+      },
+    ],
     password: { type: String, required: true },
     role: {
       type: String,

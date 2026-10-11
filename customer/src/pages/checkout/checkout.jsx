@@ -1,6 +1,4 @@
-'use client';
-
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
@@ -23,7 +21,7 @@ import {
 } from "lucide-react";
 import { CartStepper } from "@/modules/cart/cart.components";
 import {
-  ShippingAddressForm,
+  ShippingAddressManager,
   ShippingAddressConfirmedCard,
 } from "./shipping-address.components";
 import { cn } from "@/lib/utils";
@@ -34,26 +32,24 @@ export default function Checkout() {
   const { user } = useAuth();
   const { loadOnly, loading: isProcessing } = useLoader();
   const { items = [], pricing, updateShippingAddress, checkoutDraft, restoreCart } = api.cart;
-  const locations = api.locations.list || [];
+  const locations = useMemo(() => api.locations.list || [], [api.locations.list]);
 
   // Checkout Step state: 2 = Shipping Details, 3 = Payment & Order
   const [checkoutStep, setCheckoutStep] = useState(2);
   const [paymentMethod, setPaymentMethod] = useState("online"); // 'online' | 'cod'
   const [isUpdatingAddress, setIsUpdatingAddress] = useState(false);
 
-  const [formData, setFormData] = useState({
-    firstName: "",
-    lastName: "",
-    email: "",
-    phone: "",
-    door: "",
-    street: "",
-    city: "",
-    state: "",
-    zip: "",
+  // Stored Addresses (Local Storage)
+  const [storedAddresses, setStoredAddresses] = useState(() => {
+    try {
+      const raw = localStorage.getItem("torque_garage_addresses");
+      return raw ? JSON.parse(raw) : [];
+    } catch {
+      return [];
+    }
   });
 
-  const autoFilled = useRef(false);
+  const [selectedAddressId, setSelectedAddressId] = useState(null);
 
   // Load Locations / Deliverable States via location module
   useEffect(() => {
@@ -61,109 +57,150 @@ export default function Checkout() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Autofill user details if available
-  useEffect(() => {
-    if (user && locations.length > 0 && !autoFilled.current) {
-      autoFilled.current = true;
-      const parts = user.name ? user.name.split(" ") : [""];
-      const firstName = parts[0] || "";
-      const lastName = parts.slice(1).join(" ") || "";
+  // Compute combined saved addresses from profile and local storage
+  const savedAddresses = useMemo(() => {
+    const combined = [...storedAddresses];
 
-      const newFormData = {
-        firstName,
-        lastName,
-        email: user.email || "",
-        phone: user.phone || "",
-        door: user.address?.door || "",
-        street: user.address?.street || "",
-        city: user.address?.city || "",
-        state: user.address?.state || "",
-        zip: user.address?.pincode ? String(user.address.pincode) : "",
-      };
-
-      if (user.address?.state) {
-        const loc = locations.find((l) => l._id === user.address.state);
-        if (loc && !loc.deliverable) {
-          toast.error("Your default location is not deliverable. Please choose another address.");
-          newFormData.state = "";
-        } else {
-          updateShippingAddress({
-            door: user.address.door || "",
-            street: user.address.street || "",
-            city: user.address.city || "",
-            state: user.address.state,
-            pincode: user.address.pincode || 0,
-          });
-        }
+    if (user) {
+      if (Array.isArray(user.addresses)) {
+        user.addresses.forEach((ua) => {
+          const id = ua._id || ua.id;
+          if (id && !combined.some((c) => (c._id || c.id) === id)) {
+            combined.unshift(ua);
+          }
+        });
       }
-      setFormData(newFormData);
+
+      // Add default profile address if present
+      if (user.address && user.address.state && !combined.some((c) => c.id === "profile_default")) {
+        combined.unshift({
+          id: "profile_default",
+          label: "Primary Profile",
+          name: user.name || "Default Contact",
+          firstName: user.name ? user.name.split(" ")[0] : "",
+          lastName: user.name ? user.name.split(" ").slice(1).join(" ") : "",
+          phone: user.phone || "",
+          email: user.email || "",
+          door: user.address.door || "",
+          street: user.address.street || "",
+          city: user.address.city || "",
+          state: user.address.state,
+          zip: user.address.pincode ? String(user.address.pincode) : "",
+          pincode: user.address.pincode || 0,
+          isDefault: true,
+        });
+      }
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user, locations]);
 
-  const selectedLocation = locations.find((l) => l._id === formData.state);
-  const isStateDeliverable = selectedLocation ? selectedLocation.deliverable : true;
+    return combined;
+  }, [user, storedAddresses]);
 
-  const handleStateChange = async (val) => {
-    const loc = locations.find((l) => l._id === val);
+  // Derive active selected address without setState in useEffect
+  const selectedAddress = useMemo(() => {
+    if (selectedAddressId) {
+      const match = savedAddresses.find((a) => (a.id || a._id) === selectedAddressId);
+      if (match) return match;
+    }
+    if (savedAddresses.length > 0) {
+      return (
+        savedAddresses.find((a) => {
+          const loc = locations.find((l) => l._id === a.state);
+          return loc && loc.deliverable;
+        }) || savedAddresses[0]
+      );
+    }
+    return null;
+  }, [selectedAddressId, savedAddresses, locations]);
+
+  const selectedLoc = locations.find((l) => l._id === selectedAddress?.state);
+  const isStateDeliverable = selectedLoc ? selectedLoc.deliverable : true;
+
+  // Handle selecting an address
+  const handleSelectAddress = async (addr) => {
+    setSelectedAddressId(addr.id || addr._id);
+
+    const loc = locations.find((l) => l._id === addr.state);
     if (loc && !loc.deliverable) {
-      toast.error("This state is currently not deliverable. Please select a deliverable state.");
-      setFormData((prev) => ({ ...prev, state: val }));
-      return;
-    }
-
-    setFormData((prev) => ({ ...prev, state: val }));
-    const pincodeNum = Number(formData.zip);
-    if (pincodeNum >= 100000 && pincodeNum <= 999999) {
-      const address = {
-        door: formData.door ? formData.door.trim() : undefined,
-        street: formData.street ? formData.street.trim() : undefined,
-        city: formData.city ? formData.city.trim() : undefined,
-        state: val,
-        pincode: pincodeNum,
-      };
-      await updateShippingAddress(address);
+      toast.error(`Notice: Deliveries to ${loc.state} are currently restricted. You cannot proceed until a deliverable address is selected.`);
+    } else if (addr.state && (addr.zip || addr.pincode)) {
+      try {
+        await updateShippingAddress({
+          door: addr.door || "",
+          street: addr.street || "",
+          city: addr.city || "",
+          state: addr.state,
+          pincode: Number(addr.zip || addr.pincode) || 0,
+        });
+      } catch {
+        // ignore
+      }
     }
   };
 
-  const handleInputChange = (e) => {
-    const { id, value } = e.target;
-    setFormData((prev) => ({ ...prev, [id]: value }));
+  // Save new or edited address from modal popup
+  const handleSaveAddress = (newAddr) => {
+    const exists = storedAddresses.some((a) => (a.id || a._id) === (newAddr.id || newAddr._id));
+    let updated;
+    if (exists) {
+      updated = storedAddresses.map((a) =>
+        (a.id || a._id) === (newAddr.id || newAddr._id) ? newAddr : a
+      );
+    } else {
+      updated = [newAddr, ...storedAddresses];
+    }
+
+    setStoredAddresses(updated);
+    try {
+      localStorage.setItem("torque_garage_addresses", JSON.stringify(updated));
+    } catch {
+      // ignore
+    }
+
+    handleSelectAddress(newAddr);
+    toast.success("Shipping address saved to your Garage Address Book!");
+  };
+
+  // Delete saved address
+  const handleDeleteAddress = (addrId) => {
+    const filtered = storedAddresses.filter((a) => (a.id || a._id) !== addrId);
+    setStoredAddresses(filtered);
+    try {
+      localStorage.setItem("torque_garage_addresses", JSON.stringify(filtered));
+    } catch {
+      // ignore
+    }
+    toast.success("Address removed from your address book");
+
+    if ((selectedAddress?.id || selectedAddress?._id) === addrId) {
+      const remaining = savedAddresses.filter((a) => (a.id || a._id) !== addrId);
+      if (remaining.length > 0) {
+        handleSelectAddress(remaining[0]);
+      } else {
+        setSelectedAddressId(null);
+      }
+    }
   };
 
   // Step 2 Submission -> Validate and Proceed to Step 3 (Payment)
-  const handleProceedToPayment = async (e) => {
-    e.preventDefault();
-    if (
-      !formData.firstName.trim() ||
-      !formData.lastName.trim() ||
-      !formData.street.trim() ||
-      !formData.city.trim() ||
-      !formData.state ||
-      !formData.zip.trim()
-    ) {
-      toast.error("Please fill in all required shipping fields.");
-      return;
-    }
-
-    if (!/^\d{6}$/.test(formData.zip.trim())) {
-      toast.error("PIN Code must be a valid 6-digit postal code.");
+  const handleProceedToPayment = async () => {
+    if (!selectedAddress) {
+      toast.error("Please select or add a shipping destination to continue.");
       return;
     }
 
     if (!isStateDeliverable) {
-      toast.error("Selected state is not deliverable. Please choose another location.");
+      toast.error(`Cannot proceed: Delivery is restricted in ${selectedLoc?.state || "the selected state"}. Please choose a deliverable address.`);
       return;
     }
 
     try {
       setIsUpdatingAddress(true);
       const address = {
-        door: formData.door ? formData.door.trim() : undefined,
-        street: formData.street ? formData.street.trim() : undefined,
-        city: formData.city ? formData.city.trim() : undefined,
-        state: formData.state,
-        pincode: Number(formData.zip),
+        door: selectedAddress.door ? selectedAddress.door.trim() : undefined,
+        street: selectedAddress.street ? selectedAddress.street.trim() : undefined,
+        city: selectedAddress.city ? selectedAddress.city.trim() : undefined,
+        state: selectedAddress.state,
+        pincode: Number(selectedAddress.zip || selectedAddress.pincode),
       };
       await updateShippingAddress(address);
       setCheckoutStep(3);
@@ -179,13 +216,13 @@ export default function Checkout() {
   const grandTotal = total > 0 ? total : subtotal + shipping + tax;
 
   const cancelOrderAndRestoreCart = async (orderId, cartBackup, errorMessage) => {
-    const currentAddress = formData.state && formData.zip
+    const currentAddress = selectedAddress
       ? {
-          door: formData.door ? formData.door.trim() : undefined,
-          street: formData.street ? formData.street.trim() : undefined,
-          city: formData.city ? formData.city.trim() : undefined,
-          state: formData.state,
-          pincode: Number(formData.zip) || 0,
+          door: selectedAddress.door ? selectedAddress.door.trim() : undefined,
+          street: selectedAddress.street ? selectedAddress.street.trim() : undefined,
+          city: selectedAddress.city ? selectedAddress.city.trim() : undefined,
+          state: selectedAddress.state,
+          pincode: Number(selectedAddress.zip || selectedAddress.pincode) || 0,
         }
       : null;
 
@@ -209,17 +246,24 @@ export default function Checkout() {
       return;
     }
 
+    // STRICT DELIVERABILITY ENFORCEMENT ON FINAL CHECKOUT
+    if (!isStateDeliverable) {
+      toast.error(`Cannot place order: Destination in ${selectedLoc?.state || ""} is not deliverable.`);
+      setCheckoutStep(2);
+      return;
+    }
+
     const cartBackup = items.map((i) => ({
       product: typeof i.product === "object" ? i.product?._id || i.product?.id : i.product || i.id || i._id,
       quantity: i.quantity || 1,
     }));
 
     const currentAddress = {
-      door: formData.door ? formData.door.trim() : undefined,
-      street: formData.street ? formData.street.trim() : undefined,
-      city: formData.city ? formData.city.trim() : undefined,
-      state: formData.state,
-      pincode: Number(formData.zip),
+      door: selectedAddress.door ? selectedAddress.door.trim() : undefined,
+      street: selectedAddress.street ? selectedAddress.street.trim() : undefined,
+      city: selectedAddress.city ? selectedAddress.city.trim() : undefined,
+      state: selectedAddress.state,
+      pincode: Number(selectedAddress.zip || selectedAddress.pincode),
     };
 
     try {
@@ -292,9 +336,9 @@ export default function Checkout() {
               },
             },
             prefill: {
-              name: `${formData.firstName} ${formData.lastName}`.trim(),
-              email: formData.email || user?.email || "customer@torquetoyz.com",
-              contact: formData.phone || user?.phone || "9999999999",
+              name: selectedAddress.name || `${selectedAddress.firstName || ""} ${selectedAddress.lastName || ""}`.trim() || user?.name || "Customer",
+              email: selectedAddress.email || user?.email || "customer@torquetoyz.com",
+              contact: selectedAddress.phone || user?.phone || "9999999999",
             },
             theme: {
               color: "#e11d48", // Primary brand accent color
@@ -365,7 +409,7 @@ export default function Checkout() {
           </Link>
           <span>›</span>
           <span className="text-foreground font-bold">
-            Checkout {checkoutStep === 2 ? "› Shipping Details" : "› Payment & Review"}
+            Checkout {checkoutStep === 2 ? "› Shipping Destination" : "› Payment & Review"}
           </span>
         </div>
 
@@ -413,13 +457,13 @@ export default function Checkout() {
           {/* Main Left Workspace (8 cols) */}
           <div className="lg:col-span-8 space-y-6">
             {checkoutStep === 2 ? (
-              <ShippingAddressForm
-                formData={formData}
-                onInputChange={handleInputChange}
+              <ShippingAddressManager
+                savedAddresses={savedAddresses}
+                selectedAddress={selectedAddress}
+                onSelectAddress={handleSelectAddress}
+                onDeleteAddress={handleDeleteAddress}
+                onSaveNewAddress={handleSaveAddress}
                 locations={locations}
-                selectedLocation={selectedLocation}
-                isStateDeliverable={isStateDeliverable}
-                onStateChange={handleStateChange}
                 onSubmit={handleProceedToPayment}
                 isUpdating={isUpdatingAddress}
               />
@@ -427,8 +471,8 @@ export default function Checkout() {
               <form onSubmit={handleFinalCheckout} className="space-y-6">
                 {/* Confirmed Shipping Address Summary Card */}
                 <ShippingAddressConfirmedCard
-                  formData={formData}
-                  selectedLocation={selectedLocation}
+                  address={selectedAddress}
+                  selectedLocation={selectedLoc}
                   onEditAddress={() => setCheckoutStep(2)}
                 />
 
@@ -512,7 +556,7 @@ export default function Checkout() {
                 {/* Final Submit CTA */}
                 <Button
                   type="submit"
-                  disabled={isProcessing}
+                  disabled={isProcessing || !isStateDeliverable}
                   className="w-full h-12 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground font-bold text-sm shadow-xs transition-all gap-2 cursor-pointer"
                 >
                   {isProcessing

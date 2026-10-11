@@ -145,6 +145,7 @@ export const getCurrentUser = async (token: string): Promise<ReturnedUser> => {
       state: "",
       pincode: "",
     },
+    addresses: (user as any).addresses || [],
     _id: (user as any)._id as Types.ObjectId,
     role: (user as any).role || role,
   };

@@ -21,6 +21,22 @@ export const createUserSchema = z.object({
       pincode: z.number().optional(),
     })
     .optional(),
+  addresses: z
+    .array(
+      z.object({
+        _id: z.string().optional(),
+        label: z.string().trim().optional(),
+        name: z.string().trim().optional(),
+        phone: z.string().trim().optional(),
+        door: z.string().trim().optional(),
+        street: z.string().trim().optional(),
+        city: z.string().trim().optional(),
+        state: z.string().optional(),
+        pincode: z.number().optional(),
+        is_default: z.boolean().optional(),
+      })
+    )
+    .optional(),
   profile: z.object({ url: z.string().url() }).optional(),
   theme: z.enum(['light', 'dark', 'system']).optional(),
   acceptTerms: z.literal(true, { error: 'You must accept the terms and conditions' }),
