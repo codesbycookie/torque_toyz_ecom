@@ -43,10 +43,11 @@ import {
   FileText,
   ShieldCheck,
   Check,
-  ChevronRight,
-  HelpCircle,
   Phone,
+  Mail,
+  Weight,
   Sparkles,
+  HelpCircle,
 } from "lucide-react";
 import { useApi } from "@/core/contexts/api.context";
 import { useLoader } from "@/core/hooks/useLoader";
@@ -97,13 +98,14 @@ export default function OrderTracking() {
     const product = item.product || item;
     try {
       await cart.addToCart(product, 1);
-      toast.success(`"${item.name || product.name}" added back to cart!`);
+      toast.success(`"${item.name || product.name}" added back to your cart!`);
     } catch {
-      toast.error("Failed to re-add model to cart");
+      toast.error("Failed to re-add item to cart");
     }
   };
 
   const copyToClipboard = (text, label) => {
+    if (!text) return;
     navigator.clipboard.writeText(text);
     toast.success(`Copied ${label} to clipboard`);
   };
@@ -116,7 +118,7 @@ export default function OrderTracking() {
     if (navigator.share) {
       navigator.share({
         title: `Track Order #${currentCode} | Torque Toyzz`,
-        text: `Track your scale model order delivery status:`,
+        text: `Track delivery status for order #${currentCode}:`,
         url,
       }).catch(() => {
         copyToClipboard(url, "Tracking link");
@@ -157,7 +159,7 @@ export default function OrderTracking() {
           </div>
           <h2 className="text-2xl font-bold tracking-tight">Order Not Found</h2>
           <p className="text-sm text-muted-foreground leading-relaxed">
-            We couldn't locate this order in your garage records. The order link may have expired or is incorrect.
+            We couldn't locate this order in your garage records. The order ID may be incorrect or you may not have permission to view it.
           </p>
           <Button
             onClick={() => navigate("/orders")}
@@ -170,171 +172,170 @@ export default function OrderTracking() {
     );
   }
 
+  // ─── Extract Data Strictly Matching Backend IOrder Model ───────────────────
   const orderId = orderDetails._id || orderDetails.id;
   const orderCode =
-    orderDetails.code || (orderDetails._id ? orderDetails._id.slice(-8).toUpperCase() : "ORD");
-  const orderDateObj = new Date(orderDetails.createdAt || orderDetails.date || Date.now());
-  const orderDate = orderDateObj.toLocaleDateString("en-IN", {
+    orderDetails.code || (orderDetails._id ? `ORD-${orderDetails._id.slice(-6).toUpperCase()}` : "ORD");
+  
+  const orderCreatedAt = orderDetails.createdAt ? new Date(orderDetails.createdAt) : new Date();
+  const orderUpdatedAt = orderDetails.updatedAt ? new Date(orderDetails.updatedAt) : null;
+  const orderDateFormatted = orderCreatedAt.toLocaleDateString("en-IN", {
     day: "numeric",
     month: "long",
     year: "numeric",
   });
-  const orderDateShort = orderDateObj.toLocaleDateString("en-IN", {
+  const orderDateShort = orderCreatedAt.toLocaleDateString("en-IN", {
     day: "numeric",
     month: "short",
     year: "numeric",
   });
-  const orderTotal = Number(orderDetails.pricing?.total || orderDetails.total || 0);
 
-  const statusLower = orderDetails.status?.toLowerCase();
-  const isCancelled = statusLower === "cancelled";
-  const isDelivered = statusLower === "delivered";
-  const isShipped = statusLower === "shipped";
-  const isConfirmed = statusLower === "confirmed";
-  const canCancel = ["placed", "confirmed"].includes(statusLower);
+  const status = (orderDetails.status || "placed").toLowerCase();
+  const isPlaced = status === "placed";
+  const isConfirmed = status === "confirmed";
+  const isShipped = status === "shipped";
+  const isDelivered = status === "delivered";
+  const isCancelled = status === "cancelled";
+  const canCancel = ["placed", "confirmed"].includes(status);
 
-  const items = orderDetails.items || orderDetails.products || [];
+  // Status History array directly from backend model: IStatusEntry[]
+  const statusHistory = Array.isArray(orderDetails.status_history)
+    ? orderDetails.status_history
+    : [];
 
-  // Build status history lookup map
   const historyMap = {};
-  if (Array.isArray(orderDetails.status_history)) {
-    orderDetails.status_history.forEach((h) => {
-      if (h.status) {
-        historyMap[h.status.toLowerCase()] = h;
-      }
-    });
-  }
+  statusHistory.forEach((entry) => {
+    if (entry.status) {
+      historyMap[entry.status.toLowerCase()] = entry;
+    }
+  });
 
-  const formatStepDate = (statusKey, defaultDate) => {
-    const historyEntry = historyMap[statusKey];
-    if (historyEntry?.timestamp) {
-      return new Date(historyEntry.timestamp).toLocaleString("en-IN", {
-        day: "numeric",
-        month: "short",
-        hour: "2-digit",
-        minute: "2-digit",
-      });
-    }
-    if (statusKey === "placed" && (orderDetails.createdAt || orderDetails.date)) {
-      return new Date(orderDetails.createdAt || orderDetails.date).toLocaleString("en-IN", {
-        day: "numeric",
-        month: "short",
-        hour: "2-digit",
-        minute: "2-digit",
-      });
-    }
-    return defaultDate || "Pending";
+  // Items from model: IOrderItem[]
+  const items = Array.isArray(orderDetails.items) ? orderDetails.items : [];
+
+  // Pricing from model: IPricing
+  const pricing = orderDetails.pricing || {
+    subtotal: 0,
+    tax: 0,
+    total_weight: 0,
+    shipping_cost: 0,
+    total: 0,
   };
+  const totalWeightKg = Number(pricing.total_weight || 0);
 
+  // Shipping Address from model: IShippingAddress
+  const shippingAddress = orderDetails.shipping_address || {};
+  const stateDisplay =
+    typeof shippingAddress.state === "object" && shippingAddress.state !== null
+      ? shippingAddress.state.state || shippingAddress.state.name || shippingAddress.state.code || ""
+      : String(shippingAddress.state || "");
+  const stateCode =
+    typeof shippingAddress.state === "object" && shippingAddress.state !== null
+      ? shippingAddress.state.code || ""
+      : "";
+
+  // User from model: populated with 'name email phone'
+  const user = typeof orderDetails.user === "object" && orderDetails.user !== null ? orderDetails.user : {};
+  const customerName = user.name || "Customer";
+  const customerPhone = user.phone || "";
+  const customerEmail = user.email || "";
+
+  // Payment from model: IPayment ({ method: 'cod'|'online', status: 'pending'|'paid'|'failed'|'refunded', transaction_id })
+  const payment = orderDetails.payment || {
+    method: "online",
+    status: "pending",
+  };
+  const paymentMethodLabel =
+    payment.method === "cod" ? "Cash on Delivery" : "Prepaid Online Payment";
+  const isPaymentPaid = payment.status === "paid";
+
+  // Delivery Partner URL from model: string
+  const deliveryPartnerUrl = orderDetails.delivery_partner_url || "";
+
+  // 4 Pipeline Milestones matching the exact backend OrderStatus progression
   const statusRankMap = {
     placed: 1,
     confirmed: 2,
     shipped: 3,
     delivered: 4,
   };
+  const currentRank = statusRankMap[status] || (isCancelled ? 0 : 1);
 
-  const currentRank = statusRankMap[statusLower] || (isCancelled ? 0 : 1);
+  const formatCheckpointDate = (statusKey) => {
+    const entry = historyMap[statusKey];
+    if (entry?.timestamp) {
+      return new Date(entry.timestamp).toLocaleString("en-IN", {
+        day: "numeric",
+        month: "short",
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+    }
+    if (statusKey === "placed" && orderDetails.createdAt) {
+      return new Date(orderDetails.createdAt).toLocaleString("en-IN", {
+        day: "numeric",
+        month: "short",
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+    }
+    return "Pending";
+  };
 
-  const pipelineSteps = [
+  const pipelineMilestones = [
     {
       key: "placed",
-      label: "Order Placed",
-      subLabel: "Verified online",
+      title: "Order Placed",
+      subTitle: "Verified in system",
       icon: Package,
-      note: historyMap.placed?.note || "Order placed & verified by Torque Toyzz",
+      note: historyMap.placed?.note || "Order registered and payment verified",
     },
     {
       key: "confirmed",
-      label: "Boxed & Ready",
-      subLabel: "Inspected in garage",
+      title: "Confirmed & Boxed",
+      subTitle: "Garage inspection",
       icon: ShieldCheck,
-      note: historyMap.confirmed?.note || "Order confirmed & inspection prepped in garage",
+      note: historyMap.confirmed?.note || "Precision models inspected and prepared for courier",
     },
     {
       key: "shipped",
-      label: "Dispatched",
-      subLabel: "In carrier transit",
+      title: "Dispatched",
+      subTitle: "With courier partner",
       icon: Truck,
-      note: historyMap.shipped?.note || "Package in transit with express courier partner",
+      note: historyMap.shipped?.note || "Package handed to courier and en route",
     },
     {
       key: "delivered",
-      label: "Delivered",
-      subLabel: "At your doorstep",
+      title: "Delivered",
+      subTitle: "At doorstep",
       icon: CheckCircle2,
-      note: historyMap.delivered?.note || "Package delivered to shipping destination",
+      note: historyMap.delivered?.note || "Delivered successfully to shipping destination",
     },
   ];
 
-  const getStepState = (stepKey) => {
-    const stepRank = statusRankMap[stepKey];
+  const getMilestoneState = (key) => {
+    const rank = statusRankMap[key];
     if (isCancelled) {
-      return historyMap[stepKey]
-        ? { status: "completed", date: formatStepDate(stepKey) }
-        : { status: "pending", date: "Cancelled" };
+      return historyMap[key]
+        ? { state: "completed", date: formatCheckpointDate(key) }
+        : { state: "cancelled", date: "Cancelled" };
     }
-    if (stepRank < currentRank) {
-      return { status: "completed", date: formatStepDate(stepKey) };
+    if (rank < currentRank) {
+      return { state: "completed", date: formatCheckpointDate(key) };
     }
-    if (stepRank === currentRank) {
+    if (rank === currentRank) {
       return {
-        status: orderDetails.status === "delivered" ? "completed" : "current",
-        date: formatStepDate(stepKey),
+        state: isDelivered ? "completed" : "current",
+        date: formatCheckpointDate(key),
       };
     }
-    return { status: "pending", date: "Pending" };
+    return { state: "pending", date: "Pending" };
   };
 
-  const getStatusBadge = (status) => {
-    switch (status?.toLowerCase()) {
-      case "delivered":
-        return (
-          <Badge className="bg-primary text-primary-foreground font-semibold gap-1.5 px-2.5 py-0.5 text-xs">
-            <CheckCircle2 className="size-3.5" /> Delivered
-          </Badge>
-        );
-      case "shipped":
-        return (
-          <Badge className="bg-primary/80 text-primary-foreground font-semibold gap-1.5 px-2.5 py-0.5 text-xs">
-            <Truck className="size-3.5" /> In Transit
-          </Badge>
-        );
-      case "confirmed":
-        return (
-          <Badge className="bg-primary/20 text-primary border border-primary/30 font-semibold gap-1.5 px-2.5 py-0.5 text-xs">
-            <Check className="size-3.5" /> Confirmed
-          </Badge>
-        );
-      case "placed":
-        return (
-          <Badge className="bg-primary/10 text-primary border border-primary/20 font-semibold gap-1.5 px-2.5 py-0.5 text-xs">
-            <Clock className="size-3.5" /> Placed
-          </Badge>
-        );
-      case "cancelled":
-        return (
-          <Badge className="bg-destructive/10 text-destructive border border-destructive/20 font-semibold gap-1.5 px-2.5 py-0.5 text-xs">
-            <Ban className="size-3.5" /> Cancelled
-          </Badge>
-        );
-      default:
-        return (
-          <Badge variant="secondary" className="font-semibold text-xs capitalize">
-            {status || "Processing"}
-          </Badge>
-        );
-    }
-  };
-
-  const shippingName =
-    orderDetails.shipping_address?.full_name ||
-    orderDetails.shipping_address?.name ||
-    (typeof orderDetails.user === "object" ? orderDetails.user?.name : String(orderDetails.user || "Customer"));
-
-  // Build Chronological Tracking Scans for Live Log
+  // Build Chronological Tracking Scans Log from status_history
   let trackingScans = [];
-  if (Array.isArray(orderDetails.status_history) && orderDetails.status_history.length > 0) {
-    trackingScans = [...orderDetails.status_history]
+  if (statusHistory.length > 0) {
+    trackingScans = [...statusHistory]
       .map((entry) => ({
         status: entry.status,
         title: entry.status ? entry.status.charAt(0).toUpperCase() + entry.status.slice(1) : "Update",
@@ -347,7 +348,7 @@ export default function OrderTracking() {
               minute: "2-digit",
             })
           : "Recent",
-        note: entry.note || "Order checkpoint status recorded in fulfillment system",
+        note: entry.note || "Order status recorded in Torque fulfillment system",
       }))
       .reverse();
   } else {
@@ -355,33 +356,74 @@ export default function OrderTracking() {
       trackingScans.push({
         status: "delivered",
         title: "Delivered",
-        date: formatStepDate("delivered"),
-        note: "Package was safely delivered to your shipping address and confirmed.",
+        date: formatCheckpointDate("delivered"),
+        note: "Package safely delivered to resident at designated destination address.",
       });
     }
     if (isShipped || isDelivered) {
       trackingScans.push({
         status: "shipped",
-        title: "Dispatched / Out for Delivery",
-        date: formatStepDate("shipped"),
-        note: "Package departed local logistics hub and is en route with express carrier.",
+        title: "Dispatched with Carrier",
+        date: formatCheckpointDate("shipped"),
+        note: "Package departed local distribution center and is out for delivery.",
       });
     }
     if (isConfirmed || isShipped || isDelivered) {
       trackingScans.push({
         status: "confirmed",
-        title: "Quality Inspected & Packaged",
-        date: formatStepDate("confirmed"),
-        note: "Scale models inspected, bubble-wrapped in reinforced Torque Garage packaging.",
+        title: "Confirmed & Boxed",
+        date: formatCheckpointDate("confirmed"),
+        note: "Scale models inspected and packed in reinforced garage packaging.",
       });
     }
     trackingScans.push({
       status: "placed",
-      title: "Order Placed & Verified",
-      date: formatStepDate("placed"),
-      note: "Payment authorized and order entry registered in system.",
+      title: "Order Placed",
+      date: formatCheckpointDate("placed"),
+      note: "Order recorded and verified online by customer.",
     });
   }
+
+  const getStatusBadge = (s) => {
+    switch (s?.toLowerCase()) {
+      case "delivered":
+        return (
+          <Badge className="bg-primary text-primary-foreground font-semibold gap-1.5 px-3 py-1 text-xs">
+            <CheckCircle2 className="size-3.5" /> Delivered
+          </Badge>
+        );
+      case "shipped":
+        return (
+          <Badge className="bg-primary/80 text-primary-foreground font-semibold gap-1.5 px-3 py-1 text-xs">
+            <Truck className="size-3.5" /> Dispatched • In Transit
+          </Badge>
+        );
+      case "confirmed":
+        return (
+          <Badge className="bg-primary/20 text-primary border border-primary/30 font-semibold gap-1.5 px-3 py-1 text-xs">
+            <Check className="size-3.5" /> Confirmed
+          </Badge>
+        );
+      case "placed":
+        return (
+          <Badge className="bg-primary/10 text-primary border border-primary/20 font-semibold gap-1.5 px-3 py-1 text-xs">
+            <Clock className="size-3.5" /> Placed
+          </Badge>
+        );
+      case "cancelled":
+        return (
+          <Badge className="bg-destructive/10 text-destructive border border-destructive/20 font-semibold gap-1.5 px-3 py-1 text-xs">
+            <Ban className="size-3.5" /> Cancelled
+          </Badge>
+        );
+      default:
+        return (
+          <Badge variant="secondary" className="font-semibold text-xs capitalize">
+            {s || "Processing"}
+          </Badge>
+        );
+    }
+  };
 
   return (
     <div className="min-h-screen bg-background text-foreground pb-12">
@@ -401,7 +443,7 @@ export default function OrderTracking() {
             <span className="font-mono text-foreground font-semibold">#{orderCode}</span>
             <span>›</span>
             <span className="text-foreground font-bold">
-              {activeView === "invoice" ? "Invoice" : "Delivery Tracker"}
+              {activeView === "invoice" ? "Official Invoice" : "Live Delivery Tracking"}
             </span>
           </div>
 
@@ -433,69 +475,75 @@ export default function OrderTracking() {
               className="h-8.5 rounded-xl text-xs gap-1.5 font-medium cursor-pointer"
             >
               <ArrowLeft className="size-3.5" />
-              <span>All Orders</span>
+              <span>Back to Orders</span>
             </Button>
           </div>
         </div>
 
-        {/* ─── Hero Header & Status Banner ─── */}
+        {/* ─── Hero Delivery Tracker Card ─── */}
         <div className="rounded-2xl border border-border/80 bg-card overflow-hidden shadow-xs">
-          {/* Top Headline Strip */}
+          {/* Header Strip with Order Code, Live Status & Metadata */}
           <div className="p-6 sm:p-8 border-b border-border/70 flex flex-col md:flex-row md:items-center justify-between gap-6">
             <div className="space-y-2">
               <div className="flex items-center gap-3 flex-wrap">
                 <span className="text-xs font-mono font-bold uppercase tracking-wider text-muted-foreground">
-                  Order #{orderCode}
+                  Order Reference:
+                </span>
+                <span className="font-mono font-extrabold text-foreground text-sm">
+                  #{orderCode}
                 </span>
                 {getStatusBadge(orderDetails.status)}
               </div>
 
-              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold tracking-tight text-foreground">
+              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black tracking-tight text-foreground">
                 {isDelivered
                   ? `Delivered on ${orderDateShort}`
                   : isShipped
                   ? "Dispatched & In Transit"
                   : isConfirmed
-                  ? "Boxed & Preparing for Courier"
+                  ? "Inspected & Boxed in Garage"
                   : isCancelled
-                  ? "Order Cancelled"
-                  : "Order Received & Verified"}
+                  ? "Order Was Cancelled"
+                  : "Order Placed & Confirmed"}
               </h1>
 
               <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed max-w-2xl">
                 {isDelivered
-                  ? `Package was delivered directly to your doorstep on ${orderDate}. All items have passed garage verification.`
+                  ? `Package delivered safely on ${orderDateFormatted}. Your scale model collection has been updated.`
                   : isShipped
-                  ? "Your order has been handed to our express courier partner and is en route to your city sorting hub."
+                  ? "Package is currently in transit with our logistics partner and headed toward your local hub."
                   : isCancelled
-                  ? "This order was cancelled and scale model allocations were released back to garage inventory."
-                  : "We have registered your order and our collectors are preparing precision models for factory inspection."}
+                  ? "This order was cancelled and inventory quantities were restored to the catalog."
+                  : "Your order is confirmed and our technicians are inspecting precision models prior to boxing."}
               </p>
             </div>
 
-            {/* AWB & Dispatch Badge */}
-            <div className="bg-muted/40 dark:bg-muted/20 border border-border/80 rounded-xl p-4 shrink-0 space-y-2 text-xs md:min-w-[240px]">
+            {/* Logistics & Dispatch Summary Pill */}
+            <div className="bg-muted/40 dark:bg-muted/20 border border-border/80 rounded-xl p-4 shrink-0 space-y-2 text-xs md:min-w-[260px]">
               <div className="flex items-center justify-between text-muted-foreground">
-                <span>Courier Partner</span>
-                <strong className="text-foreground font-semibold">Express Carrier</strong>
+                <span>Order Placed</span>
+                <span className="text-foreground font-semibold">{orderDateShort}</span>
               </div>
-              <div className="flex items-center justify-between text-muted-foreground">
-                <span>AWB / Tracking ID</span>
-                <div className="flex items-center gap-1.5 font-mono font-bold text-foreground">
-                  <span>{orderDetails.tracking_number || orderCode}</span>
-                  <button
-                    type="button"
-                    onClick={() => copyToClipboard(orderDetails.tracking_number || orderCode, "Tracking ID")}
-                    className="hover:text-primary transition-colors cursor-pointer"
-                    title="Copy Tracking ID"
-                  >
-                    <Copy className="size-3" />
-                  </button>
+              
+              {totalWeightKg > 0 && (
+                <div className="flex items-center justify-between text-muted-foreground">
+                  <span className="flex items-center gap-1">
+                    <Weight className="size-3 text-primary" /> Total Weight
+                  </span>
+                  <span className="text-foreground font-semibold">{totalWeightKg} kg</span>
                 </div>
+              )}
+
+              <div className="flex items-center justify-between text-muted-foreground">
+                <span>Payment Method</span>
+                <span className="text-foreground font-semibold uppercase">{payment.method}</span>
               </div>
+
               <div className="flex items-center justify-between text-muted-foreground pt-1 border-t border-border/60">
-                <span>Package Date</span>
-                <span className="text-foreground">{orderDateShort}</span>
+                <span>Order Total</span>
+                <strong className="text-primary font-bold text-sm">
+                  ₹{Number(pricing.total || 0).toLocaleString("en-IN", { minimumFractionDigits: 2 })}
+                </strong>
               </div>
             </div>
           </div>
@@ -504,36 +552,36 @@ export default function OrderTracking() {
           {!isCancelled && (
             <div className="p-6 sm:p-8 bg-muted/10">
               <div className="relative">
-                {/* Connecting Track Line */}
-                <div className="hidden sm:block absolute left-[10%] right-[10%] top-5 h-1 bg-border rounded-full" />
+                {/* Background Connecting Line */}
+                <div className="hidden sm:block absolute left-[12%] right-[12%] top-5.5 h-1 bg-border rounded-full" />
 
                 {/* Active Colored Fill Line */}
                 <div
                   className={cn(
-                    "hidden sm:block absolute left-[10%] top-5 h-1 rounded-full transition-all duration-700 bg-primary",
+                    "hidden sm:block absolute left-[12%] top-5.5 h-1 rounded-full transition-all duration-700 bg-primary",
                     isDelivered
-                      ? "right-[10%]"
+                      ? "right-[12%]"
                       : currentRank === 3
-                      ? "w-[60%]"
+                      ? "w-[50%]"
                       : currentRank === 2
-                      ? "w-[30%]"
+                      ? "w-[25%]"
                       : "w-0"
                   )}
                 />
 
-                {/* 4 Pipeline Step Nodes */}
+                {/* Milestones */}
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-6 sm:gap-2">
-                  {pipelineSteps.map((step) => {
-                    const state = getStepState(step.key);
-                    const isCompleted = state.status === "completed";
-                    const isCurrent = state.status === "current";
-                    const StepIcon = step.icon;
+                  {pipelineMilestones.map((milestone) => {
+                    const stepState = getMilestoneState(milestone.key);
+                    const isCompleted = stepState.state === "completed";
+                    const isCurrent = stepState.state === "current";
+                    const StepIcon = milestone.icon;
 
                     return (
-                      <div key={step.key} className="flex flex-col items-center text-center relative z-10 group">
+                      <div key={milestone.key} className="flex flex-col items-center text-center relative z-10">
                         <div
                           className={cn(
-                            "size-10 sm:size-11 rounded-2xl flex items-center justify-center border-2 transition-all shadow-xs",
+                            "size-11 sm:size-12 rounded-2xl flex items-center justify-center border-2 transition-all shadow-xs",
                             isCompleted
                               ? "bg-primary border-primary text-primary-foreground"
                               : isCurrent
@@ -546,7 +594,7 @@ export default function OrderTracking() {
                           ) : isCurrent ? (
                             <StepIcon className="size-5 text-primary animate-pulse" />
                           ) : (
-                            <StepIcon className="size-4.5 text-muted-foreground/60" />
+                            <StepIcon className="size-5 text-muted-foreground/60" />
                           )}
                         </div>
 
@@ -556,15 +604,15 @@ export default function OrderTracking() {
                             isCompleted
                               ? "text-foreground"
                               : isCurrent
-                              ? "text-primary font-extrabold"
+                              ? "text-primary font-black"
                               : "text-muted-foreground"
                           )}
                         >
-                          {step.label}
+                          {milestone.title}
                         </span>
 
                         <span className="text-[11px] text-muted-foreground hidden sm:block mt-0.5">
-                          {state.date !== "Pending" ? state.date : step.subLabel}
+                          {stepState.date !== "Pending" ? stepState.date : milestone.subTitle}
                         </span>
                       </div>
                     );
@@ -575,26 +623,26 @@ export default function OrderTracking() {
           )}
         </div>
 
-        {/* ─── Cancelled Order Banner ─── */}
+        {/* ─── Cancelled Order Notice ─── */}
         {isCancelled && (
           <div className="rounded-2xl border border-destructive/30 bg-destructive/10 p-5 sm:p-6 flex items-start gap-4 shadow-2xs">
             <AlertTriangle className="size-6 text-destructive shrink-0 mt-0.5" />
             <div className="space-y-1">
-              <h3 className="font-bold text-destructive text-base">Order Was Cancelled</h3>
+              <h3 className="font-bold text-destructive text-base">Order Cancelled</h3>
               <p className="text-xs sm:text-sm text-muted-foreground">
                 {historyMap.cancelled?.note ||
-                  "This order was cancelled and inventory quantities were restored to the catalog."}
+                  "This order has been cancelled and model stock has been replenished back to the garage collection."}
               </p>
               {historyMap.cancelled?.timestamp && (
                 <p className="text-xs text-muted-foreground pt-1">
-                  Cancellation processed on: {new Date(historyMap.cancelled.timestamp).toLocaleString("en-IN")}
+                  Cancellation recorded: {new Date(historyMap.cancelled.timestamp).toLocaleString("en-IN")}
                 </p>
               )}
             </div>
           </div>
         )}
 
-        {/* ─── Navigation Tabs: [ Delivery Journey ] | [ Invoice & Details ] ─── */}
+        {/* ─── View Switcher Tabs: Tracking vs Invoice ─── */}
         <div className="flex items-center gap-6 border-b border-border/80 text-sm font-semibold">
           <button
             type="button"
@@ -607,7 +655,7 @@ export default function OrderTracking() {
             )}
           >
             <Truck className="size-4" />
-            <span>Delivery Tracking & Package</span>
+            <span>Delivery Tracking</span>
           </button>
 
           <button
@@ -621,26 +669,26 @@ export default function OrderTracking() {
             )}
           >
             <FileText className="size-4" />
-            <span>Official Invoice & Summary</span>
+            <span>Tax Invoice Details</span>
           </button>
         </div>
 
         {/* ════════════════════════════════════════════════════════════════════
-            VIEW 1: TRACKING & DASHBOARD
+            VIEW 1: TRACKING DASHBOARD
             ════════════════════════════════════════════════════════════════════ */}
         {activeView === "tracking" && (
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
 
-            {/* Left 8 Columns: Live Activity Timeline & Scale Model Showcase */}
+            {/* Left 8 Cols: Checkpoints, Models, Courier Map */}
             <div className="lg:col-span-8 space-y-6">
 
-              {/* 1. Live Checkpoint Journey Log */}
+              {/* 1. Live Checkpoint Journey Log from status_history */}
               <div className="rounded-2xl border border-border/80 bg-card overflow-hidden shadow-xs">
                 <div className="bg-muted/40 dark:bg-muted/20 border-b border-border/70 px-5 sm:px-6 py-4 flex items-center justify-between">
                   <div className="flex items-center gap-2.5">
                     <Clock className="size-4 text-primary" />
                     <h3 className="font-bold text-sm text-foreground">
-                      Live Delivery Checkpoints
+                      Status History & Delivery Checkpoints
                     </h3>
                   </div>
                   <button
@@ -648,7 +696,7 @@ export default function OrderTracking() {
                     onClick={() => setShowAllUpdates((prev) => !prev)}
                     className="text-xs font-semibold text-primary hover:underline flex items-center gap-1 cursor-pointer"
                   >
-                    <span>{showAllUpdates ? "Collapse History" : "Expand All Checkpoints"}</span>
+                    <span>{showAllUpdates ? "Collapse Logs" : "Expand Logs"}</span>
                     {showAllUpdates ? <ChevronUp className="size-3.5" /> : <ChevronDown className="size-3.5" />}
                   </button>
                 </div>
@@ -684,7 +732,7 @@ export default function OrderTracking() {
                                   </span>
                                   {isLatest && (
                                     <Badge className="bg-primary/10 text-primary border border-primary/20 text-[10px] py-0 px-1.5 font-bold">
-                                      Latest Update
+                                      Latest Milestone
                                     </Badge>
                                   )}
                                 </div>
@@ -704,31 +752,34 @@ export default function OrderTracking() {
                 )}
               </div>
 
-              {/* 2. Shipment Items Showcase Card */}
+              {/* 2. Items List from backend items: IOrderItem[] */}
               <div className="rounded-2xl border border-border/80 bg-card overflow-hidden shadow-xs">
                 <div className="bg-muted/40 dark:bg-muted/20 border-b border-border/70 px-5 sm:px-6 py-4 flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <Package className="size-4 text-primary" />
                     <h3 className="font-bold text-sm text-foreground">
-                      Scale Models in Shipment ({items.length} {items.length === 1 ? "item" : "items"})
+                      Ordered Models ({items.length} {items.length === 1 ? "item" : "items"})
                     </h3>
                   </div>
-                  <span className="text-xs text-muted-foreground font-mono">
-                    Ref: #{orderCode}
-                  </span>
+                  {totalWeightKg > 0 && (
+                    <span className="text-xs text-muted-foreground">
+                      Package Weight: <strong className="text-foreground">{totalWeightKg} kg</strong>
+                    </span>
+                  )}
                 </div>
 
                 <div className="p-5 sm:p-6 divide-y divide-border/60">
                   {items.map((item, idx) => {
-                    const prod = item.product || item;
+                    const prod = typeof item.product === "object" && item.product !== null ? item.product : {};
+                    const prodId = prod._id || item.product;
                     const img =
                       item.image ||
                       prod.images?.[0] ||
                       prod.image ||
                       "/logo.png";
-                    const slug = prod.slug || prod._id;
-                    const qty = item.quantity || 1;
+                    const qty = Number(item.quantity || 1);
                     const price = Number(item.price || prod.price || 0);
+                    const weight = Number(item.weight || prod.weight || 0);
 
                     return (
                       <div
@@ -737,22 +788,22 @@ export default function OrderTracking() {
                       >
                         <div className="flex gap-4 sm:gap-5 flex-1 min-w-0">
                           <Link
-                            to={slug ? `/products/${slug}` : "#"}
+                            to={prodId ? `/products/${prodId}` : "#"}
                             className="size-20 sm:size-24 rounded-xl bg-background border border-border/80 p-2 flex items-center justify-center shrink-0 hover:border-primary transition-all overflow-hidden shadow-2xs"
                           >
                             <img
                               src={img}
-                              alt={item.name || prod.name}
+                              alt={item.name}
                               className="size-full object-contain hover:scale-105 transition-transform duration-300"
                             />
                           </Link>
 
                           <div className="space-y-1.5 flex-1 min-w-0">
                             <Link
-                              to={slug ? `/products/${slug}` : "#"}
+                              to={prodId ? `/products/${prodId}` : "#"}
                               className="font-bold text-sm sm:text-base text-foreground hover:text-primary transition-colors line-clamp-1 block"
                             >
-                              {item.name || prod.name || "Precision Diecast Scale Model"}
+                              {item.name || "Precision Collectible Scale Model"}
                             </Link>
 
                             <div className="flex items-center gap-3 text-xs text-muted-foreground flex-wrap">
@@ -763,14 +814,20 @@ export default function OrderTracking() {
                               <span>
                                 ₹{price.toLocaleString("en-IN", { minimumFractionDigits: 2 })} each
                               </span>
+                              {weight > 0 && (
+                                <>
+                                  <span>•</span>
+                                  <span>{weight} kg per unit</span>
+                                </>
+                              )}
                             </div>
 
                             <div className="text-[11px] text-muted-foreground flex items-center gap-1.5 pt-0.5">
                               <span className="inline-flex items-center gap-1 text-primary font-semibold">
-                                <ShieldCheck className="size-3.5" /> Certified Authentic Scale Collectible
+                                <ShieldCheck className="size-3.5" /> Certified Precision Collectible
                               </span>
                               <span>•</span>
-                              <span>Torque Toyzz Garage Guaranteed</span>
+                              <span>Authenticity Guaranteed</span>
                             </div>
                           </div>
                         </div>
@@ -792,8 +849,8 @@ export default function OrderTracking() {
                             size="sm"
                             className="w-full h-8 rounded-xl text-xs font-medium cursor-pointer"
                           >
-                            <Link to={slug ? `/products/${slug}` : "#"}>
-                              View Item Details
+                            <Link to={prodId ? `/products/${prodId}` : "#"}>
+                              View Model
                             </Link>
                           </Button>
                         </div>
@@ -805,30 +862,30 @@ export default function OrderTracking() {
                 <div className="bg-muted/20 border-t border-border/70 p-4 px-5 sm:px-6 flex items-center justify-between text-xs text-muted-foreground">
                   <div className="flex items-center gap-2">
                     <Sparkles className="size-4 text-primary shrink-0" />
-                    <span>Every model comes packed in reinforced shock-proof bubble wrapping.</span>
+                    <span>Reinforced garage packaging ensures zero transit damage.</span>
                   </div>
-                  <span className="hidden sm:inline font-medium text-foreground">7-Day Return Policy</span>
+                  <span className="hidden sm:inline font-medium text-foreground">7-Day Return Guarantee</span>
                 </div>
               </div>
 
-              {/* 3. Live Courier Feed Iframe (if delivery_partner_url exists) */}
-              {orderDetails.delivery_partner_url && !isCancelled && (
+              {/* 3. Live Courier Feed (if delivery_partner_url exists) */}
+              {deliveryPartnerUrl && !isCancelled && (
                 <div className="rounded-2xl border border-border/80 bg-card overflow-hidden shadow-xs">
                   <div className="bg-muted/40 dark:bg-muted/20 border-b border-border/80 px-5 sm:px-6 py-3.5 flex items-center justify-between gap-3">
                     <div className="flex items-center gap-2">
                       <Truck className="size-4 text-primary" />
-                      <h4 className="font-bold text-sm text-foreground">Live Logistics Portal</h4>
+                      <h4 className="font-bold text-sm text-foreground">Live Courier Feed</h4>
                     </div>
                     <Button asChild variant="outline" size="sm" className="h-7 text-xs rounded-lg gap-1">
-                      <a href={orderDetails.delivery_partner_url} target="_blank" rel="noopener noreferrer">
-                        Carrier Tracking <ExternalLink className="size-3" />
+                      <a href={deliveryPartnerUrl} target="_blank" rel="noopener noreferrer">
+                        Carrier Portal <ExternalLink className="size-3" />
                       </a>
                     </Button>
                   </div>
                   <div className="p-4">
                     <div className="relative w-full h-96 bg-muted/20 rounded-xl overflow-hidden border border-border">
                       <iframe
-                        src={orderDetails.delivery_partner_url}
+                        src={deliveryPartnerUrl}
                         title="Carrier Tracking Map"
                         className="w-full h-full border-0"
                         allow="geolocation; autoplay; clipboard-write"
@@ -839,79 +896,70 @@ export default function OrderTracking() {
               )}
             </div>
 
-            {/* Right 4 Columns: Destination, Billing, Garage Assistance */}
+            {/* Right 4 Cols: Address, Payment & Financial Summary */}
             <div className="lg:col-span-4 space-y-6">
 
-              {/* 1. Shipping Destination Card */}
+              {/* 1. Destination Address Card from shipping_address & user */}
               <div className="rounded-2xl border border-border/80 bg-card overflow-hidden shadow-xs">
                 <div className="bg-muted/40 dark:bg-muted/20 border-b border-border/80 px-5 py-3.5 flex items-center gap-2">
                   <MapPin className="size-4 text-primary" />
                   <h4 className="font-bold text-xs uppercase tracking-wider text-muted-foreground">
-                    Shipping Destination
+                    Delivery Destination
                   </h4>
                 </div>
-                <div className="p-5 space-y-1.5 text-xs">
-                  <p className="font-bold text-sm text-foreground">{shippingName}</p>
-                  {orderDetails.shipping_address ? (
-                    <div className="text-muted-foreground space-y-1 leading-relaxed pt-1">
-                      <p>
-                        {[orderDetails.shipping_address.door, orderDetails.shipping_address.street]
-                          .filter(Boolean)
-                          .join(", ")}
-                      </p>
-                      <p>
-                        {[
-                          orderDetails.shipping_address.city,
-                          typeof orderDetails.shipping_address.state === "object"
-                            ? orderDetails.shipping_address.state?.name
-                            : orderDetails.shipping_address.state,
-                        ]
-                          .filter(Boolean)
-                          .join(", ")}{" "}
-                        {orderDetails.shipping_address.pincode
-                          ? `- ${orderDetails.shipping_address.pincode}`
-                          : ""}
-                      </p>
-                      <p className="font-medium text-foreground">India</p>
-                      {orderDetails.user?.phone && (
-                        <p className="pt-1.5 text-[11px] flex items-center gap-1.5 border-t border-border/60">
+                <div className="p-5 space-y-2 text-xs">
+                  <p className="font-bold text-sm text-foreground">{customerName}</p>
+
+                  <div className="text-muted-foreground space-y-0.5 leading-relaxed">
+                    {shippingAddress.door && <p>{shippingAddress.door}</p>}
+                    {shippingAddress.street && <p>{shippingAddress.street}</p>}
+                    <p>
+                      {[shippingAddress.city, stateDisplay].filter(Boolean).join(", ")}
+                      {shippingAddress.pincode ? ` - ${shippingAddress.pincode}` : ""}
+                    </p>
+                    <p className="font-medium text-foreground">India</p>
+                  </div>
+
+                  {(customerPhone || customerEmail) && (
+                    <div className="pt-2 border-t border-border/60 space-y-1 text-[11px] text-muted-foreground">
+                      {customerPhone && (
+                        <p className="flex items-center gap-1.5">
                           <Phone className="size-3 text-primary" />
-                          <span>Contact: <strong className="text-foreground">{orderDetails.user.phone}</strong></span>
+                          <span>Phone: <strong className="text-foreground">{customerPhone}</strong></span>
+                        </p>
+                      )}
+                      {customerEmail && (
+                        <p className="flex items-center gap-1.5">
+                          <Mail className="size-3 text-primary" />
+                          <span>Email: <strong className="text-foreground">{customerEmail}</strong></span>
                         </p>
                       )}
                     </div>
-                  ) : (
-                    <p className="text-muted-foreground">Address details not recorded</p>
                   )}
                 </div>
               </div>
 
-              {/* 2. Order Financial Breakdown Card */}
+              {/* 2. Pricing & Payment Breakdown from pricing & payment */}
               <div className="rounded-2xl border border-border/80 bg-card overflow-hidden shadow-xs">
                 <div className="bg-muted/40 dark:bg-muted/20 border-b border-border/80 px-5 py-3.5 flex items-center gap-2">
                   <CreditCard className="size-4 text-primary" />
                   <h4 className="font-bold text-xs uppercase tracking-wider text-muted-foreground">
-                    Payment & Summary
+                    Payment & Charges
                   </h4>
                 </div>
                 <div className="p-5 space-y-2.5 text-xs">
                   <div className="flex justify-between">
-                    <span className="text-muted-foreground">Item(s) Subtotal:</span>
+                    <span className="text-muted-foreground">Items Subtotal:</span>
                     <span className="font-medium text-foreground">
-                      ₹
-                      {(orderDetails.pricing?.subtotal || orderTotal).toLocaleString("en-IN", {
-                        minimumFractionDigits: 2,
-                      })}
+                      ₹{Number(pricing.subtotal || 0).toLocaleString("en-IN", { minimumFractionDigits: 2 })}
                     </span>
                   </div>
 
                   <div className="flex justify-between items-center">
-                    <span className="text-muted-foreground">Shipping:</span>
-                    {orderDetails.pricing?.shipping_cost > 0 ? (
+                    <span className="text-muted-foreground">Shipping Cost:</span>
+                    {Number(pricing.shipping_cost || 0) > 0 ? (
                       <span className="font-medium text-foreground">
-                        ₹{orderDetails.pricing.shipping_cost.toLocaleString("en-IN", {
-                          minimumFractionDigits: 2,
-                        })}
+                        ₹{Number(pricing.shipping_cost).toLocaleString("en-IN", { minimumFractionDigits: 2 })}
                       </span>
                     ) : (
                       <Badge className="bg-primary/10 text-primary border border-primary/20 text-[10px] font-bold">
@@ -920,11 +968,11 @@ export default function OrderTracking() {
                     )}
                   </div>
 
-                  {orderDetails.pricing?.tax > 0 && (
+                  {Number(pricing.tax || 0) > 0 && (
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">Estimated GST (18%):</span>
                       <span className="font-medium text-foreground">
-                        ₹{orderDetails.pricing.tax.toLocaleString("en-IN", { minimumFractionDigits: 2 })}
+                        ₹{Number(pricing.tax).toLocaleString("en-IN", { minimumFractionDigits: 2 })}
                       </span>
                     </div>
                   )}
@@ -932,29 +980,35 @@ export default function OrderTracking() {
                   <Separator className="my-2" />
 
                   <div className="flex justify-between items-center text-sm">
-                    <span className="font-bold text-foreground">Grand Total:</span>
+                    <span className="font-bold text-foreground">Total Paid:</span>
                     <span className="text-base font-black text-primary">
-                      ₹{orderTotal.toLocaleString("en-IN", { minimumFractionDigits: 2 })}
+                      ₹{Number(pricing.total || 0).toLocaleString("en-IN", { minimumFractionDigits: 2 })}
                     </span>
                   </div>
 
                   <div className="pt-2 border-t border-border/60 flex items-center justify-between text-[11px]">
-                    <span className="text-muted-foreground">Payment Status:</span>
+                    <span className="text-muted-foreground">Payment Mode:</span>
                     <Badge
                       className={cn(
                         "capitalize font-semibold text-[10px]",
-                        orderDetails.payment?.status === "paid"
+                        isPaymentPaid
                           ? "bg-primary text-primary-foreground"
                           : "bg-muted text-muted-foreground"
                       )}
                     >
-                      {orderDetails.payment?.method || "Prepaid"} • {orderDetails.payment?.status || "Authorized"}
+                      {paymentMethodLabel} ({payment.status || "pending"})
                     </Badge>
                   </div>
+
+                  {payment.transaction_id && (
+                    <p className="text-[10px] text-muted-foreground font-mono truncate">
+                      Txn ID: {payment.transaction_id}
+                    </p>
+                  )}
                 </div>
               </div>
 
-              {/* 3. Garage Assistance & Cancellation Card */}
+              {/* 3. Garage Assistance & Order Cancellation */}
               <div className="rounded-2xl border border-border/80 bg-card p-5 space-y-3 shadow-xs">
                 <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-muted-foreground">
                   <HelpCircle className="size-4 text-primary" />
@@ -969,20 +1023,20 @@ export default function OrderTracking() {
                     className="w-full h-8.5 text-xs justify-start font-medium rounded-xl cursor-pointer"
                   >
                     <FileText className="size-3.5 mr-2 text-primary" />
-                    <span>View Formal Tax Invoice</span>
+                    <span>View Official Tax Invoice</span>
                   </Button>
 
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => copyToClipboard(orderCode, "Order ID")}
+                    onClick={() => copyToClipboard(orderCode, "Order Reference")}
                     className="w-full h-8.5 text-xs justify-start font-medium rounded-xl cursor-pointer"
                   >
                     <Copy className="size-3.5 mr-2 text-muted-foreground" />
                     <span>Copy Order ID (#{orderCode})</span>
                   </Button>
 
-                  {/* Cancel Button if eligible */}
+                  {/* Cancel Button if eligible according to backend logic */}
                   {canCancel && (
                     <AlertDialog>
                       <AlertDialogTrigger asChild>
@@ -993,7 +1047,7 @@ export default function OrderTracking() {
                           className="w-full h-8.5 text-xs justify-start text-destructive hover:bg-destructive/10 hover:text-destructive rounded-xl font-medium cursor-pointer"
                         >
                           <Ban className="size-3.5 mr-2" />
-                          <span>Cancel Order</span>
+                          <span>Cancel this Order</span>
                         </Button>
                       </AlertDialogTrigger>
                       <AlertDialogContent className="rounded-2xl border-border bg-popover shadow-xl">
@@ -1004,7 +1058,7 @@ export default function OrderTracking() {
                           </AlertDialogTitle>
                           <AlertDialogDescription className="space-y-3 pt-2">
                             <span>
-                              Are you sure you want to cancel this order? This action will restock all scale models back to the garage collection.
+                              Are you sure you want to cancel this order? This will restock the scale models back to the garage collection.
                             </span>
                             <div className="space-y-1.5 text-left pt-2">
                               <label className="text-xs font-semibold text-foreground">
@@ -1060,14 +1114,14 @@ export default function OrderTracking() {
         {activeView === "invoice" && (
           <div className="space-y-6">
             <div className="rounded-2xl border border-border/80 bg-card overflow-hidden shadow-xs">
-              {/* Invoice Header */}
+              {/* Header with Torque Toyzz & Invoice Code */}
               <div className="p-6 sm:p-8 border-b border-border/70 flex flex-col sm:flex-row justify-between gap-6">
                 <div>
                   <h2 className="text-2xl font-black text-foreground tracking-tight">
                     Torque Toyzz
                   </h2>
                   <p className="text-xs text-muted-foreground mt-1">
-                    Precision Diecast & RC Automotive Collectibles
+                    Precision Scale Automotive Collectibles & Racing Garage
                   </p>
                   <p className="text-xs text-muted-foreground">GSTIN: 33AAAAA0000A1Z5</p>
                 </div>
@@ -1079,69 +1133,62 @@ export default function OrderTracking() {
                   <p className="font-mono font-bold text-sm text-foreground pt-1">
                     Invoice #{orderCode}
                   </p>
-                  <p className="text-muted-foreground">Date: {orderDate}</p>
+                  <p className="text-muted-foreground">Order Date: {orderDateFormatted}</p>
                 </div>
               </div>
 
-              {/* Bill to & Ship to */}
+              {/* Customer & Payment details */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-6 sm:p-8 border-b border-border/70 text-xs">
                 <div className="space-y-1">
                   <span className="font-bold text-muted-foreground uppercase text-[11px] tracking-wider">
-                    Customer / Delivery To
+                    Billed & Shipped To:
                   </span>
-                  <p className="font-bold text-sm text-foreground">{shippingName}</p>
-                  {orderDetails.shipping_address && (
-                    <div className="text-muted-foreground space-y-0.5">
-                      <p>
-                        {[orderDetails.shipping_address.door, orderDetails.shipping_address.street]
-                          .filter(Boolean)
-                          .join(", ")}
-                      </p>
-                      <p>
-                        {[
-                          orderDetails.shipping_address.city,
-                          typeof orderDetails.shipping_address.state === "object"
-                            ? orderDetails.shipping_address.state?.name
-                            : orderDetails.shipping_address.state,
-                        ]
-                          .filter(Boolean)
-                          .join(", ")}{" "}
-                        {orderDetails.shipping_address.pincode
-                          ? `- ${orderDetails.shipping_address.pincode}`
-                          : ""}
-                      </p>
-                      <p>India</p>
-                    </div>
-                  )}
+                  <p className="font-bold text-sm text-foreground">{customerName}</p>
+                  <div className="text-muted-foreground space-y-0.5">
+                    {shippingAddress.door && <p>{shippingAddress.door}</p>}
+                    {shippingAddress.street && <p>{shippingAddress.street}</p>}
+                    <p>
+                      {[shippingAddress.city, stateDisplay].filter(Boolean).join(", ")}
+                      {shippingAddress.pincode ? ` - ${shippingAddress.pincode}` : ""}
+                    </p>
+                    <p>India</p>
+                    {customerPhone && <p>Phone: {customerPhone}</p>}
+                    {customerEmail && <p>Email: {customerEmail}</p>}
+                  </div>
                 </div>
 
                 <div className="space-y-1 md:text-right">
                   <span className="font-bold text-muted-foreground uppercase text-[11px] tracking-wider">
-                    Payment Details
+                    Payment Method & Transaction:
                   </span>
                   <p className="font-semibold text-foreground capitalize">
-                    {orderDetails.payment?.method || "Prepaid Online"}
+                    {paymentMethodLabel}
                   </p>
                   <p className="text-muted-foreground capitalize">
-                    Status: {orderDetails.payment?.status || "Captured"}
+                    Payment Status: {payment.status || "Authorized"}
                   </p>
-                  {orderDetails.payment?.transaction_id && (
+                  {payment.transaction_id && (
                     <p className="font-mono text-[11px] text-muted-foreground">
-                      Txn: {orderDetails.payment.transaction_id}
+                      Transaction Ref: {payment.transaction_id}
+                    </p>
+                  )}
+                  {totalWeightKg > 0 && (
+                    <p className="text-muted-foreground pt-1">
+                      Consignment Weight: {totalWeightKg} kg
                     </p>
                   )}
                 </div>
               </div>
 
-              {/* Items Breakdown Table */}
+              {/* Itemized Table */}
               <div className="p-6 sm:p-8 space-y-4">
                 <h4 className="font-bold text-sm text-foreground">
-                  Order Breakdown
+                  Purchased Items
                 </h4>
                 <div className="divide-y divide-border/60">
                   {items.map((item, idx) => {
-                    const prod = item.product || item;
-                    const qty = item.quantity || 1;
+                    const prod = typeof item.product === "object" && item.product !== null ? item.product : {};
+                    const qty = Number(item.quantity || 1);
                     const unitPrice = Number(item.price || prod.price || 0);
                     const lineTotal = unitPrice * qty;
 
@@ -1149,7 +1196,7 @@ export default function OrderTracking() {
                       <div key={idx} className="flex items-center justify-between py-3.5 text-xs first:pt-0 last:pb-0">
                         <div className="space-y-0.5">
                           <p className="font-bold text-foreground">
-                            {item.name || prod.name || "Scale Model"}
+                            {item.name || prod.name || "Precision Scale Model"}
                           </p>
                           <p className="text-muted-foreground">
                             Qty: {qty} × ₹{unitPrice.toLocaleString("en-IN", { minimumFractionDigits: 2 })}
@@ -1165,44 +1212,39 @@ export default function OrderTracking() {
 
                 <Separator />
 
-                {/* Totals */}
+                {/* Financial Summary */}
                 <div className="space-y-2 text-xs max-w-xs ml-auto pt-2">
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Subtotal:</span>
-                    <span className="font-medium">
-                      ₹
-                      {(orderDetails.pricing?.subtotal || orderTotal).toLocaleString("en-IN", {
-                        minimumFractionDigits: 2,
-                      })}
+                    <span className="font-medium text-foreground">
+                      ₹{Number(pricing.subtotal || 0).toLocaleString("en-IN", { minimumFractionDigits: 2 })}
                     </span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-muted-foreground">Shipping Cost:</span>
+                    <span className="text-muted-foreground">Shipping:</span>
                     <span>
-                      {orderDetails.pricing?.shipping_cost > 0
-                        ? `₹${orderDetails.pricing.shipping_cost.toLocaleString("en-IN", {
-                            minimumFractionDigits: 2,
-                          })}`
+                      {Number(pricing.shipping_cost || 0) > 0
+                        ? `₹${Number(pricing.shipping_cost).toLocaleString("en-IN", { minimumFractionDigits: 2 })}`
                         : "FREE"}
                     </span>
                   </div>
-                  {orderDetails.pricing?.tax > 0 && (
+                  {Number(pricing.tax || 0) > 0 && (
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">GST (18%):</span>
-                      <span>₹{orderDetails.pricing.tax.toLocaleString("en-IN", { minimumFractionDigits: 2 })}</span>
+                      <span>₹{Number(pricing.tax).toLocaleString("en-IN", { minimumFractionDigits: 2 })}</span>
                     </div>
                   )}
                   <Separator />
                   <div className="flex justify-between font-black text-base text-primary">
-                    <span>Total Amount:</span>
-                    <span>₹{orderTotal.toLocaleString("en-IN", { minimumFractionDigits: 2 })}</span>
+                    <span>Grand Total:</span>
+                    <span>₹{Number(pricing.total || 0).toLocaleString("en-IN", { minimumFractionDigits: 2 })}</span>
                   </div>
                 </div>
               </div>
 
-              {/* Invoice Footer Strip */}
+              {/* Invoice Footer */}
               <div className="bg-muted/30 border-t border-border/70 p-5 sm:p-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-muted-foreground">
-                <p>This is a computer-generated tax invoice and requires no physical signature.</p>
+                <p>Torque Toyzz certified tax invoice. System generated.</p>
                 <Button
                   size="sm"
                   onClick={() => window.print()}
