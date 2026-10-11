@@ -20,17 +20,12 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 function validate(f) {
   const e = {};
   if (!f.name.trim()) e.name = 'Enter your full name';
-  else if (f.name.trim().length < 2) e.name = 'Name must be at least 2 characters';
   if (!f.email.trim()) e.email = 'Enter your email address';
   else if (!EMAIL_RE.test(f.email.trim())) e.email = 'Enter a valid email address';
   if (!f.phone.trim()) e.phone = 'Enter your phone number';
   else if (!/^\d{10}$/.test(f.phone.trim())) e.phone = 'Phone number must be 10 digits';
   if (!f.password) e.password = 'Create a password';
-  else if (f.password.length < 8) e.password = 'Password must be at least 8 characters';
-  else if (f.password.length > 64) e.password = 'Password must be 64 characters or fewer';
-  else if (!/[A-Z]/.test(f.password)) e.password = 'Password must contain at least one uppercase letter';
-  else if (!/[a-z]/.test(f.password)) e.password = 'Password must contain at least one lowercase letter';
-  else if (!/[0-9]/.test(f.password)) e.password = 'Password must contain at least one number';
+  else if (f.password.length < 6) e.password = 'Password must be at least 6 characters';
   if (!f.confirm) e.confirm = 'Re-enter your password';
   else if (f.confirm !== f.password) e.confirm = 'Passwords do not match';
   if (!f.terms) e.terms = 'You need to accept the terms to continue';
@@ -40,7 +35,7 @@ function validate(f) {
 function getStrength(pw) {
   if (!pw) return { score: 0, label: '' };
   let score = 0;
-  if (pw.length >= 8) score++;
+  if (pw.length >= 6) score++;
   if (pw.length >= 10) score++;
   if (/[a-z]/.test(pw) && /[A-Z]/.test(pw) && /\d/.test(pw)) score++;
   if (/[^A-Za-z0-9]/.test(pw)) score++;
@@ -105,7 +100,7 @@ export default function Register() {
       email: form.email.trim().toLowerCase(),
       phone: form.phone.trim(),
       password: form.password,
-      acceptTerms: true,
+      accepted_terms: true,
     });
 
     if (result) {
@@ -264,7 +259,7 @@ export default function Register() {
                   <input
                     id="password"
                     type={showPassword ? 'text' : 'password'}
-                    placeholder="8+ characters, uppercase, lowercase, and a number"
+                    placeholder="At least 6 characters"
                     value={form.password}
                     onChange={set('password')}
                     onBlur={blur('password')}
@@ -344,8 +339,23 @@ export default function Register() {
                   />
                   <span className="text-sm text-muted-foreground leading-snug">
                     I agree to the{' '}
-                    <span className="font-medium text-foreground">Terms of Service</span> and{' '}
-                    <span className="font-medium text-foreground">Privacy Policy</span>
+                    <Link
+                      to="/terms"
+                      target="_blank"
+                      rel="noreferrer"
+                      className="font-medium text-primary hover:underline"
+                    >
+                      Terms &amp; Conditions
+                    </Link>{' '}
+                    and{' '}
+                    <Link
+                      to="/privacy"
+                      target="_blank"
+                      rel="noreferrer"
+                      className="font-medium text-primary hover:underline"
+                    >
+                      Privacy Policy
+                    </Link>
                   </span>
                 </label>
                 {fieldError('terms') && (

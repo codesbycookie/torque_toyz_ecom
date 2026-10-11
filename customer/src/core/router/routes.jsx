@@ -10,6 +10,8 @@ import Cart from "@/pages/cart/cart";
 import Orders from "@/pages/orders/orders";
 import OrderTracking from "@/pages/order-tracking/order-tracking";
 import Checkout from "@/pages/checkout/checkout";
+import Terms from "@/pages/terms/terms";
+import Privacy from "@/pages/privacy_policy/privacypolicy";
 
 export const appRoutes = [
   {
@@ -72,4 +74,14 @@ export const appRoutes = [
     element: <Checkout />,
     withLayout: true,
   },
+  {
+    path: "/terms",
+    element: <Terms />,
+    withLayout: true,
+  },
+  {
+    path: "/privacy",
+    element: <Privacy />,
+    withLayout: true,
+  }
 ];
