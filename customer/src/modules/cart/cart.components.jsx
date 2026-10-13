@@ -102,6 +102,7 @@ export function CartItemCard({
   };
 
   const productId = getCleanProductId(item);
+  const productPath = item.slug || item.product?.slug || productId;
   const name = item.name || item.product?.name || "Product";
   const image = item.image || item.product?.images?.[0];
   const price = Number(item.price ?? item.product?.price ?? 0);
@@ -115,7 +116,7 @@ export function CartItemCard({
         {/* Thumbnail Image */}
         <div
           className="size-24 sm:size-28 rounded-xl bg-muted/40 border shrink-0 overflow-hidden cursor-pointer flex items-center justify-center p-2 relative"
-          onClick={() => navigate(`/products/${productId}`)}
+          onClick={() => navigate(`/products/${productPath}`)}
         >
           {image ? (
             <img
@@ -134,7 +135,7 @@ export function CartItemCard({
           <div className="flex items-start justify-between gap-2">
             <div>
               <Link
-                to={`/products/${productId}`}
+                to={`/products/${productPath}`}
                 className="font-semibold text-base line-clamp-1 hover:text-primary transition-colors block leading-snug"
               >
                 {name}

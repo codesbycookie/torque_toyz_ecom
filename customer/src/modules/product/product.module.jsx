@@ -4,6 +4,19 @@ import { apiurls } from "@/core/api/api.urls";
 import { createEntityQueryActions } from "@/core/utils/entity.util";
 import { apiRequest } from "@/core/api/api.request";
 
+const getBySlug = async (slug) => {
+  const { products } = apiurls;
+  const isObjectId = /^[a-f\d]{24}$/i.test(slug);
+  const endpoint = isObjectId ? products.getOne : products.getBySlug;
+  const url = endpoint.url(slug);
+
+  const res = await apiRequest(endpoint.method, url);
+  const data = res?.data || res;
+
+  useProductStore.getState().setCurrent(data);
+  return data;
+};
+
 export const useProductModule = () => {
   const { products } = apiurls;
 
@@ -26,17 +39,6 @@ export const useProductModule = () => {
   const loading = useProductStore((s) => s.loading);
   const query = useProductStore((s) => s.query);
   const pagination = useProductStore((s) => s.pagination);
-
-  const getBySlug = async (slug) => {
-    const base = import.meta.env.VITE_BASE_URL;
-    const url = `${base}/products/slug/${slug}`;
-
-    const res = await apiRequest("get", url);
-    const data = res?.data || res;
-
-    useProductStore.getState().setCurrent(data);
-    return data;
-  };
 
   const getFeatured = (limit = 8) => {
     return fetch({ limit, sortBy: "createdAt", order: "desc", page: 1 });

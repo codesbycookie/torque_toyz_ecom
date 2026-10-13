@@ -199,7 +199,7 @@ export function ProductCard({
     <Card className="group overflow-hidden border-border/60 transition-all hover:shadow-md">
       {/* Image */}
       <Link
-        to={`/products/${product._id}`}
+        to={`/products/${product.slug || product._id}`}
         className="block relative aspect-square overflow-hidden bg-muted"
       >
         {firstImage ? (
