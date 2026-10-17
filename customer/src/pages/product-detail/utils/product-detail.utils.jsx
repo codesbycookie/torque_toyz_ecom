@@ -1,4 +1,5 @@
 import { toast } from "sonner";
+import { resolveProductId } from "@/modules/cart/cart.helpers";
 
 export const formatProductPrice = (price) =>
   Number(price || 0).toLocaleString("en-IN", {
@@ -22,6 +23,13 @@ export const getProductQuantity = (requestedQuantity, stock) =>
 export const isProductWishlisted = (product, wishlist) =>
   Boolean(product.is_in_wishlist) ||
   wishlist.some((item) => item._id === product._id);
+
+export const isProductInCart = (product, cartItems) => {
+  const productId = resolveProductId(product);
+  return Boolean(productId) && cartItems.some(
+    (item) => resolveProductId(item) === productId
+  );
+};
 
 export const addProductToCart = async ({
   authenticated,

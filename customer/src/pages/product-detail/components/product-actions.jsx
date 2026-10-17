@@ -3,20 +3,22 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 const stepClass =
-  "grid size-11 place-items-center text-muted-foreground transition-colors hover:text-foreground disabled:pointer-events-none disabled:opacity-40";
+  "grid size-11 place-items-center text-muted-foreground transition-transform transition-colors hover:text-foreground active:scale-90 disabled:pointer-events-none disabled:opacity-40";
 
 export default function ProductActions({
   quantity,
   max,
   disabled,
+  isInCart,
   isWishlisted,
   onQuantityChange,
   onAddToCart,
+  onGoToCart,
   onToggleWishlist,
 }) {
   return (
-    <div className="flex items-center gap-3">
-      <div className="inline-flex h-12 shrink-0 items-center rounded-lg border bg-background">
+    <div className="flex flex-wrap items-center gap-3 lg:flex-nowrap">
+      <div className="order-1 inline-flex h-12 shrink-0 items-center rounded-lg border bg-background">
         <button
           type="button"
           aria-label="Decrease quantity"
@@ -45,12 +47,12 @@ export default function ProductActions({
 
       <Button
         size="lg"
-        disabled={disabled}
-        onClick={onAddToCart}
-        className="h-12 min-w-0 flex-1 text-base"
+        disabled={disabled && !isInCart}
+        onClick={isInCart ? onGoToCart : onAddToCart}
+        className="order-3 h-12 w-full min-w-0 text-base transition-transform active:scale-[0.98] lg:order-2 lg:flex-1"
       >
         <ShoppingCart className="mr-2 size-5" />
-        Add to cart
+        {isInCart ? "Go to cart" : "Add to cart"}
       </Button>
 
       <Button
@@ -59,7 +61,7 @@ export default function ProductActions({
         onClick={onToggleWishlist}
         aria-label={isWishlisted ? "Remove from wishlist" : "Add to wishlist"}
         aria-pressed={isWishlisted}
-        className="h-12 w-12 shrink-0 px-0"
+        className="order-2 ml-auto h-12 w-12 shrink-0 px-0 transition-transform active:scale-90 lg:order-3 lg:ml-0"
       >
         <Heart
           className={cn("size-5", isWishlisted && "fill-primary text-primary")}

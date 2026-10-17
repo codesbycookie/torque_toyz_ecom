@@ -384,7 +384,7 @@ export function WishlistGridCard({
           type="button"
           onClick={() => navigate(href)}
           aria-label={`View ${product.name}`}
-          className="flex size-full items-center justify-center p-5 focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-primary"
+          className="flex size-full items-center justify-center focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-primary"
         >
           {firstImage ? (
             <>
@@ -393,7 +393,7 @@ export function WishlistGridCard({
                 alt={product.name}
                 loading="lazy"
                 className={cn(
-                  "absolute inset-0 m-auto size-[calc(100%-2.5rem)] object-contain transition-all duration-500",
+                  "size-full object-cover transition-all duration-500",
                   hoverImage
                     ? "group-hover:opacity-0"
                     : "group-hover:scale-105",
@@ -406,7 +406,7 @@ export function WishlistGridCard({
                   alt=""
                   loading="lazy"
                   className={cn(
-                    "absolute inset-0 m-auto size-[calc(100%-2.5rem)] object-contain opacity-0 transition-all duration-500 group-hover:opacity-100 group-hover:scale-105",
+                    "absolute inset-0 size-full object-cover opacity-0 transition-all duration-500 group-hover:opacity-100 group-hover:scale-105",
                     isOutOfStock && "grayscale"
                   )}
                 />
@@ -623,14 +623,14 @@ export function WishlistListCard({
           />
 
           <div
-            className="size-24 sm:size-28 rounded-xl bg-muted/40 border overflow-hidden cursor-pointer flex items-center justify-center p-2 shrink-0"
+            className="size-24 sm:size-28 rounded-xl bg-muted/40 border overflow-hidden cursor-pointer flex items-center justify-center shrink-0"
             onClick={() => navigate(`/products/${product.slug || product._id}`)}
           >
             {firstImage ? (
               <img
                 src={firstImage}
                 alt={product.name}
-                className="size-full object-contain transition-transform duration-300 group-hover:scale-105"
+                className="size-full object-cover transition-transform duration-300 group-hover:scale-105"
                 loading="lazy"
               />
             ) : (
@@ -744,11 +744,11 @@ export function WishlistTableRow({
       </TableCell>
       <TableCell className="w-[80px]">
         <div
-          className="size-14 rounded-lg bg-muted/40 border overflow-hidden cursor-pointer flex items-center justify-center p-1"
+          className="size-14 rounded-lg bg-muted/40 border overflow-hidden cursor-pointer flex items-center justify-center"
           onClick={() => navigate(`/products/${product.slug || product._id}`)}
         >
           {firstImage ? (
-            <img src={firstImage} alt={product.name} className="size-full object-contain" />
+            <img src={firstImage} alt={product.name} className="size-full object-cover" />
           ) : (
             <ShoppingBag className="size-4 text-muted-foreground" />
           )}

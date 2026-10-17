@@ -259,11 +259,11 @@ export default function TabsProducts({
                 className="w-[240px] sm:w-[260px] md:w-[275px] shrink-0 snap-start group flex flex-col justify-between rounded-xl overflow-hidden border border-border/80 bg-card hover:border-primary/50 hover:shadow-lg transition-all duration-300"
               >
                 {/* Image & Scale Pill */}
-                <div className="relative aspect-[4/3] bg-neutral-100/70 p-3 flex items-center justify-center overflow-hidden">
+                <div className="relative aspect-[4/3] bg-neutral-100/70 overflow-hidden">
                   <img
                     src={image}
                     alt={product.name}
-                    className="size-full object-contain transition-transform duration-500 group-hover:scale-105"
+                    className="size-full object-cover transition-transform duration-500 group-hover:scale-105"
                     loading="lazy"
                   />
                   <div className="absolute top-2.5 left-2.5">
@@ -327,4 +327,3 @@ export default function TabsProducts({
     </section>
   );
 }
-

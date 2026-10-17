@@ -3,7 +3,7 @@ import { ChevronLeft, ChevronRight, Package } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const arrowClass =
-  "absolute top-1/2 grid size-10 -translate-y-1/2 place-items-center rounded-full border bg-background/90 text-foreground shadow-sm backdrop-blur transition-colors hover:bg-accent hover:text-accent-foreground";
+  "absolute top-1/2 grid size-11 -translate-y-1/2 place-items-center rounded-full border bg-background/90 text-foreground shadow-sm backdrop-blur transition-colors hover:bg-accent hover:text-accent-foreground";
 
 // Render with key={productId} so the selection resets when the product changes.
 export default function ProductGallery({ images = [], name }) {
@@ -20,7 +20,7 @@ export default function ProductGallery({ images = [], name }) {
           <img
             src={images[index]}
             alt={name}
-            className="size-full object-contain p-5 sm:p-8"
+            className="size-full object-cover"
           />
         ) : (
           <div className="flex flex-col items-center gap-3 text-muted-foreground">
@@ -55,7 +55,7 @@ export default function ProductGallery({ images = [], name }) {
       </div>
 
       {hasMany && (
-        <div className="grid grid-cols-4 gap-3 sm:grid-cols-5">
+        <div className="-mx-4 flex snap-x snap-mandatory gap-3 overflow-x-auto px-4 pb-1 sm:mx-0 sm:grid sm:grid-cols-5 sm:overflow-visible sm:px-0 sm:pb-0 [&::-webkit-scrollbar]:hidden">
           {images.map((image, i) => (
             <button
               key={`${image}-${i}`}
@@ -64,7 +64,7 @@ export default function ProductGallery({ images = [], name }) {
               aria-pressed={index === i}
               onClick={() => setSelected(i)}
               className={cn(
-                "aspect-[4/3] overflow-hidden rounded-xl border-2 bg-card p-1 transition-colors",
+                "aspect-[4/3] w-20 shrink-0 snap-start overflow-hidden rounded-xl border-2 bg-card transition-colors sm:w-auto",
                 index === i
                   ? "border-primary"
                   : "border-transparent hover:border-primary/40"
@@ -74,7 +74,7 @@ export default function ProductGallery({ images = [], name }) {
                 src={image}
                 alt=""
                 loading="lazy"
-                className="size-full object-contain"
+                className="size-full object-cover"
               />
             </button>
           ))}

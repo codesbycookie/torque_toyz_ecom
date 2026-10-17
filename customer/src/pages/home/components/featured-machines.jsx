@@ -174,11 +174,11 @@ export default function FeaturedMachines({
                 className="group w-[250px] sm:w-[270px] shrink-0 rounded-xl overflow-hidden border border-border/80 bg-card hover:border-primary/40 hover:shadow-lg transition-all duration-300 flex flex-col justify-between snap-start"
               >
                 {/* Image & Action Badges */}
-                <div className="relative aspect-[4/3] bg-neutral-100/70 p-3 flex items-center justify-center overflow-hidden">
+                <div className="relative aspect-[4/3] bg-neutral-100/70 overflow-hidden">
                   <img
                     src={image}
                     alt={product.name}
-                    className="size-full object-contain transition-transform duration-500 group-hover:scale-105"
+                    className="size-full object-cover transition-transform duration-500 group-hover:scale-105"
                     loading="lazy"
                   />
 
@@ -280,4 +280,3 @@ export default function FeaturedMachines({
     </section>
   );
 }
-

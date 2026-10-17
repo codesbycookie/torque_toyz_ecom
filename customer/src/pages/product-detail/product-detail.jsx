@@ -1,11 +1,13 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import {
   ArrowLeft,
   ArrowRight,
+  ChevronDown,
   Hash,
   Package,
   Scale,
+  ShoppingCart,
   Tag,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -25,6 +27,7 @@ import {
   formatProductPrice,
   getProductQuantity,
   getProductRating,
+  isProductInCart,
   isProductWishlisted,
   showProductReviews,
   toggleProductWishlist,
@@ -44,6 +47,8 @@ export default function ProductDetail() {
   const [loadedProduct, setLoadedProduct] = useState(null);
   const [requestedQuantity, setRequestedQuantity] = useState(1);
   const [activeTab, setActiveTab] = useState("description");
+  const [showMobileCartBar, setShowMobileCartBar] = useState(false);
+  const purchaseActionsRef = useRef(null);
 
   const product =
     loadedProduct &&
@@ -79,6 +84,19 @@ export default function ProductDetail() {
     }
   }, [product?._id, getRecommendations]);
 
+  useEffect(() => {
+    const purchaseActions = purchaseActionsRef.current;
+    if (!purchaseActions) return;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => setShowMobileCartBar(!entry.isIntersecting),
+      { threshold: 0.1 },
+    );
+    observer.observe(purchaseActions);
+
+    return () => observer.disconnect();
+  }, [product?._id]);
+
   if (loadedSlug !== slug) return <ProductDetailSkeleton />;
 
   if (!product) {
@@ -105,6 +123,7 @@ export default function ProductDetail() {
   const quantity = getProductQuantity(requestedQuantity, stock);
   const wishlistItems = wishlist.list || [];
   const isWishlisted = isProductWishlisted(product, wishlistItems);
+  const isInCart = isProductInCart(product, cart.items || []);
   const relatedProducts = recommendations.filter(
     (item) => String(item._id) !== String(product._id),
   );
@@ -128,7 +147,7 @@ export default function ProductDetail() {
     });
 
   return (
-    <main className="min-h-screen bg-background pb-16">
+    <main className="min-h-screen bg-background pb-32 lg:pb-16">
       <div className="mx-auto max-w-7xl px-4 py-5 sm:px-6 lg:px-8">
         <nav
           aria-label="Breadcrumb"
@@ -249,9 +268,20 @@ export default function ProductDetail() {
             </div>
 
             {product.description && (
-              <p className="mt-5 line-clamp-4 whitespace-pre-line text-sm leading-6 text-muted-foreground">
-                {product.description}
-              </p>
+              <>
+                <details className="group mt-5 md:hidden">
+                  <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-3 text-sm font-medium [&::-webkit-details-marker]:hidden">
+                    Product description
+                    <ChevronDown className="size-4 shrink-0 text-muted-foreground transition-transform group-open:rotate-180" />
+                  </summary>
+                  <p className="whitespace-pre-line pb-2 text-sm leading-6 text-muted-foreground">
+                    {product.description}
+                  </p>
+                </details>
+                <p className="mt-5 hidden whitespace-pre-line text-sm leading-6 text-muted-foreground md:block">
+                  {product.description}
+                </p>
+              </>
             )}
 
             <div className="torque-top-accent mt-6 rounded-xl border bg-background p-4 sm:p-5">
@@ -267,11 +297,12 @@ export default function ProductDetail() {
                 <ProductStockStatus stock={stock} active={product.active} />
               </div>
 
-              <div className="mt-5">
+              <div ref={purchaseActionsRef} className="mt-5">
                 <ProductActions
                   quantity={quantity}
                   max={stock}
                   disabled={isUnavailable}
+                  isInCart={isInCart}
                   isWishlisted={isWishlisted}
                   onQuantityChange={(nextQuantity) =>
                     setRequestedQuantity(
@@ -279,6 +310,7 @@ export default function ProductDetail() {
                     )
                   }
                   onAddToCart={() => handleAddToCart()}
+                  onGoToCart={() => navigate("/cart")}
                   onToggleWishlist={() => handleToggleWishlist()}
                 />
               </div>
@@ -329,6 +361,38 @@ export default function ProductDetail() {
             />
           </section>
         )}
+      </div>
+
+      <div
+        aria-hidden={!showMobileCartBar}
+        className={`fixed inset-x-0 bottom-0 z-40 border-t bg-background/95 px-4 pt-3 pb-[max(env(safe-area-inset-bottom),0.75rem)] shadow-[0_-8px_24px_rgba(0,0,0,0.08)] backdrop-blur-xl transition-all duration-300 lg:hidden ${
+          showMobileCartBar
+            ? "translate-y-0 opacity-100"
+            : "pointer-events-none translate-y-full opacity-0"
+        }`}
+      >
+        <div className="mx-auto flex max-w-7xl items-center justify-between gap-4">
+          <div className="min-w-0">
+            <p className="truncate text-xs text-muted-foreground">
+              {isInCart ? "Already in your cart" : "Price"}
+            </p>
+            <p className="truncate text-lg font-bold tracking-tight text-primary">
+              {formatProductPrice(product.price)}
+            </p>
+          </div>
+          <Button
+            size="lg"
+            disabled={isUnavailable && !isInCart}
+            onClick={
+              isInCart ? () => navigate("/cart") : () => handleAddToCart()
+            }
+            tabIndex={showMobileCartBar ? 0 : -1}
+            className="h-12 shrink-0 px-5 transition-transform active:scale-[0.98]"
+          >
+            <ShoppingCart className="size-5" />
+            {isInCart ? "Go to cart" : "Add to cart"}
+          </Button>
+        </div>
       </div>
     </main>
   );

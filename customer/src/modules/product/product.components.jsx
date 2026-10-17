@@ -57,7 +57,7 @@ export function ProductListCard({
                 <img
                   src={firstImage}
                   alt={product.name}
-                  className="size-full object-contain p-2"
+                  className="size-full object-cover"
                   loading="lazy"
                 />
               ) : (
