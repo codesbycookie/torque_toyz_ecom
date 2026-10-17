@@ -2,27 +2,27 @@ import { Skeleton } from "@/components/ui/skeleton";
 
 export default function ProductDetailSkeleton() {
   return (
-    <div className="container mx-auto px-4 py-6">
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-        <div className="lg:col-span-6 space-y-3">
-          <Skeleton className="aspect-[4/3] w-full rounded-xl" />
-          <div className="grid grid-cols-4 sm:grid-cols-5 gap-3">
-            {Array.from({ length: 4 }).map((_, i) => (
-              <Skeleton key={i} className="aspect-[4/3] rounded-lg" />
-            ))}
+    <main className="min-h-screen bg-background">
+      <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
+        <Skeleton className="mb-6 h-4 w-64" />
+        <div className="grid gap-8 lg:grid-cols-[1.1fr_0.9fr] lg:gap-12">
+          <div className="space-y-3">
+            <Skeleton className="aspect-[4/3] w-full rounded-2xl" />
+            <div className="grid grid-cols-4 gap-3 sm:grid-cols-5">
+              {Array.from({ length: 4 }, (_, i) => (
+                <Skeleton key={i} className="aspect-[4/3] rounded-xl" />
+              ))}
+            </div>
           </div>
-        </div>
-        <div className="lg:col-span-6">
-          <div className="rounded-xl border p-6 space-y-4">
-            <Skeleton className="h-4 w-1/3" />
-            <Skeleton className="h-8 w-3/4" />
-            <Skeleton className="h-5 w-1/3" />
-            <Skeleton className="h-20 w-full" />
-            <Skeleton className="h-12 w-full" />
+          <div className="space-y-5">
+            <Skeleton className="h-6 w-28 rounded-full" />
+            <Skeleton className="h-10 w-4/5" />
+            <Skeleton className="h-5 w-40" />
             <Skeleton className="h-16 w-full" />
+            <Skeleton className="h-52 w-full rounded-2xl" />
           </div>
         </div>
       </div>
-    </div>
+    </main>
   );
 }

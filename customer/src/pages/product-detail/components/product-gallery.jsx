@@ -1,43 +1,81 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
+import { ChevronLeft, ChevronRight, Package } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-export default function ProductGallery({ images = [], name, productId }) {
-  const [selected, setSelected] = useState(0);
+const arrowClass =
+  "absolute top-1/2 grid size-10 -translate-y-1/2 place-items-center rounded-full border bg-background/90 text-foreground shadow-sm backdrop-blur transition-colors hover:bg-accent hover:text-accent-foreground";
 
-  // Reset selected image when product changes
-  useEffect(() => {
-    setSelected(0);
-  }, [productId]);
+// Render with key={productId} so the selection resets when the product changes.
+export default function ProductGallery({ images = [], name }) {
+  const [selected, setSelected] = useState(0);
+  const index = Math.min(selected, Math.max(images.length - 1, 0));
+  const hasMany = images.length > 1;
+  const go = (step) =>
+    setSelected((index + step + images.length) % images.length);
 
   return (
-    <div className="space-y-3">
-      <div className="aspect-[4/3] rounded-xl overflow-hidden bg-muted border flex items-center justify-center">
-        {images[selected] ? (
+    <div className="min-w-0 space-y-3">
+      <div className="relative flex aspect-[4/3] items-center justify-center overflow-hidden rounded-2xl border bg-card">
+        {images[index] ? (
           <img
-            src={images[selected]}
+            src={images[index]}
             alt={name}
-            className="size-full object-contain p-4"
+            className="size-full object-contain p-5 sm:p-8"
           />
         ) : (
-          <span className="text-muted-foreground">No image</span>
+          <div className="flex flex-col items-center gap-3 text-muted-foreground">
+            <Package className="size-12" />
+            <span className="text-sm">No product images available</span>
+          </div>
+        )}
+
+        {hasMany && (
+          <>
+            <button
+              type="button"
+              aria-label="Previous image"
+              onClick={() => go(-1)}
+              className={cn(arrowClass, "left-3")}
+            >
+              <ChevronLeft className="size-5" />
+            </button>
+            <button
+              type="button"
+              aria-label="Next image"
+              onClick={() => go(1)}
+              className={cn(arrowClass, "right-3")}
+            >
+              <ChevronRight className="size-5" />
+            </button>
+            <span className="absolute bottom-3 right-3 rounded-full bg-background/90 px-2.5 py-1 text-xs font-medium text-muted-foreground backdrop-blur">
+              {index + 1} / {images.length}
+            </span>
+          </>
         )}
       </div>
 
-      {images.length > 1 && (
-        <div className="grid grid-cols-4 sm:grid-cols-5 gap-3">
-          {images.map((img, idx) => (
+      {hasMany && (
+        <div className="grid grid-cols-4 gap-3 sm:grid-cols-5">
+          {images.map((image, i) => (
             <button
-              key={idx}
+              key={`${image}-${i}`}
               type="button"
-              onClick={() => setSelected(idx)}
+              aria-label={`View product image ${i + 1}`}
+              aria-pressed={index === i}
+              onClick={() => setSelected(i)}
               className={cn(
-                "aspect-[4/3] rounded-lg overflow-hidden border-2 bg-muted transition-all",
-                selected === idx
+                "aspect-[4/3] overflow-hidden rounded-xl border-2 bg-card p-1 transition-colors",
+                index === i
                   ? "border-primary"
-                  : "border-transparent opacity-70 hover:opacity-100"
+                  : "border-transparent hover:border-primary/40"
               )}
             >
-              <img src={img} alt="" className="size-full object-cover" />
+              <img
+                src={image}
+                alt=""
+                loading="lazy"
+                className="size-full object-contain"
+              />
             </button>
           ))}
         </div>

@@ -1,95 +1,120 @@
-import { useState } from "react";
-import {
-  CheckCircle2,
-  FileText,
-  Hash,
-  ListChecks,
-  MessageSquare,
-  Package,
-  Weight,
-} from "lucide-react";
+import { CheckCircle2, Hash, Package, Tag, Weight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import ProductSpecCard from "./product-spec-card";
 import ProductReviewItem from "./product-review-item";
+import { ProductStars } from "./product-rating-badge";
 
-export default function ProductTabs({ product, reviews = [] }) {
+export default function ProductTabs({
+  product,
+  reviews = [],
+  rating,
+  stock,
+  activeTab,
+  onTabChange,
+}) {
   const tabs = [
-    product.description && {
-      id: "description",
-      label: "Description",
-      icon: FileText,
-    },
-    { id: "specifications", label: "Specifications", icon: ListChecks },
-    reviews.length > 0 && {
+    ...(product.description ? [{ id: "description", label: "Description" }] : []),
+    { id: "details", label: "Product details" },
+    {
       id: "reviews",
-      label: `Reviews (${reviews.length})`,
-      icon: MessageSquare,
+      label: `Reviews${reviews.length ? ` (${reviews.length})` : ""}`,
     },
-  ].filter(Boolean);
+  ];
+  const selected = tabs.some((t) => t.id === activeTab) ? activeTab : tabs[0].id;
 
-  const [active, setActive] = useState(tabs[0].id);
+  const specs = [
+    { icon: Hash, label: "Product code", value: product.code },
+    { icon: Tag, label: "Category", value: product.category?.name },
+    {
+      icon: Weight,
+      label: "Weight",
+      value: Number(product.weight) > 0 ? `${product.weight} kg` : null,
+    },
+    {
+      icon: Package,
+      label: "Stock",
+      value: stock > 0 ? `${stock} units` : "Out of stock",
+    },
+    {
+      icon: CheckCircle2,
+      label: "Availability",
+      value: product.active ? "Available for purchase" : "Unavailable",
+    },
+  ].filter((spec) => spec.value);
 
   return (
-    <section className="space-y-5">
-      <div className="flex gap-1 overflow-x-auto rounded-xl border bg-background p-1.5">
-        {tabs.map(({ id, label, icon: Icon }) => (
+    <section id="product-tabs" className="mt-12 scroll-mt-6 sm:mt-16">
+      <div
+        role="tablist"
+        aria-label="Product information"
+        className="flex gap-6 overflow-x-auto border-b"
+      >
+        {tabs.map((tab) => (
           <button
-            key={id}
+            key={tab.id}
+            id={`tab-${tab.id}`}
             type="button"
-            onClick={() => setActive(id)}
+            role="tab"
+            aria-selected={selected === tab.id}
+            aria-controls={`panel-${tab.id}`}
+            onClick={() => onTabChange(tab.id)}
             className={cn(
-              "flex items-center gap-2 shrink-0 rounded-lg px-4 py-2 text-sm font-medium transition-colors",
-              active === id
-                ? "bg-primary/10 text-primary"
-                : "text-muted-foreground hover:text-foreground"
+              "-mb-px shrink-0 border-b-2 pb-3 text-sm font-medium transition-colors",
+              selected === tab.id
+                ? "border-primary text-foreground"
+                : "border-transparent text-muted-foreground hover:text-foreground"
             )}
           >
-            <Icon className="size-4" />
-            {label}
+            {tab.label}
           </button>
         ))}
       </div>
 
-      {active === "description" && (
-        <div className="rounded-xl border bg-background p-6">
-          <p className="text-sm text-muted-foreground leading-relaxed whitespace-pre-line">
+      <div
+        id={`panel-${selected}`}
+        role="tabpanel"
+        aria-labelledby={`tab-${selected}`}
+        className="pt-6"
+      >
+        {selected === "description" && (
+          <p className="max-w-3xl whitespace-pre-line text-sm leading-7 text-muted-foreground">
             {product.description}
           </p>
-        </div>
-      )}
+        )}
 
-      {active === "specifications" && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          {product.weight > 0 && (
-            <ProductSpecCard
-              icon={Weight}
-              label="Weight"
-              value={`${product.weight} kg`}
-            />
-          )}
-          <ProductSpecCard icon={Hash} label="Product code" value={product.code} />
-          <ProductSpecCard
-            icon={Package}
-            label="Stock"
-            value={product.stock > 0 ? `${product.stock} units` : "Out of stock"}
-          />
-          {product.active && (
-            <ProductSpecCard
-              icon={CheckCircle2}
-              label="Availability"
-              value="Available for purchase"
-            />
-          )}
-        </div>
-      )}
+        {selected === "details" && (
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {specs.map((spec) => (
+              <ProductSpecCard key={spec.label} {...spec} />
+            ))}
+          </div>
+        )}
 
-      {active === "reviews" && (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {reviews.slice(0, 5).map((review) => (
-            <ProductReviewItem key={review._id} review={review} />
+        {selected === "reviews" &&
+          (reviews.length ? (
+            <div className="grid gap-8 md:grid-cols-[14rem_1fr]">
+              <div>
+                <p className="text-4xl font-bold tracking-tight">
+                  {rating.toFixed(1)}
+                </p>
+                <ProductStars value={rating} className="mt-2" />
+                <p className="mt-2 text-sm text-muted-foreground">
+                  Based on {reviews.length}{" "}
+                  {reviews.length === 1 ? "review" : "reviews"}
+                </p>
+              </div>
+              <div className="divide-y">
+                {reviews.map((review) => (
+                  <ProductReviewItem key={review._id} review={review} />
+                ))}
+              </div>
+            </div>
+          ) : (
+            <p className="text-sm text-muted-foreground">
+              There are no reviews for this product yet.
+            </p>
           ))}
-        </div>
-      )}
+      </div>
     </section>
   );
 }
