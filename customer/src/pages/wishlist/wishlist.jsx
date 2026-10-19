@@ -24,7 +24,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Trash2, Search, ShoppingBag } from 'lucide-react';
+import { Trash2, Search } from 'lucide-react';
 import {
   WishlistSummaryHeader,
   WishlistControlsBar,
@@ -34,7 +34,7 @@ import {
   WishlistTableRow,
   WishlistEmptyState,
   WishlistSkeleton,
-} from '@/modules/wishlist/wishlist.components';
+} from './components/wishlist.components';
 
 export default function Wishlist() {
   const navigate = useNavigate();
@@ -199,7 +199,6 @@ export default function Wishlist() {
   // Batch Operations
   const handleMoveSelectedToCart = async () => {
     const inStockSelected = selectedProducts.filter((p) => p.stock > 0);
-
     if (inStockSelected.length === 0) {
       toast.error('None of the selected items are currently in stock');
       return;
@@ -212,20 +211,15 @@ export default function Wishlist() {
         await wishlist.removeProduct(prod._id);
       }
       setSelectedIds([]);
-      toast.success(
-        `Moved ${inStockSelected.length} ${
-          inStockSelected.length === 1 ? 'item' : 'items'
-        } to cart!`
-      );
+      toast.success(`Moved ${inStockSelected.length} items to cart!`);
     } catch {
-      toast.error('Failed to move some items to cart');
+      toast.error('Failed to move selected items to cart');
     } finally {
       setIsBatchProcessing(false);
     }
   };
 
   const handleRemoveSelected = async () => {
-    if (selectedIds.length === 0) return;
     try {
       setIsBatchProcessing(true);
       for (const id of selectedIds) {
