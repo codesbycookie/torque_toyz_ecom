@@ -179,7 +179,7 @@ export default function Navbar() {
   const handleSelectProduct = (product) => {
     setIsCommandOpen(false);
     if (product?._id) {
-      navigate(`/product/${product._id}`);
+      navigate(`/products/${product.slug || product._id}`);
     } else {
       handleSelectSearch(product.name);
     }
