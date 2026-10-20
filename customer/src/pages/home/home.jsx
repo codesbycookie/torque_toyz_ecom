@@ -26,7 +26,6 @@ import {
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
-// Hero carousel slides inspired by Amazon & Torque Toyzz
 const HERO_SLIDES = [
   {
     id: 1,
@@ -38,7 +37,7 @@ const HERO_SLIDES = [
     ctaText: "Explore Collection",
     ctaLink: "/products?sort=latest",
     image: "/cars/gt3_rs.jpg",
-    accent: "from-red-950/80 via-neutral-900/90 to-background",
+    accent: "bg-gradient-to-t from-black/80 via-black/50 to-black/20",
   },
   {
     id: 2,
@@ -50,7 +49,7 @@ const HERO_SLIDES = [
     ctaText: "Shop Race Cars",
     ctaLink: "/products?search=F1",
     image: "/cars/redbull_f1.jpg",
-    accent: "from-blue-950/80 via-neutral-900/90 to-background",
+    accent: "bg-gradient-to-t from-black/80 via-black/50 to-black/20",
   },
   {
     id: 3,
@@ -62,7 +61,7 @@ const HERO_SLIDES = [
     ctaText: "View RC Fleet",
     ctaLink: "/products?sort=price-high",
     image: "/cars/rx7_lbwk.jpg",
-    accent: "from-amber-950/80 via-neutral-900/90 to-background",
+    accent: "bg-gradient-to-t from-black/80 via-black/50 to-black/20",
   },
 ];
 
@@ -162,8 +161,8 @@ export default function Home() {
           </div>
         </div>
       </div>
-
-      {/* ─── 2. HERO CAROUSEL WITH GRADIENT OVERLAY ────────────────── */}
+      ```
+      {/* ─── 2. HERO CAROUSEL ────────────────── */}
       <section className="relative overflow-hidden border-b border-border/80 bg-neutral-950">
         <div className="relative min-h-[380px] sm:min-h-[460px] lg:min-h-[520px] flex items-center">
           {/* Background image & gradient blend */}
@@ -171,14 +170,9 @@ export default function Home() {
             <img
               src={currentSlide.image}
               alt={currentSlide.title}
-              className="w-full h-full object-cover object-center opacity-40 filter contrast-125 transition-opacity duration-700"
+              className="w-full h-full object-cover object-center duration-700"
             />
-            <div
-              className={cn(
-                "absolute inset-0 bg-gradient-to-r",
-                currentSlide.accent,
-              )}
-            />
+            <div className={cn("absolute inset-0 ", currentSlide.accent)} />
             <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent" />
           </div>
 
@@ -268,7 +262,7 @@ export default function Home() {
           </div>
         </div>
       </section>
-      
+      ``` for this too
       {/* ─── 3. AMAZON-STYLE OVERLAPPING CATEGORY & FEATURE CARDS ────── */}
       <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 -mt-10 sm:-mt-16 relative z-30 mb-12 sm:mb-16">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 sm:gap-6">
@@ -470,7 +464,6 @@ export default function Home() {
           </div>
         </div>
       </div>
-
       {/* ─── 4. TRENDING RELEASES SECTION (REAL BACKEND PRODUCTS) ──── */}
       <section className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="flex items-center justify-between mb-6 border-b border-border/80 pb-3">
@@ -528,7 +521,6 @@ export default function Home() {
           </div>
         )}
       </section>
-
       {/* ─── 5. FULL CATEGORY EXPLORATION TILES ─────────────────────── */}
       {categoriesList.length > 0 && (
         <section className="bg-card/50 border-y border-border/80 py-12">
@@ -580,7 +572,6 @@ export default function Home() {
           </div>
         </section>
       )}
-
       {/* ─── 6. BEST SELLERS / PERFORMANCE COLLECTION ──────────────── */}
       {productsList.length > 8 && (
         <section className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-12">
@@ -625,7 +616,6 @@ export default function Home() {
           </div>
         </section>
       )}
-
       {/* ─── 7. RECENTLY VIEWED ROW (AMAZON STYLE) ─────────────────── */}
       {recentlyViewed && recentlyViewed.length > 0 && (
         <section className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-8 border-t border-border/80">
@@ -654,7 +644,6 @@ export default function Home() {
           </div>
         </section>
       )}
-
       {/* ─── 8. BOTTOM TRUST STRIP ──────────────────────────────────── */}
       <section className="bg-card border-t border-border/80 py-10">
         <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8">
