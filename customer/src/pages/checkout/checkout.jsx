@@ -165,14 +165,27 @@ export default function Checkout() {
 
   // Save new or edited address from modal popup
   const handleSaveAddress = (newAddr) => {
-    const exists = storedAddresses.some((a) => (a.id || a._id) === (newAddr.id || newAddr._id));
+    const loc =
+      locations.find((l) => String(l._id) === String(newAddr.state)) ||
+      locations.find(
+        (l) =>
+          l.state?.trim().toLowerCase() ===
+          (newAddr.stateName || newAddr.state || "").trim().toLowerCase()
+      );
+    const cleanedAddr = {
+      ...newAddr,
+      state: loc?._id ? String(loc._id) : newAddr.state,
+      stateName: loc?.state || newAddr.stateName || "",
+    };
+
+    const exists = storedAddresses.some((a) => (a.id || a._id) === (cleanedAddr.id || cleanedAddr._id));
     let updated;
     if (exists) {
       updated = storedAddresses.map((a) =>
-        (a.id || a._id) === (newAddr.id || newAddr._id) ? newAddr : a
+        (a.id || a._id) === (cleanedAddr.id || cleanedAddr._id) ? cleanedAddr : a
       );
     } else {
-      updated = [newAddr, ...storedAddresses];
+      updated = [cleanedAddr, ...storedAddresses];
     }
 
     setStoredAddresses(updated);
@@ -182,7 +195,7 @@ export default function Checkout() {
       // ignore
     }
 
-    handleSelectAddress(newAddr);
+    handleSelectAddress(cleanedAddr);
     toast.success("Shipping address saved!");
   };
 
@@ -247,7 +260,7 @@ export default function Checkout() {
           door: selectedAddress.door ? selectedAddress.door.trim() : undefined,
           street: selectedAddress.street ? selectedAddress.street.trim() : undefined,
           city: selectedAddress.city ? selectedAddress.city.trim() : undefined,
-          state: selectedAddress.state,
+          state: selectedLoc?._id || selectedAddress.state,
           pincode: Number(selectedAddress.zip || selectedAddress.pincode) || 0,
         }
       : null;
@@ -288,7 +301,7 @@ export default function Checkout() {
       door: selectedAddress.door ? selectedAddress.door.trim() : undefined,
       street: selectedAddress.street ? selectedAddress.street.trim() : undefined,
       city: selectedAddress.city ? selectedAddress.city.trim() : undefined,
-      state: selectedAddress.state,
+      state: selectedLoc?._id || selectedAddress.state,
       pincode: Number(selectedAddress.zip || selectedAddress.pincode),
     };
 

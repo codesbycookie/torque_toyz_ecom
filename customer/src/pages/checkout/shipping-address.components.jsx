@@ -194,8 +194,13 @@ export function AddressModalDialog({
     const matchedState = availableStates.find(
       (s) => String(s.locationId) === String(modalForm.state) || s.name.toLowerCase() === modalForm.state.toLowerCase()
     );
-    const resolvedStateId = matchedState?.locationId || modalForm.state;
-    const resolvedStateName = matchedState?.name || "";
+    const locMatch =
+      locations.find((l) => String(l._id) === String(modalForm.state)) ||
+      locations.find((l) => l.state?.trim().toLowerCase() === (matchedState?.name || modalForm.state).toLowerCase()) ||
+      locations.find((l) => l.state?.trim().toLowerCase().startsWith((matchedState?.name || modalForm.state).toLowerCase()));
+
+    const resolvedStateId = locMatch ? String(locMatch._id) : (matchedState?.locationId || modalForm.state);
+    const resolvedStateName = matchedState?.name || locMatch?.state || "";
 
     const payload = {
       id: assignedId,

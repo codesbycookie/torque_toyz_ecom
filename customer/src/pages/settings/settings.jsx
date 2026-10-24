@@ -175,7 +175,7 @@ export default function Settings() {
             email: profileData.email.trim(),
             phone: profileData.phone.trim(),
           },
-          { __options: { toast: true, success: "Collector profile updated successfully!" } }
+          { __options: { toast: true, success: "Profile updated successfully!" } }
         )
       );
 
@@ -213,16 +213,29 @@ export default function Settings() {
 
   // Save new or edited address from modal dialog
   const handleSaveAddress = (newAddr) => {
+    const loc =
+      locations.find((l) => String(l._id) === String(newAddr.state)) ||
+      locations.find(
+        (l) =>
+          l.state?.trim().toLowerCase() ===
+          (newAddr.stateName || newAddr.state || "").trim().toLowerCase()
+      );
+    const cleanedAddr = {
+      ...newAddr,
+      state: loc?._id ? String(loc._id) : newAddr.state,
+      stateName: loc?.state || newAddr.stateName || "",
+    };
+
     const exists = storedAddresses.some(
-      (a) => (a.id || a._id) === (newAddr.id || newAddr._id)
+      (a) => (a.id || a._id) === (cleanedAddr.id || cleanedAddr._id)
     );
     let updated;
     if (exists) {
       updated = storedAddresses.map((a) =>
-        (a.id || a._id) === (newAddr.id || newAddr._id) ? newAddr : a
+        (a.id || a._id) === (cleanedAddr.id || cleanedAddr._id) ? cleanedAddr : a
       );
     } else {
-      updated = [newAddr, ...storedAddresses];
+      updated = [cleanedAddr, ...storedAddresses];
     }
 
     setStoredAddresses(updated);
@@ -232,7 +245,7 @@ export default function Settings() {
       // ignore
     }
 
-    toast.success("Shipping address saved to your Garage Address Book!");
+    toast.success("Shipping address saved!");
   };
 
   // Delete saved address
@@ -244,7 +257,7 @@ export default function Settings() {
     } catch {
       // ignore
     }
-    toast.success("Address removed from your Garage Address Book");
+    toast.success("Address removed");
   };
 
   const initials = user?.name
@@ -258,23 +271,14 @@ export default function Settings() {
 
   const tabsConfig = [
     { id: "profile", label: "Profile & Identity", icon: User },
-    { id: "addresses", label: "Garage Address Book", icon: MapPin, count: savedAddresses.length },
+    { id: "addresses", label: "Saved Addresses", icon: MapPin, count: savedAddresses.length },
     { id: "security", label: "Security & Credentials", icon: Lock },
-    { id: "notifications", label: "Dispatch & Drop Alerts", icon: Bell },
+    { id: "notifications", label: "Notifications", icon: Bell },
   ];
 
   return (
     <div className="min-h-screen bg-background text-foreground pb-12">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
-
-        {/* ─── Breadcrumb Navigation ─── */}
-        <div className="flex items-center gap-1.5 text-xs text-muted-foreground flex-wrap">
-          <Link to="/profile" className="hover:text-primary transition-colors">
-            Your Account
-          </Link>
-          <span>›</span>
-          <span className="text-foreground font-bold">Collector Settings & Preferences</span>
-        </div>
 
         {/* ─── Page Header Strip ─── */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-border/80">
@@ -283,13 +287,13 @@ export default function Settings() {
               Account Settings
             </h1>
             <p className="text-xs sm:text-sm text-muted-foreground pt-1">
-              Configure your collector profile, saved destinations, and dispatch alerts
+              Manage your profile, saved addresses and notifications
             </p>
           </div>
 
           <div className="flex items-center gap-2">
             <Badge className="bg-primary/10 text-primary border border-primary/20 text-xs font-semibold px-2.5 py-1">
-              {user?.login_id ? `ID #${user.login_id}` : "Verified Collector"}
+              {user?.login_id ? `ID #${user.login_id}` : "Verified Customer"}
             </Badge>
           </div>
         </div>
@@ -303,7 +307,7 @@ export default function Settings() {
             <div className="rounded-2xl border border-border/80 bg-card overflow-hidden shadow-xs">
               <div className="bg-muted/40 dark:bg-muted/20 border-b border-border/80 px-5 py-3.5 flex items-center justify-between">
                 <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
-                  Garage Membership
+                  Membership
                 </span>
                 <span className="flex items-center gap-1.5 text-xs font-semibold text-primary">
                   <span className="size-2 rounded-full bg-primary animate-pulse" />
@@ -318,10 +322,10 @@ export default function Settings() {
                   </div>
                   <div className="min-w-0">
                     <h3 className="font-extrabold text-base sm:text-lg text-foreground truncate">
-                      {user?.name || "Collector"}
+                      {user?.name || "Customer"}
                     </h3>
                     <p className="text-xs text-muted-foreground truncate">
-                      {user?.email || "Signed In Collector"}
+                      {user?.email || "Signed in"}
                     </p>
                     {user?.username && (
                       <p className="text-[11px] font-mono text-primary pt-0.5">
@@ -337,7 +341,7 @@ export default function Settings() {
                   <div className="flex items-center justify-between">
                     <span>Account Role</span>
                     <Badge variant="outline" className="text-[10px] font-bold uppercase tracking-wider">
-                      {user?.role || "Collector"}
+                      {user?.role || "Customer"}
                     </Badge>
                   </div>
                   <div className="flex items-center justify-between">
@@ -445,7 +449,7 @@ export default function Settings() {
 
                     <div className="space-y-1.5">
                       <Label htmlFor="username" className="text-xs font-medium text-foreground">
-                        Collector Handle / Username
+                        Username
                       </Label>
                       <Input
                         id="username"
@@ -521,10 +525,10 @@ export default function Settings() {
                     <MapPin className="size-4 text-primary" />
                     <div>
                       <h2 className="text-sm sm:text-base font-bold text-foreground">
-                        Garage Address Book
+                        Saved Addresses
                       </h2>
                       <p className="text-xs text-muted-foreground">
-                        Manage your verified delivery locations for scale model dispatch
+                        Manage your delivery addresses
                       </p>
                     </div>
                   </div>
@@ -602,7 +606,7 @@ export default function Settings() {
                         Account Password & Security
                       </h2>
                       <p className="text-xs text-muted-foreground">
-                        Update your authentication password to protect your garage orders
+                        Update your authentication password to keep your account secure
                       </p>
                     </div>
                   </div>
@@ -704,7 +708,7 @@ export default function Settings() {
                     <Bell className="size-4 text-primary" />
                     <div>
                       <h2 className="text-sm sm:text-base font-bold text-foreground">
-                        Logistics & Dispatch Alert Preferences
+                        Notification Preferences
                       </h2>
                       <p className="text-xs text-muted-foreground">
                         Customize tracking status alerts and exclusive catalog drops
@@ -724,7 +728,7 @@ export default function Settings() {
                       <div className="flex items-center gap-2">
                         <Truck className="size-4 text-primary" />
                         <h4 className="font-bold text-sm text-foreground">
-                          Order Dispatch & Transit Tracking
+                          Order Shipping Updates
                         </h4>
                       </div>
                       <p className="text-xs text-muted-foreground leading-relaxed">
@@ -751,7 +755,7 @@ export default function Settings() {
                         </h4>
                       </div>
                       <p className="text-xs text-muted-foreground leading-relaxed">
-                        Get live notifications when the package arrives at your local delivery hub and is dispatched out for doorstep delivery.
+                        Get live notifications when the package arrives at your local delivery hub and is out for delivery.
                       </p>
                     </div>
                     <Switch
@@ -788,7 +792,7 @@ export default function Settings() {
                   <div className="pt-2 border-t border-border/70 flex justify-end">
                     <Button
                       type="button"
-                      onClick={() => toast.success("Dispatch alert preferences saved successfully!")}
+                      onClick={() => toast.success("Notification preferences saved!")}
                       className="h-10 px-6 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground font-bold text-xs shadow-xs cursor-pointer"
                     >
                       Save Preferences

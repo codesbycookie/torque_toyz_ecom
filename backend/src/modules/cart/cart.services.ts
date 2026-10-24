@@ -205,6 +205,35 @@ export const removeItemFromCart = async (
   return enhanceCart(cartRaw);
 };
 
+export const resolveLocationObjectId = async (stateVal: any): Promise<Types.ObjectId> => {
+  if (!stateVal) {
+    throw new ApiError(400, "Shipping address state is required");
+  }
+
+  const str = String(stateVal).trim();
+  if (Types.ObjectId.isValid(str) && String(new Types.ObjectId(str)) === str) {
+    return new Types.ObjectId(str);
+  }
+
+  // Lookup by exact state name
+  const loc = await Location.findOne({
+    state: { $regex: new RegExp(`^${str}$`, "i") },
+  });
+  if (loc) {
+    return loc._id as Types.ObjectId;
+  }
+
+  // Lookup by state prefix
+  const locPrefix = await Location.findOne({
+    state: { $regex: new RegExp(`^${str}`, "i") },
+  });
+  if (locPrefix) {
+    return locPrefix._id as Types.ObjectId;
+  }
+
+  throw new ApiError(400, `Invalid location state: "${str}" could not be resolved`);
+};
+
 export const updateCartShippingAddress = async (
   guestId: string,
   shipping_address: any,
@@ -214,7 +243,15 @@ export const updateCartShippingAddress = async (
   const cartRaw = await Cart.findById(cartObj._id || cartObj.id);
   if (!cartRaw) throw new ApiError(404, "Cart not found");
 
-  cartRaw.shipping_address = shipping_address;
+  if (shipping_address) {
+    const resolvedState = await resolveLocationObjectId(shipping_address.state);
+    cartRaw.shipping_address = {
+      ...shipping_address,
+      state: resolvedState,
+    };
+  } else {
+    cartRaw.shipping_address = undefined;
+  }
 
   await recalculateCartPricing(cartRaw);
   return enhanceCart(cartRaw);
@@ -244,9 +281,10 @@ export const checkoutCart = async (
   if (!userId && !cartRaw.user) throw new ApiError(400, "User is required for checkout");
 
   if (data.shipping_address) {
+    const resolvedState = await resolveLocationObjectId(data.shipping_address.state);
     cartRaw.shipping_address = {
       ...data.shipping_address,
-      state: new Types.ObjectId(data.shipping_address.state as string),
+      state: resolvedState,
     };
   }
 
