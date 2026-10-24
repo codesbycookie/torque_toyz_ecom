@@ -64,17 +64,19 @@ export default function Checkout() {
     if (user) {
       if (Array.isArray(user.addresses)) {
         user.addresses.forEach((ua) => {
-          const id = ua._id || ua.id;
-          if (id && !combined.some((c) => (c._id || c.id) === id)) {
-            combined.unshift(ua);
+          const id = ua?._id ? String(ua._id) : (ua?.id ? String(ua.id) : "");
+          if (id && !combined.some((c) => String(c?._id || c?.id) === id)) {
+            combined.unshift({ ...ua, id, _id: id });
           }
         });
       }
 
       // Add default profile address if present
-      if (user.address && user.address.state && !combined.some((c) => c.id === "profile_default")) {
+      if (user.address && user.address.state && !combined.some((c) => String(c?.id || c?._id) === "profile_default")) {
+        const stateVal = typeof user.address.state === "object" ? String(user.address.state._id || "") : String(user.address.state);
         combined.unshift({
           id: "profile_default",
+          _id: "profile_default",
           label: "Primary Profile",
           name: user.name || "Default Contact",
           firstName: user.name ? user.name.split(" ")[0] : "",
@@ -84,7 +86,7 @@ export default function Checkout() {
           door: user.address.door || "",
           street: user.address.street || "",
           city: user.address.city || "",
-          state: user.address.state,
+          state: stateVal,
           zip: user.address.pincode ? String(user.address.pincode) : "",
           pincode: user.address.pincode || 0,
           isDefault: true,

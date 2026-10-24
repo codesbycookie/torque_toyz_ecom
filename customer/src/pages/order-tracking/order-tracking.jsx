@@ -52,11 +52,13 @@ import {
 } from "lucide-react";
 import { useApi } from "@/core/contexts/api.context";
 import { useLoader } from "@/core/hooks/useLoader";
+import { useBreadcrumb } from "@/core/contexts/breadcrumb.context";
 import { cn } from "@/lib/utils";
 
 export default function OrderTracking() {
   const navigate = useNavigate();
   const { id } = useParams();
+  const { setCustomBreadcrumbs } = useBreadcrumb();
   const [searchParams, setSearchParams] = useSearchParams();
   const activeView = searchParams.get("view") || "tracking"; // "tracking" | "invoice"
 
@@ -168,6 +170,21 @@ export default function OrderTracking() {
     }
   };
 
+  const currentOrderCode =
+    orderDetails?.code ||
+    (orderDetails?._id ? `ORD-${orderDetails._id.slice(-6).toUpperCase()}` : null);
+
+  useEffect(() => {
+    if (currentOrderCode) {
+      setCustomBreadcrumbs([
+        { label: "Home", href: "/" },
+        { label: "My Profile", href: "/profile" },
+        { label: "Your Orders", href: "/orders" },
+        { label: `#${currentOrderCode}` },
+      ]);
+    }
+  }, [currentOrderCode, setCustomBreadcrumbs]);
+
   if (loading) {
     return (
       <div className="min-h-screen bg-background text-foreground">
@@ -199,7 +216,7 @@ export default function OrderTracking() {
           </div>
           <h2 className="text-2xl font-bold tracking-tight">Order Not Found</h2>
           <p className="text-sm text-muted-foreground leading-relaxed">
-            We couldn't locate this order in your garage records. The order ID may be incorrect or you may not have permission to view it.
+            We couldn't locate this order in your account. The order ID may be incorrect or you may not have permission to view it.
           </p>
           <Button
             onClick={() => navigate("/orders")}
@@ -214,8 +231,7 @@ export default function OrderTracking() {
 
   // ─── Extract Data Strictly Matching Backend IOrder Model ───────────────────
   const orderId = orderDetails._id || orderDetails.id;
-  const orderCode =
-    orderDetails.code || (orderDetails._id ? `ORD-${orderDetails._id.slice(-6).toUpperCase()}` : "ORD");
+  const orderCode = currentOrderCode || "ORD";
   
   const orderCreatedAt = orderDetails.createdAt ? new Date(orderDetails.createdAt) : new Date();
   const orderUpdatedAt = orderDetails.updatedAt ? new Date(orderDetails.updatedAt) : null;
@@ -333,13 +349,13 @@ export default function OrderTracking() {
     {
       key: "confirmed",
       title: "Confirmed & Boxed",
-      subTitle: "Garage inspection",
+      subTitle: "Quality check",
       icon: ShieldCheck,
       note: historyMap.confirmed?.note || "Precision models inspected and prepared for courier",
     },
     {
       key: "shipped",
-      title: "Dispatched",
+      title: "Shipped",
       subTitle: "With courier partner",
       icon: Truck,
       note: historyMap.shipped?.note || "Package handed to courier and en route",
@@ -403,7 +419,7 @@ export default function OrderTracking() {
     if (isShipped || isDelivered) {
       trackingScans.push({
         status: "shipped",
-        title: "Dispatched with Carrier",
+        title: "Handed to Courier",
         date: formatCheckpointDate("shipped"),
         note: "Package departed local distribution center and is out for delivery.",
       });
@@ -413,7 +429,7 @@ export default function OrderTracking() {
         status: "confirmed",
         title: "Confirmed & Boxed",
         date: formatCheckpointDate("confirmed"),
-        note: "Scale models inspected and packed in reinforced garage packaging.",
+        note: "Scale models inspected and packed securely.",
       });
     }
     trackingScans.push({
@@ -435,7 +451,7 @@ export default function OrderTracking() {
       case "shipped":
         return (
           <Badge className="bg-primary/80 text-primary-foreground font-semibold gap-1.5 px-3 py-1 text-xs">
-            <Truck className="size-3.5" /> Dispatched • In Transit
+            <Truck className="size-3.5" /> Shipped • In Transit
           </Badge>
         );
       case "confirmed":
@@ -469,70 +485,52 @@ export default function OrderTracking() {
     <div className="min-h-screen bg-background text-foreground pb-12">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
 
-        {/* ─── Breadcrumbs & Action Bar ─── */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div className="flex items-center gap-1.5 text-xs text-muted-foreground flex-wrap">
-            <Link to="/profile" className="hover:text-primary transition-colors">
-              Your Account
-            </Link>
-            <span>›</span>
-            <Link to="/orders" className="hover:text-primary transition-colors">
-              Your Orders
-            </Link>
-            <span>›</span>
-            <span className="font-mono text-foreground font-semibold">#{orderCode}</span>
-            <span>›</span>
-            <span className="text-foreground font-bold">
-              {activeView === "invoice" ? "Official Invoice" : "Live Delivery Tracking"}
-            </span>
-          </div>
+        {/* ─── Action Bar ─── */}
+        <div className="flex items-center justify-end gap-2 flex-wrap">
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={isReorderingAll}
+            onClick={handleBuyAgainAll}
+            className="h-8.5 rounded-xl text-xs gap-1.5 font-medium hover:border-primary hover:text-primary cursor-pointer"
+          >
+            {isReorderingAll ? (
+              <Loader2 className="size-3.5 animate-spin text-primary" />
+            ) : (
+              <RotateCcw className="size-3.5 text-primary" />
+            )}
+            <span>Buy Order Again</span>
+          </Button>
 
-          <div className="flex items-center gap-2 flex-wrap">
-            <Button
-              variant="outline"
-              size="sm"
-              disabled={isReorderingAll}
-              onClick={handleBuyAgainAll}
-              className="h-8.5 rounded-xl text-xs gap-1.5 font-medium hover:border-primary hover:text-primary cursor-pointer"
-            >
-              {isReorderingAll ? (
-                <Loader2 className="size-3.5 animate-spin text-primary" />
-              ) : (
-                <RotateCcw className="size-3.5 text-primary" />
-              )}
-              <span>Buy Order Again</span>
-            </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleShareTracking}
+            className="h-8.5 rounded-xl text-xs gap-1.5 font-medium cursor-pointer"
+          >
+            <Share2 className="size-3.5 text-primary" />
+            <span>Share</span>
+          </Button>
 
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleShareTracking}
-              className="h-8.5 rounded-xl text-xs gap-1.5 font-medium cursor-pointer"
-            >
-              <Share2 className="size-3.5 text-primary" />
-              <span>Share</span>
-            </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => window.print()}
+            className="h-8.5 rounded-xl text-xs gap-1.5 font-medium cursor-pointer"
+          >
+            <Printer className="size-3.5 text-muted-foreground" />
+            <span>Print</span>
+          </Button>
 
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => window.print()}
-              className="h-8.5 rounded-xl text-xs gap-1.5 font-medium cursor-pointer"
-            >
-              <Printer className="size-3.5 text-muted-foreground" />
-              <span>Print</span>
-            </Button>
-
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => navigate("/orders")}
-              className="h-8.5 rounded-xl text-xs gap-1.5 font-medium cursor-pointer"
-            >
-              <ArrowLeft className="size-3.5" />
-              <span>Back to Orders</span>
-            </Button>
-          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => navigate("/orders")}
+            className="h-8.5 rounded-xl text-xs gap-1.5 font-medium cursor-pointer"
+          >
+            <ArrowLeft className="size-3.5" />
+            <span>Back to Orders</span>
+          </Button>
         </div>
 
         {/* ─── Hero Delivery Tracker Card ─── */}
@@ -554,9 +552,9 @@ export default function OrderTracking() {
                 {isDelivered
                   ? `Delivered on ${orderDateShort}`
                   : isShipped
-                  ? "Dispatched & In Transit"
+                  ? "Shipped & In Transit"
                   : isConfirmed
-                  ? "Inspected & Boxed in Garage"
+                  ? "Checked & Packed"
                   : isCancelled
                   ? "Order Was Cancelled"
                   : "Order Placed & Confirmed"}
@@ -686,7 +684,7 @@ export default function OrderTracking() {
               <h3 className="font-bold text-destructive text-base">Order Cancelled</h3>
               <p className="text-xs sm:text-sm text-muted-foreground">
                 {historyMap.cancelled?.note ||
-                  "This order has been cancelled and model stock has been replenished back to the garage collection."}
+                  "This order has been cancelled and the items have been restocked."}
               </p>
               {historyMap.cancelled?.timestamp && (
                 <p className="text-xs text-muted-foreground pt-1">
@@ -917,7 +915,7 @@ export default function OrderTracking() {
                 <div className="bg-muted/20 border-t border-border/70 p-4 px-5 sm:px-6 flex items-center justify-between text-xs text-muted-foreground">
                   <div className="flex items-center gap-2">
                     <Sparkles className="size-4 text-primary shrink-0" />
-                    <span>Reinforced garage packaging ensures zero transit damage.</span>
+                    <span>Secure packaging to prevent damage in transit.</span>
                   </div>
                   <span className="hidden sm:inline font-medium text-foreground">7-Day Return Guarantee</span>
                 </div>
@@ -1067,7 +1065,7 @@ export default function OrderTracking() {
               <div className="rounded-2xl border border-border/80 bg-card p-5 space-y-3 shadow-xs">
                 <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-muted-foreground">
                   <HelpCircle className="size-4 text-primary" />
-                  <span>Garage Assistance</span>
+                  <span>Need Help?</span>
                 </div>
 
                 <div className="space-y-2">
@@ -1113,7 +1111,7 @@ export default function OrderTracking() {
                           </AlertDialogTitle>
                           <AlertDialogDescription className="space-y-3 pt-2">
                             <span>
-                              Are you sure you want to cancel this order? This will restock the scale models back to the garage collection.
+                              Are you sure you want to cancel this order? This cannot be undone.
                             </span>
                             <div className="space-y-1.5 text-left pt-2">
                               <label className="text-xs font-semibold text-foreground">
@@ -1176,7 +1174,7 @@ export default function OrderTracking() {
                     Torque Toyzz
                   </h2>
                   <p className="text-xs text-muted-foreground mt-1">
-                    Precision Scale Automotive Collectibles & Racing Garage
+                    Scale Model Cars & RC Toys
                   </p>
                   <p className="text-xs text-muted-foreground">GSTIN: 33AAAAA0000A1Z5</p>
                 </div>
