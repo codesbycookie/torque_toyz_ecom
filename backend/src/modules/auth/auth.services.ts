@@ -1,6 +1,7 @@
 import { Types } from "mongoose";
 
 import User from "@db/models/user.model.ts";
+import Otp from "@db/models/otp.model.ts";
 
 import { generateToken, verifyToken } from "@lib/jwt.ts";
 import { ApiError } from "@core/errors/api.error.ts";
@@ -8,6 +9,7 @@ import { ApiError } from "@core/errors/api.error.ts";
 import { ROLE, ERROR, SUCCESS } from "./auth.constants.ts";
 import { buildPayload } from "./auth.utils.ts";
 import { RegisterPayload } from "@typings/auth.types.ts";
+import { ensureUsernameAvailable } from "@modules/user/user.utils.ts";
 
 type Role = (typeof ROLE)[keyof typeof ROLE];
 
@@ -60,6 +62,8 @@ export const register = async (data: RegisterPayload) => {
   const existingUser = await User.findOne({ email: normalizedEmail });
   
   if (existingUser) throw new ApiError(409, "User with this email already exists");
+
+  await ensureUsernameAvailable((data as any).username);
 
   const user = await new User({
     ...data,
@@ -119,6 +123,44 @@ export const changePassword = async (data: {
   await user.save();
 
   return { message: SUCCESS.PASSWORD_CHANGED };
+};
+
+export const resetPassword = async (data: {
+  email: string;
+  code?: string;
+  newPassword: string;
+}) => {
+  const { email, code, newPassword } = data;
+
+  const user = await User.findOne({
+    email: email.toLowerCase().trim(),
+    active: true,
+    deleted: false,
+  });
+  if (!user) throw new ApiError(404, 'No account found with this email address');
+
+  // Verify that a valid password_reset OTP exists
+  const verifiedOtp = await Otp.findOne({
+    identifier: email.toLowerCase().trim(),
+    purpose: 'password_reset',
+    verified: true,
+  }).sort({ updatedAt: -1 });
+
+  if (!verifiedOtp && code) {
+    const isMatch = await Otp.verify(email.toLowerCase().trim(), 'password_reset', code);
+    if (!isMatch) throw new ApiError(400, 'Invalid or expired OTP');
+  } else if (!verifiedOtp) {
+    throw new ApiError(400, 'Invalid or expired verification session. Please request a new OTP.');
+  }
+
+  // Update password (UserSchema pre-validate hook will hash it)
+  user.password = newPassword;
+  await user.save();
+
+  // Clear all password_reset OTPs for this user
+  await Otp.deleteMany({ identifier: email.toLowerCase().trim(), purpose: 'password_reset' });
+
+  return { message: 'Password has been reset successfully. Please sign in with your new password.' };
 };
 
 export const getCurrentUser = async (token: string): Promise<ReturnedUser> => {

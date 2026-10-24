@@ -198,7 +198,7 @@ export default function Login() {
               <Dial className="size-4" />
               <span>Pit lane access</span>
             </div>
-            <h1 className="max-w-md text-4xl font-extrabold leading-tight tracking-tight xl:text-5xl">
+            <h1 className="max-w-md text-4xl font-extrabold leading-tight tracking-tight text-white xl:text-5xl">
               Back on the grid, racer.
             </h1>
             <p className="mt-3 max-w-sm text-base text-white/80">

@@ -7,6 +7,7 @@ import ScrollToTop from "@/core/utils/scrolltotop.util";
 import "./app.css";
 import AppRoutes from "@/core/router/app.routes";
 import { AuthProvider } from "@/core/contexts/auth.context";
+import { BreadcrumbProvider } from "@/core/contexts/breadcrumb.context";
 import { ThemeProvider } from "next-themes";
 
 export default function App() {
@@ -17,9 +18,11 @@ export default function App() {
           <UIProvider>
             <ApiProvider>
               <EcomProvider>
-                <ScrollToTop />
-                <Toaster />
-                <AppRoutes />
+                <BreadcrumbProvider>
+                  <ScrollToTop />
+                  <Toaster />
+                  <AppRoutes />
+                </BreadcrumbProvider>
               </EcomProvider>
             </ApiProvider>
           </UIProvider>

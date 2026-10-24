@@ -3,10 +3,11 @@ import { dynamicFilter } from '@core/constants/dynamicfilter.constant.ts';
 import { CreateUserPayload, UpdateUserPayload } from '@typings/user.types.ts';
 import { Role } from '@typings/auth.types.js';
 import { UPDATE_OPTIONS, SOFT_DELETE, RETRIEVE, getVisibility } from './user.constants.ts';
-import { enhanceUser } from './user.utils.ts';
+import { enhanceUser, ensureUsernameAvailable } from './user.utils.ts';
 import { userFilterConfig } from './user.filterconfig.ts';
 
 export const createUser = async (data: CreateUserPayload) => {
+  await ensureUsernameAvailable(data.username);
   const user = await new User({
     ...data,
     accepted_terms_at: data.acceptTerms ? new Date() : null,
@@ -27,6 +28,7 @@ export const getUserById = async (id: string) => {
 };
 
 export const updateUser = async (id: string, data: UpdateUserPayload) => {
+  await ensureUsernameAvailable(data.username, id);
   const updated = await User.findByIdAndUpdate(id, data, UPDATE_OPTIONS);
   if (!updated) return null;
   return enhanceUser(updated);

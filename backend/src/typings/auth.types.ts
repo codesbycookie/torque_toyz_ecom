@@ -27,4 +27,11 @@ export interface AdminResetPasswordPayload {
   newPassword: string;
 }
 
+export interface ResetPasswordPayload {
+  email: string;
+  code?: string;
+  newPassword: string;
+}
+
+
 

@@ -47,9 +47,12 @@ export const money = (n) =>
     maximumFractionDigits: 0,
   }).format(Number(n || 0));
 
+import { resolveProductImage } from "@/modules/product/product.components";
+
 export const getImage = (p) => {
   const i = p.images?.[0] || p.image || p.thumbnail || p.imageUrl;
-  return typeof i === 'string' ? i : i?.url || i?.secure_url || '';
+  const str = typeof i === 'string' ? i : i?.url || i?.secure_url || '';
+  return resolveProductImage(str, p._id || p.name || 0);
 };
 
 export const CHECK_CLS =
@@ -133,7 +136,7 @@ export function Stat({ icon: Icon, value, label }) {
         <Icon className="size-3.5" />
         <span className="truncate text-[11px] font-semibold sm:text-xs">{label}</span>
       </div>
-      <p className="mt-0.5 truncate text-lg font-extrabold tracking-tight sm:text-2xl">{value}</p>
+      <p className="mt-0.5 truncate text-lg font-extrabold tracking-tight text-white sm:text-2xl">{value}</p>
     </div>
   );
 }
@@ -183,11 +186,11 @@ export function WishlistSummaryHeader({
               </span>
             )}
           </div>
-          <h1 className="text-3xl font-extrabold leading-tight tracking-tight sm:text-4xl">
+          <h1 className="text-3xl font-extrabold leading-tight tracking-tight text-white sm:text-4xl">
             My Wishlist
           </h1>
-          <p className="mt-1 max-w-md text-sm text-white/80">
-            Your pit-stop shelf of RC cars, parts and upgrades. Move them to the cart when you're ready to race.
+          <p className="mt-1 max-w-md text-sm text-white/90">
+            Products you've saved for later. Move them to the cart when you're ready to buy.
           </p>
         </div>
 
@@ -935,10 +938,10 @@ export function WishlistEmptyState() {
         <Heart className="wl-beat size-9 fill-primary" />
       </div>
       <h2 className="text-2xl font-extrabold tracking-tight text-foreground">
-        Your pit stop is empty
+        Your wishlist is empty
       </h2>
       <p className="mt-2 max-w-sm text-sm text-muted-foreground">
-        Tap the heart on any RC car or part to save it here. We'll keep it ready for your next race.
+        Tap the heart on any RC car or part to save it here. You can find it here anytime.
       </p>
       <Button
         asChild

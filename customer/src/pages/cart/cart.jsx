@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { useApi } from "@/core/contexts/api.context";
 import { Button } from "@/components/ui/button";
@@ -86,7 +86,7 @@ export default function Cart() {
     try {
       setIsClearing(true);
       await clearCart();
-      toast.success("Your garage cart has been cleared");
+      toast.success("Your cart has been cleared");
     } catch {
       toast.error("Failed to clear cart");
     } finally {
@@ -99,15 +99,6 @@ export default function Cart() {
   return (
     <div className="min-h-screen bg-background text-foreground pb-12">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
-
-        {/* ─── Breadcrumb Navigation ─── */}
-        <div className="flex items-center gap-1.5 text-xs text-muted-foreground flex-wrap">
-          <Link to="/profile" className="hover:text-primary transition-colors">
-            Your Account
-          </Link>
-          <span>›</span>
-          <span className="text-foreground font-bold">Shopping Cart</span>
-        </div>
 
         {/* ─── Checkout Stepper Progress ─── */}
         <CartStepper currentStep={1} />

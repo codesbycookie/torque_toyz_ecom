@@ -21,6 +21,36 @@ import {
 } from "@/components/ui/tooltip";
 
 
+// ─── High-Res Automotive Fallback Image Helper ──────────────
+const FALLBACK_CARS = [
+  "/cars/gt3_rs.jpg",
+  "/cars/redbull_f1.jpg",
+  "/cars/rx7_lbwk.jpg",
+  "/cars/bmw_m4_gt3.jpg",
+  "/cars/daytona_sp3.jpg",
+  "/cars/ferrari_499p.jpg",
+  "/cars/r34_gtr.jpg",
+  "/cars/shelby_cobra.jpg",
+];
+
+export const resolveProductImage = (img, seedKey = 0) => {
+  if (
+    !img ||
+    typeof img !== "string" ||
+    img.includes("placehold.co") ||
+    img.includes("text=Product")
+  ) {
+    const idx =
+      typeof seedKey === "string"
+        ? Math.abs(
+            seedKey.split("").reduce((acc, c) => acc + c.charCodeAt(0), 0)
+          ) % FALLBACK_CARS.length
+        : Math.abs(Number(seedKey || 0)) % FALLBACK_CARS.length;
+    return FALLBACK_CARS[idx];
+  }
+  return img;
+};
+
 // ─── Vertical Product List Card (shadcn style) ──────────────
 export function ProductListCard({
   product,
@@ -29,7 +59,7 @@ export function ProductListCard({
   isWishlisted = false,
 }) {
   const navigate = useNavigate();
-  const firstImage = product.images?.[0];
+  const firstImage = resolveProductImage(product.images?.[0], product._id || product.slug);
   const price = Number(product.price || 0);
   const isOutOfStock = product.stock <= 0;
 
@@ -191,7 +221,7 @@ export function AmazonProductCard({
   isWishlisted = false,
 }) {
   const navigate = useNavigate();
-  const firstImage = product.images?.[0];
+  const firstImage = resolveProductImage(product.images?.[0], product._id || product.slug);
   const price = Number(product.price || 0);
   const isOutOfStock = product.stock <= 0;
   const isWish = isWishlisted || Boolean(product?.is_in_wishlist);

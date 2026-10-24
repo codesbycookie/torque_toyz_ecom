@@ -1,5 +1,6 @@
 import Login from "@/pages/login/login";
 import Register from "@/pages/register/register";
+import ForgotPassword from "@/pages/forgot-password/forgot-password";
 import ProductDetail from "@/pages/product-detail/product-detail";
 import Home from "@/pages/home/home";
 import Product from "@/pages/product/product";
@@ -30,6 +31,11 @@ export const appRoutes = [
   {
     path: "/register",
     element: <Register />,
+    withLayout: false,
+  },
+  {
+    path: "/forgot-password",
+    element: <ForgotPassword />,
     withLayout: false,
   },
   {

@@ -6,6 +6,7 @@ import {
   logoutUser,
   adminResetPassword,
   changePassword,
+  resetPassword,
 } from './auth.controller.ts';
 
 import { authMiddleware } from '@core/middlewares/auth.middleware.ts';
@@ -17,6 +18,7 @@ import {
   registerSchema,
   changePasswordSchema,
   adminResetPasswordSchema,
+  resetPasswordSchema,
 } from './auth.validator.ts';
 
 const router = Router();
@@ -31,6 +33,12 @@ router.post(
   '/register',
   zodValidate(registerSchema, 'body', 'RegisterSchema'),
   registerUser
+);
+
+router.post(
+  '/reset-password',
+  zodValidate(resetPasswordSchema, 'body', 'ResetPasswordSchema'),
+  resetPassword
 );
 
 router.get('/me', authMiddleware, getCurrentUser);

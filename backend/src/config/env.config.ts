@@ -13,6 +13,10 @@ type ENVTYPE = {
   CLOUDINARY_CLOUD_NAME: string | undefined;
   CLOUDINARY_API_KEY: string | undefined;
   CLOUDINARY_API_SECRET: string | undefined;
+  EMAILJS_SERVICE_ID: string | undefined;
+  EMAILJS_TEMPLATE_ID: string | undefined;
+  EMAILJS_PUBLIC_KEY: string | undefined;
+  EMAILJS_PRIVATE_KEY: string | undefined;
 };
 
 export const ENV: ENVTYPE = {
@@ -26,6 +30,10 @@ export const ENV: ENVTYPE = {
   CLOUDINARY_CLOUD_NAME: process.env.CLOUDINARY_CLOUD_NAME,
   CLOUDINARY_API_KEY: process.env.CLOUDINARY_API_KEY,
   CLOUDINARY_API_SECRET: process.env.CLOUDINARY_API_SECRET,
+  EMAILJS_SERVICE_ID: process.env.EMAILJS_SERVICE_ID || 'service_6c4rj3o',
+  EMAILJS_TEMPLATE_ID: process.env.EMAILJS_TEMPLATE_ID || '',
+  EMAILJS_PUBLIC_KEY: process.env.EMAILJS_PUBLIC_KEY || 'uYySZeyRILTzH3PM7',
+  EMAILJS_PRIVATE_KEY: process.env.EMAILJS_PRIVATE_KEY || '',
 };
 
 export const ENVCONFIG = {

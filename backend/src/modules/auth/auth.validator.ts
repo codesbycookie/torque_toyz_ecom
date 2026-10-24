@@ -31,3 +31,10 @@ export const registerSchema = z.object({
   password: passwordSchema,
   acceptTerms: z.literal(true, { error: 'You must accept the terms and conditions' }),
 });
+
+export const resetPasswordSchema = z.object({
+  email: z.string().trim().email(),
+  code: z.string().length(6, 'OTP must be 6 digits').optional(),
+  newPassword: passwordSchema,
+});
+
