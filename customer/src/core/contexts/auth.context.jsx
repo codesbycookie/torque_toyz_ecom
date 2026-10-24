@@ -110,10 +110,14 @@ export const AuthProvider = ({ children }) => {
       const res = await crud.login(data, { __options: { toast: false } });
       if (!res) return;
 
+      if (res?.token) {
+        localStorage.setItem("access_token", res.token);
+      }
+
       const me = await crud.me({ __options: { toast: false, silent: true } });
 
       flushSync(() => {
-        setUser(me);
+        setUser(me || res);
       });
 
       resetLogoutState();
@@ -133,10 +137,14 @@ export const AuthProvider = ({ children }) => {
       const res = await crud.register(data, { __options: { toast: false } });
       if (!res) return;
 
+      if (res?.token) {
+        localStorage.setItem("access_token", res.token);
+      }
+
       const me = await crud.me({ __options: { toast: false, silent: true } });
 
       flushSync(() => {
-        setUser(me);
+        setUser(me || res);
       });
 
       toast.success("Registration successful");
@@ -150,9 +158,12 @@ export const AuthProvider = ({ children }) => {
 
   const logout = async () => {
     try {
+      localStorage.removeItem("access_token");
       await crud.logout();
     } catch {
       toast.error("Error during logout");
+    } finally {
+      localStorage.removeItem("access_token");
     }
 
     uiRef.clearModals?.();

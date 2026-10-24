@@ -1,13 +1,20 @@
 import axios from 'axios';
 
-const getBaseURL = () => {
-  return import.meta.env.VITE_BASE_URL || '/api/v1';
-};
-
 const api = axios.create({
-  baseURL: getBaseURL(),
+  baseURL: import.meta.env.VITE_BASE_URL || 'http://192.168.29.100:3000/api/v1',
   timeout: 15000,
   withCredentials: true,
+});
+
+api.interceptors.request.use((config) => {
+  if (typeof window !== 'undefined') {
+    const token = localStorage.getItem('access_token');
+    if (token) {
+      config.headers = config.headers || {};
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+  }
+  return config;
 });
 
 let isLoggingOut = false;

@@ -1,4 +1,4 @@
-const base_url = import.meta.env.VITE_BASE_URL || '/api/v1';
+const base_url = import.meta.env.VITE_BASE_URL || 'http://192.168.29.100:3000/api/v1';
 
 const apiurls = {
   auth: {

@@ -39,7 +39,8 @@ const controllers = {
       maxAge: rememberMe ? LONG_AGE : SHORT_AGE,
     });
 
-    return sendResponse.fetched(res, ENTITY.USER, user);
+    const userObj = user && typeof (user as any).toObject === 'function' ? (user as any).toObject() : { ...user };
+    return sendResponse.fetched(res, ENTITY.USER, { ...userObj, token });
   },
 
   registerUser: async (req: Request<{}, {}, RegisterPayload>, res: Response, next: NextFunction) => {
@@ -52,7 +53,8 @@ const controllers = {
       maxAge: LONG_AGE,
     });
 
-    return sendResponse.created(res, ENTITY.USER, user);
+    const userObj = user && typeof (user as any).toObject === 'function' ? (user as any).toObject() : { ...user };
+    return sendResponse.created(res, ENTITY.USER, { ...userObj, token });
   },
 
   getCurrentUser: async (req: Request, res: Response, next: NextFunction) => {
