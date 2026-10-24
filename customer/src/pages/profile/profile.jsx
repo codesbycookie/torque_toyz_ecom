@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '@/core/contexts/auth.context';
 import { useApi } from '@/core/contexts/api.context';
@@ -44,6 +44,7 @@ import {
   ShieldCheck,
   Calendar,
   Sparkles,
+  Camera,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
@@ -62,6 +63,113 @@ function getInitials(name, email) {
     return email.slice(0, 2).toUpperCase();
   }
   return 'TT';
+}
+
+const AVATAR_MAX_SIZE = 5 * 1024 * 1024; // 5MB
+const AVATAR_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+
+// Avatar with upload overlay
+function AvatarUploader({ user, onUploaded }) {
+  const { users } = useApi();
+  const inputRef = useRef(null);
+  const [preview, setPreview] = useState(null);
+  const [uploading, setUploading] = useState(false);
+
+  useEffect(() => () => preview && URL.revokeObjectURL(preview), [preview]);
+
+  const handleFile = async (e) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+
+    if (!AVATAR_TYPES.includes(file.type)) {
+      toast.error('Please choose a JPG, PNG, WEBP or GIF image.');
+      return;
+    }
+    if (file.size > AVATAR_MAX_SIZE) {
+      toast.error('Image must be smaller than 5MB.');
+      return;
+    }
+
+    const localUrl = URL.createObjectURL(file);
+    setPreview(localUrl);
+
+    const formData = new FormData();
+    formData.append('image', file);
+
+    try {
+      setUploading(true);
+      const updated = await users.edit(user._id, formData, { __options: { toast: false } });
+      if (updated) onUploaded?.(updated);
+      toast.success('Avatar updated!');
+    } catch {
+      // error toast handled by crud factory
+    } finally {
+      setUploading(false);
+      setPreview(null);
+    }
+  };
+
+  const src = preview || user.profile?.url;
+
+  return (
+    <div className="relative group shrink-0">
+      <div className="relative size-24 sm:size-26 rounded-2xl border-4 border-card bg-muted p-1 shadow-md ring-1 ring-border/80 flex items-center justify-center overflow-hidden bg-gradient-to-br from-neutral-800 to-neutral-950">
+        {src ? (
+          <img
+            src={src}
+            alt={user.name}
+            className={cn('w-full h-full object-cover rounded-xl transition-opacity', uploading && 'opacity-50')}
+          />
+        ) : (
+          <span className="text-2xl sm:text-3xl font-black text-primary font-mono tracking-wider">
+            {getInitials(user.name, user.email)}
+          </span>
+        )}
+
+        <button
+          id="profile-avatar-upload-btn"
+          type="button"
+          onClick={() => inputRef.current?.click()}
+          disabled={uploading}
+          aria-label="Change profile photo"
+          className={cn(
+            'absolute inset-1 rounded-xl flex flex-col items-center justify-center gap-1 bg-black/60 text-white text-[10px] font-semibold uppercase tracking-wider transition-opacity cursor-pointer',
+            uploading ? 'opacity-100' : 'opacity-0 group-hover:opacity-100 focus-visible:opacity-100'
+          )}
+        >
+          {uploading ? (
+            <Loader2 className="size-5 animate-spin" />
+          ) : (
+            <>
+              <Camera className="size-5" />
+              <span>{user.profile?.url ? 'Change' : 'Upload'}</span>
+            </>
+          )}
+        </button>
+      </div>
+
+      {/* Mobile-friendly camera badge */}
+      <button
+        type="button"
+        onClick={() => inputRef.current?.click()}
+        disabled={uploading}
+        aria-label="Upload profile photo"
+        className="absolute -bottom-1 -right-1 size-8 rounded-full bg-primary text-primary-foreground border-2 border-card shadow-md flex items-center justify-center hover:scale-110 transition-transform cursor-pointer disabled:opacity-60"
+      >
+        <Camera className="size-3.5" />
+      </button>
+
+      <input
+        id="profile-avatar-input"
+        ref={inputRef}
+        type="file"
+        accept={AVATAR_TYPES.join(',')}
+        className="hidden"
+        onChange={handleFile}
+      />
+    </div>
+  );
 }
 
 // Password update dialog modal
@@ -136,10 +244,10 @@ function ChangePasswordDialog({ onSubmit }) {
             <Lock className="size-5" />
           </div>
           <DialogTitle className="text-center text-lg font-bold text-foreground">
-            Change Garage Password
+            Change Password
           </DialogTitle>
           <DialogDescription className="text-center text-xs text-muted-foreground">
-            Enter your current security password and set a new one.
+            Enter your current password and choose a new one.
           </DialogDescription>
         </DialogHeader>
 
@@ -284,7 +392,7 @@ function ProfileSkeleton() {
 }
 
 export default function Profile() {
-  const { user, loading, changePassword, logout } = useAuth();
+  const { user, loading, changePassword, logout, setUser } = useAuth();
   const api = useApi();
 
   // Local storage stored addresses (same cache used in checkout & settings)
@@ -374,14 +482,14 @@ export default function Profile() {
           <div className="space-y-1">
             <h2 className="text-xl font-bold text-foreground">Sign In Required</h2>
             <p className="text-xs text-muted-foreground">
-              Please authenticate to access your collector profile and garage dispatches.
+              Please sign in to view your profile and orders.
             </p>
           </div>
           <Button
             asChild
             className="w-full rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground font-semibold text-xs h-10 shadow-xs"
           >
-            <Link to="/login">Sign In to Torque Toyzz</Link>
+            <Link to="/login">Sign In</Link>
           </Button>
         </div>
       </div>
@@ -398,26 +506,19 @@ export default function Profile() {
 
   const collectorId = user._id
     ? `TT-${user._id.slice(-6).toUpperCase()}`
-    : 'TT-COLLECTOR';
+    : 'TT-USER';
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
-      {/* ─── Breadcrumb & Title ─── */}
+      {/* ─── Page Title Strip ─── */}
       <div className="space-y-1">
-        <div className="flex items-center gap-1.5 text-xs text-muted-foreground font-medium">
-          <Link to="/" className="hover:text-foreground transition-colors">
-            Torque Toyzz
-          </Link>
-          <ChevronRight className="size-3" />
-          <span className="text-foreground font-semibold">Collector Profile</span>
-        </div>
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-1">
           <div>
             <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-foreground uppercase">
-              Collector Garage Profile
+              My Profile
             </h1>
             <p className="text-xs sm:text-sm text-muted-foreground">
-              Command dashboard for your personal fleet, shipment activity, and garage preferences
+              View your orders, wishlist, addresses and account details
             </p>
           </div>
 
@@ -430,7 +531,7 @@ export default function Profile() {
             >
               <Link to="/settings">
                 <SettingsIcon className="size-3.5 text-primary" />
-                <span>Garage Settings</span>
+                <span>Settings</span>
               </Link>
             </Button>
             <Button
@@ -447,37 +548,97 @@ export default function Profile() {
       </div>
 
       {/* ─── Collector Hero Profile Card ─── */}
-      <div className="rounded-2xl border border-border/80 bg-card overflow-hidden shadow-xs relative">
-        {/* Banner with subtle dark racing speed lines */}
-        <div className="h-28 sm:h-32 bg-gradient-to-r from-neutral-900 via-neutral-950 to-neutral-900 border-b border-border/80 relative overflow-hidden flex items-center justify-between px-6">
-          <div className="flex items-center gap-2 opacity-15 text-white font-black tracking-widest text-4xl select-none uppercase pointer-events-none">
-            <Car className="size-12" />
-            <span>TORQUE TOYZZ GARAGE</span>
+      <div className="rounded-2xl border border-border/80 bg-card overflow-hidden shadow-lg relative">
+        {/* High-Performance Automotive Collector Banner */}
+        <div className="relative h-44 sm:h-52 md:h-60 w-full overflow-hidden bg-neutral-950 border-b border-border/80 flex flex-col justify-between p-4 sm:p-6 select-none">
+          {/* Background Hypercar Image & Vignette */}
+          <div className="absolute inset-0 z-0">
+            <img
+              src="/cars/daytona_sp3.jpg"
+              alt="Torque Toyzz Garage"
+              className="w-full h-full object-cover object-[center_35%] filter brightness-[0.65] contrast-[1.1] scale-105"
+            />
+            {/* Multi-directional Gradient Overlay */}
+            <div className="absolute inset-0 bg-gradient-to-r from-neutral-950 via-neutral-950/85 to-neutral-950/25 sm:to-transparent" />
+            <div className="absolute inset-0 bg-gradient-to-t from-neutral-950 via-neutral-950/60 to-transparent" />
+            <div
+              className="absolute inset-0 opacity-40 pointer-events-none"
+              style={{
+                background:
+                  "radial-gradient(circle at 85% 20%, rgba(225, 29, 72, 0.45), transparent 60%)",
+              }}
+            />
+            {/* Subtle Carbon Fiber Pattern */}
+            <div
+              className="absolute inset-0 opacity-15 pointer-events-none"
+              style={{
+                backgroundImage:
+                  "repeating-linear-gradient(45deg, rgba(255,255,255,.05) 0 2px, transparent 2px 8px)",
+              }}
+            />
           </div>
-          <div className="hidden sm:flex items-center gap-2">
-            <Badge className="bg-primary/20 text-primary border border-primary/30 text-[10px] font-mono uppercase tracking-wider px-2.5 py-1">
-              {collectorId}
-            </Badge>
+
+          {/* Top Banner Row: Badges & Telemetry */}
+          <div className="relative z-10 flex items-center justify-between gap-2 flex-wrap">
+            <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 bg-neutral-900/90 backdrop-blur-md border border-white/10 px-3 py-1 rounded-full shadow-md text-xs text-neutral-200">
+                <span className="relative flex size-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                  <span className="relative inline-flex rounded-full size-2 bg-emerald-500" />
+                </span>
+                <span className="font-semibold tracking-wide text-[11px] sm:text-xs">
+                  VIP PADDOCK
+                </span>
+                <span className="text-white/30">•</span>
+                <span className="text-[10px] text-primary font-mono font-bold uppercase tracking-wider">
+                  VERIFIED COLLECTOR
+                </span>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <div className="hidden xs:flex items-center gap-1.5 bg-neutral-900/90 backdrop-blur-md border border-white/10 px-2.5 py-1 rounded-full text-[10px] font-mono uppercase font-bold text-neutral-300 shadow-md">
+                <Sparkles className="size-3 text-amber-400" />
+                <span>APEX TIER</span>
+              </div>
+              <Badge className="bg-primary text-primary-foreground border-transparent font-mono font-bold text-[10px] sm:text-xs tracking-wider px-2.5 py-1 shadow-md uppercase">
+                {collectorId}
+              </Badge>
+            </div>
           </div>
+
+          {/* Lower Banner Row: Automotive Watermark & Slogan */}
+          <div className="relative z-10 flex items-end justify-between">
+            <div className="space-y-0.5">
+              <div className="flex items-center gap-2 text-white/95">
+                <Car className="size-4 sm:size-5 text-primary stroke-[2.2]" />
+                <span className="font-heading font-black text-sm sm:text-lg tracking-wide uppercase">
+                  Collector Garage
+                </span>
+              </div>
+              <p className="text-[10px] sm:text-xs text-neutral-300 font-medium tracking-wide">
+                Engineered for speed, scale, and precision.
+              </p>
+            </div>
+
+            <div className="hidden sm:flex items-center gap-2 text-[10px] font-mono text-neutral-400 bg-neutral-950/70 backdrop-blur-sm border border-white/10 px-2.5 py-1 rounded-lg">
+              <span className="text-primary font-bold">100%</span>
+              <span>AUTHENTIC LICENSED</span>
+            </div>
+          </div>
+
+          {/* Racing Neon Redline Divider */}
+          <div className="absolute bottom-0 left-0 right-0 h-[2.5px] bg-gradient-to-r from-primary via-primary/90 to-transparent shadow-[0_0_12px_rgba(225,29,72,0.8)] z-10" />
         </div>
 
         {/* Profile Identity Bar */}
         <div className="p-5 sm:p-6 relative -mt-12 sm:-mt-14 flex flex-col sm:flex-row items-center sm:items-end justify-between gap-5">
           <div className="flex flex-col sm:flex-row items-center sm:items-end gap-4 text-center sm:text-left">
             {/* Avatar */}
-            <div className="size-24 sm:size-26 rounded-2xl border-4 border-card bg-muted p-1 shadow-md ring-1 ring-border/80 flex items-center justify-center shrink-0 overflow-hidden bg-gradient-to-br from-neutral-800 to-neutral-950">
-              {user.profile?.url ? (
-                <img
-                  src={user.profile.url}
-                  alt={user.name}
-                  className="w-full h-full object-cover rounded-xl"
-                />
-              ) : (
-                <span className="text-2xl sm:text-3xl font-black text-primary font-mono tracking-wider">
-                  {getInitials(user.name, user.email)}
-                </span>
-              )}
-            </div>
+            <AvatarUploader
+              user={user}
+              onUploaded={(updated) => setUser((prev) => ({ ...prev, ...updated }))}
+            />
 
             {/* User Meta */}
             <div className="space-y-1.5 pb-1">
@@ -486,7 +647,7 @@ export default function Profile() {
                   {user.name}
                 </h2>
                 <Badge className="bg-primary/10 text-primary border border-primary/20 text-[10px] font-bold uppercase tracking-wider">
-                  Verified Collector
+                  Verified Customer
                 </Badge>
                 {user.role && (
                   <Badge variant="outline" className="text-[10px] font-medium capitalize border-border/80 text-muted-foreground">
@@ -504,7 +665,7 @@ export default function Profile() {
                 <span>{user.email}</span>
                 <span className="flex items-center gap-1 font-mono text-[11px]">
                   <Calendar className="size-3 text-primary" />
-                  Pit Crew Since {joinedDate}
+                  Member since {joinedDate}
                 </span>
               </div>
             </div>
@@ -545,7 +706,7 @@ export default function Profile() {
           className="group rounded-2xl border border-border/80 bg-card p-4 sm:p-5 hover:border-primary/60 transition-all shadow-2xs flex flex-col justify-between cursor-pointer"
         >
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-muted-foreground">Total Fleet Orders</span>
+            <span className="text-xs font-semibold text-muted-foreground">Total Orders</span>
             <div className="size-8 rounded-xl bg-primary/10 border border-primary/20 text-primary flex items-center justify-center group-hover:scale-110 transition-transform">
               <Package className="size-4" />
             </div>
@@ -555,7 +716,7 @@ export default function Profile() {
               {totalOrdersCount}
             </div>
             <p className="text-[11px] text-muted-foreground mt-0.5">
-              Machines ordered all time
+              Orders placed so far
             </p>
           </div>
         </Link>
@@ -566,7 +727,7 @@ export default function Profile() {
           className="group rounded-2xl border border-border/80 bg-card p-4 sm:p-5 hover:border-primary/60 transition-all shadow-2xs flex flex-col justify-between cursor-pointer"
         >
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-muted-foreground">Active In Route</span>
+            <span className="text-xs font-semibold text-muted-foreground">Active Orders</span>
             <div className="size-8 rounded-xl bg-primary/10 border border-primary/20 text-primary flex items-center justify-center group-hover:scale-110 transition-transform">
               <Truck className="size-4" />
             </div>
@@ -576,7 +737,7 @@ export default function Profile() {
               {activeOrdersCount}
             </div>
             <p className="text-[11px] text-muted-foreground mt-0.5">
-              Dispatches currently in motion
+              Orders on the way
             </p>
           </div>
         </Link>
@@ -587,7 +748,7 @@ export default function Profile() {
           className="group rounded-2xl border border-border/80 bg-card p-4 sm:p-5 hover:border-primary/60 transition-all shadow-2xs flex flex-col justify-between cursor-pointer"
         >
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-muted-foreground">Garage Wishlist</span>
+            <span className="text-xs font-semibold text-muted-foreground">Wishlist</span>
             <div className="size-8 rounded-xl bg-primary/10 border border-primary/20 text-primary flex items-center justify-center group-hover:scale-110 transition-transform">
               <Heart className="size-4" />
             </div>
@@ -597,7 +758,7 @@ export default function Profile() {
               {wishlistCount}
             </div>
             <p className="text-[11px] text-muted-foreground mt-0.5">
-              Saved diecast models
+              Saved products
             </p>
           </div>
         </Link>
@@ -608,7 +769,7 @@ export default function Profile() {
           className="group rounded-2xl border border-border/80 bg-card p-4 sm:p-5 hover:border-primary/60 transition-all shadow-2xs flex flex-col justify-between cursor-pointer"
         >
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-muted-foreground">Delivery Bays</span>
+            <span className="text-xs font-semibold text-muted-foreground">Saved Addresses</span>
             <div className="size-8 rounded-xl bg-primary/10 border border-primary/20 text-primary flex items-center justify-center group-hover:scale-110 transition-transform">
               <MapPin className="size-4" />
             </div>
@@ -618,7 +779,7 @@ export default function Profile() {
               {savedAddresses.length}
             </div>
             <p className="text-[11px] text-muted-foreground mt-0.5">
-              Verified destination addresses
+              Delivery addresses
             </p>
           </div>
         </Link>
@@ -635,10 +796,10 @@ export default function Profile() {
                 <Package className="size-4 text-primary" />
                 <div>
                   <h3 className="text-sm sm:text-base font-bold text-foreground">
-                    Recent Fleet Dispatches
+                    Recent Orders
                   </h3>
                   <p className="text-xs text-muted-foreground">
-                    Latest diecast and RC shipments linked to your garage
+                    Your latest orders
                   </p>
                 </div>
               </div>
@@ -663,9 +824,9 @@ export default function Profile() {
                     <Car className="size-6" />
                   </div>
                   <div className="space-y-1">
-                    <p className="text-sm font-bold text-foreground">No orders in your fleet yet</p>
+                    <p className="text-sm font-bold text-foreground">No orders yet</p>
                     <p className="text-xs text-muted-foreground max-w-xs mx-auto">
-                      Explore our 1:18, 1:24, and 1:64 collector diecasts to start your garage!
+                      Browse our products to place your first order.
                     </p>
                   </div>
                   <Button
@@ -741,7 +902,7 @@ export default function Profile() {
                               </Badge>
                             </div>
                             <p className="text-[11px] text-muted-foreground truncate">
-                              {items.length} {items.length === 1 ? 'machine' : 'machines'} • Ordered on {orderDate}
+                              {items.length} {items.length === 1 ? 'item' : 'items'} • Ordered on {orderDate}
                             </p>
                             <p className="text-xs font-bold font-mono text-foreground">
                               ₹{orderTotal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
@@ -785,10 +946,10 @@ export default function Profile() {
                 <MapPin className="size-4 text-primary" />
                 <div>
                   <h3 className="text-sm sm:text-base font-bold text-foreground">
-                    Primary Dispatch Bay
+                    Default Address
                   </h3>
                   <p className="text-xs text-muted-foreground">
-                    Default shipping address for your diecast deliveries
+                    Your default shipping address
                   </p>
                 </div>
               </div>
@@ -815,7 +976,7 @@ export default function Profile() {
                         {primaryAddress.label || 'Primary Destination'}
                       </span>
                       <Badge className="bg-primary/10 text-primary border border-primary/20 text-[10px] font-semibold">
-                        Default Bay
+                        Default
                       </Badge>
                     </div>
 
@@ -842,7 +1003,7 @@ export default function Profile() {
                   <div className="space-y-1">
                     <p className="text-xs font-bold text-foreground">No Shipping Address Saved</p>
                     <p className="text-[11px] text-muted-foreground max-w-xs mx-auto">
-                      Add a shipping address to your garage so you can checkout quickly!
+                      Add a shipping address for faster checkout.
                     </p>
                   </div>
                   <Button
@@ -869,10 +1030,10 @@ export default function Profile() {
                 <ShieldCheck className="size-4 text-primary" />
                 <div>
                   <h3 className="text-sm font-bold text-foreground">
-                    Collector Credentials
+                    Account Details
                   </h3>
                   <p className="text-xs text-muted-foreground">
-                    Personal identity and contact info
+                    Your personal and contact information
                   </p>
                 </div>
               </div>
@@ -901,7 +1062,7 @@ export default function Profile() {
               <div className="flex items-center justify-between text-xs pt-3.5">
                 <span className="text-muted-foreground flex items-center gap-2">
                   <Shield className="size-3.5 text-primary" />
-                  <span>Handle</span>
+                  <span>Username</span>
                 </span>
                 <span className="font-mono font-bold text-foreground">
                   {user.username ? `@${user.username}` : 'Not set'}
@@ -927,10 +1088,10 @@ export default function Profile() {
               <div className="flex items-center justify-between text-xs pt-3.5">
                 <span className="text-muted-foreground flex items-center gap-2">
                   <Sparkles className="size-3.5 text-primary" />
-                  <span>Collector Tier</span>
+                  <span>Membership</span>
                 </span>
                 <Badge className="bg-primary/10 text-primary border border-primary/20 text-[10px] font-semibold">
-                  VIP Pit Crew Tier 1
+                  Standard Member
                 </Badge>
               </div>
             </div>
@@ -943,10 +1104,10 @@ export default function Profile() {
                 <Lock className="size-4 text-primary" />
                 <div>
                   <h3 className="text-sm font-bold text-foreground">
-                    Security & Credentials
+                    Security
                   </h3>
                   <p className="text-xs text-muted-foreground">
-                    Password protection & active sessions
+                    Manage your password
                   </p>
                 </div>
               </div>
@@ -965,10 +1126,10 @@ export default function Profile() {
               <div className="rounded-xl border border-border/80 bg-muted/20 p-3.5 space-y-2">
                 <div className="flex items-center gap-2 text-xs font-bold text-foreground">
                   <CheckCircle2 className="size-3.5 text-primary" />
-                  <span>Two-Factor Protection Ready</span>
+                  <span>Your account is secure</span>
                 </div>
                 <p className="text-[11px] text-muted-foreground leading-relaxed">
-                  Your credentials are guarded by encrypted token authentication across all Torque Toyzz sessions.
+                  Your login is protected with encrypted authentication.
                 </p>
               </div>
             </div>
@@ -979,7 +1140,7 @@ export default function Profile() {
             <div className="flex items-center gap-2">
               <Sparkles className="size-4 text-primary" />
               <h3 className="text-xs font-bold text-foreground uppercase tracking-wider">
-                Garage Quick Commands
+                Quick Links
               </h3>
             </div>
 
@@ -993,7 +1154,7 @@ export default function Profile() {
                 <Link to="/products">
                   <div className="flex items-center gap-2">
                     <Car className="size-3.5 text-primary" />
-                    <span>Explore Diecast Catalog</span>
+                    <span>Browse Products</span>
                   </div>
                   <ChevronRight className="size-3 opacity-60" />
                 </Link>
@@ -1008,7 +1169,7 @@ export default function Profile() {
                 <Link to="/orders">
                   <div className="flex items-center gap-2">
                     <Truck className="size-3.5 text-primary" />
-                    <span>Track All Dispatches</span>
+                    <span>Track All Orders</span>
                   </div>
                   <ChevronRight className="size-3 opacity-60" />
                 </Link>
@@ -1023,7 +1184,7 @@ export default function Profile() {
                 <Link to="/settings">
                   <div className="flex items-center gap-2">
                     <SettingsIcon className="size-3.5 text-primary" />
-                    <span>Configure Garage Settings</span>
+                    <span>Account Settings</span>
                   </div>
                   <ChevronRight className="size-3 opacity-60" />
                 </Link>
