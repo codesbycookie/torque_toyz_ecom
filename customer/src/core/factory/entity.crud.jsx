@@ -184,8 +184,13 @@ export const createCrud = ({ entity, urls, store, getRole }) => {
 
         return data;
       } catch (err) {
+        const shouldToast =
+          callOptions.error !== false &&
+          !callOptions.silent;
+
         handleApiError(err, `Failed to ${key} ${entity}`, {
-          toast: callOptions.error !== false,
+          toast: shouldToast,
+          silent: callOptions.silent === true,
         });
 
         throw err;

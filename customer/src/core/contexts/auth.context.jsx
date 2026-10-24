@@ -9,7 +9,7 @@ import {
 import { useLocation, useNavigate } from "react-router-dom";
 import { apiurls } from "../api/api.urls";
 import { createCrud } from "../factory/entity.crud";
-import { setupInterceptors } from "../api/api.service";
+import { setupInterceptors, resetLogoutState } from "../api/api.service";
 import { flushSync } from "react-dom";
 import { uiRef } from "../bridge/ui.ref";
 import { toast } from "sonner";
@@ -46,6 +46,11 @@ export const AuthProvider = ({ children }) => {
     [],
   );
 
+  const otpCrud = useMemo(
+    () => createCrud({ entity: "Otp", urls: apiurls.otps, store: null }),
+    [],
+  );
+
   useEffect(() => {
     setupInterceptors((message) => {
       uiRef.clearModals?.();
@@ -53,8 +58,16 @@ export const AuthProvider = ({ children }) => {
         setUser(null);
       });
 
-      navigateRef.current("/login");
-      toast.error(message);
+      const currentPath = locationRef.current?.pathname;
+      const isPublicAuthPage =
+        currentPath === "/login" ||
+        currentPath === "/register" ||
+        currentPath === "/forgot-password";
+
+      if (!isPublicAuthPage) {
+        navigateRef.current("/login");
+        toast.error(message);
+      }
     });
   }, []);
 
@@ -97,12 +110,13 @@ export const AuthProvider = ({ children }) => {
       const res = await crud.login(data, { __options: { toast: false } });
       if (!res) return;
 
-      const me = await crud.me({ __options: { toast: false } });
+      const me = await crud.me({ __options: { toast: false, silent: true } });
 
       flushSync(() => {
         setUser(me);
       });
 
+      resetLogoutState();
       toast.success("Login successful");
       navigate("/");
     } catch (err) {
@@ -119,7 +133,7 @@ export const AuthProvider = ({ children }) => {
       const res = await crud.register(data, { __options: { toast: false } });
       if (!res) return;
 
-      const me = await crud.me({ __options: { toast: false } });
+      const me = await crud.me({ __options: { toast: false, silent: true } });
 
       flushSync(() => {
         setUser(me);
@@ -167,6 +181,50 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  const sendPasswordResetOtp = async (email) => {
+    try {
+      const res = await otpCrud.send({
+        email,
+        purpose: "password_reset",
+      });
+      toast.success("Verification code sent to your email!");
+      return res;
+    } catch (err) {
+      handleApiError(err);
+      throw err;
+    }
+  };
+
+  const verifyPasswordResetOtp = async (email, code) => {
+    try {
+      const res = await otpCrud.verify({
+        email,
+        code,
+        purpose: "password_reset",
+      });
+      toast.success("Code verified successfully!");
+      return res;
+    } catch (err) {
+      handleApiError(err);
+      throw err;
+    }
+  };
+
+  const resetPassword = async (email, code, newPassword) => {
+    try {
+      const res = await crud.resetPassword({
+        email,
+        code,
+        newPassword,
+      });
+      toast.success("Password reset successfully! Please sign in.");
+      return res;
+    } catch (err) {
+      handleApiError(err);
+      throw err;
+    }
+  };
+
   return (
     <AuthContext.Provider
       value={{
@@ -179,6 +237,9 @@ export const AuthProvider = ({ children }) => {
         login,
         register,
         changePassword,
+        sendPasswordResetOtp,
+        verifyPasswordResetOtp,
+        resetPassword,
         logout,
         setUser,
       }}

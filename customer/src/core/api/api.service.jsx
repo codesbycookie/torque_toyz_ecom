@@ -25,12 +25,12 @@ export const setupInterceptors = (onUnauthorized) => {
     (error) => {
       if (error.response?.status === 401) {
         const url = error.config?.url || '';
-        const isAuthCheck = url.includes('/auth/me');
+        const isAuthCheck = url.includes('/auth/me') || url.includes('/auths/me');
         const isExplicitSilent = error.config?.__options?.silent || error.config?.silent;
         const isAuthPage = typeof window !== 'undefined' && 
-          (window.location.pathname === '/login' || window.location.pathname === '/register');
+          (window.location.pathname === '/login' || window.location.pathname === '/register' || window.location.pathname === '/forgot-password');
 
-        // Do not trigger session expiry toast for routine initial auth check or if already on login/register
+        // Do not trigger session expiry toast for routine initial auth check or if already on auth pages
         if (isAuthCheck || isExplicitSilent || isAuthPage) {
           return Promise.reject(error);
         }
