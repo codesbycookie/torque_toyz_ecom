@@ -42,11 +42,14 @@ import {
   ChevronRight,
   Car,
   ShieldCheck,
+  Sparkles,
   Calendar,
   Camera,
+  Sun,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import { ThemeSegmented } from '@/components/global/theme-toggle';
 
 // Helper to extract initials
 function getInitials(name, email) {
@@ -408,10 +411,10 @@ export default function Profile() {
   useEffect(() => {
     if (user) {
       if (api.orders?.getMine) {
-        api.orders.getMine({ page: 1, limit: 3, sortBy: 'createdAt', order: 'desc' }).catch(() => {});
+        api.orders.getMine({ page: 1, limit: 3, sortBy: 'createdAt', order: 'desc' }).catch(() => { });
       }
       if (api.wishlist?.fetchAll) {
-        api.wishlist.fetchAll().catch?.(() => {});
+        api.wishlist.fetchAll().catch?.(() => { });
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -500,9 +503,9 @@ export default function Profile() {
   // Format joined date
   const joinedDate = user.createdAt
     ? new Date(user.createdAt).toLocaleDateString('en-IN', {
-        month: 'short',
-        year: 'numeric',
-      })
+      month: 'short',
+      year: 'numeric',
+    })
     : '2024';
 
   const collectorId = user._id
@@ -784,10 +787,10 @@ export default function Profile() {
                       order.code || (order._id ? order._id.slice(-8).toUpperCase() : 'ORD');
                     const orderDate = order.createdAt
                       ? new Date(order.createdAt).toLocaleDateString('en-IN', {
-                          day: 'numeric',
-                          month: 'short',
-                          year: 'numeric',
-                        })
+                        day: 'numeric',
+                        month: 'short',
+                        year: 'numeric',
+                      })
                       : 'Recent';
                     const orderTotal = Number(order.pricing?.total || order.total || 0);
                     const items = order.items || order.products || [];
@@ -1029,6 +1032,14 @@ export default function Profile() {
                 <Badge className="bg-primary/10 text-primary border border-primary/20 text-[10px] font-semibold">
                   Standard Member
                 </Badge>
+              </div>
+
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 text-xs pt-3.5 border-t border-border/70">
+                <span className="text-muted-foreground flex items-center gap-2">
+                  <Sun className="size-3.5 text-primary" />
+                  <span>Theme (Dark / Light)</span>
+                </span>
+                <ThemeSegmented />
               </div>
             </div>
           </div>

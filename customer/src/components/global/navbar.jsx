@@ -53,6 +53,7 @@ import { useAuth } from "@/core/contexts/auth.context";
 import { useApi } from "@/core/contexts/api.context";
 import { useEcom } from "@/core/contexts/ecom.context";
 import { cn } from "@/lib/utils";
+import { ThemeToggle, ThemeSegmented } from "@/components/global/theme-toggle";
 
 // Curated trending queries for command autocomplete
 const POPULAR_SEARCHES = [
@@ -630,6 +631,9 @@ export default function Navbar() {
             </Button>
           </Link>
 
+          {/* Dark / Light Mode Toggle */}
+          <ThemeToggle className="hidden sm:inline-flex" />
+
           {/* Cart Button */}
           <Link
             to="/cart"
@@ -781,6 +785,12 @@ export default function Navbar() {
                 <ChevronRight className="size-4 opacity-50" />
               </Link>
             )}
+          </div>
+
+          {/* Mobile Theme Preference */}
+          <div className="pt-2 border-t border-border flex items-center justify-between px-3.5 py-1">
+            <span className="text-xs font-semibold text-muted-foreground">Appearance</span>
+            <ThemeSegmented />
           </div>
 
           {/* Mobile User Profile Footer */}

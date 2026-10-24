@@ -34,6 +34,7 @@ import {
   SavedAddressCard,
 } from "@/pages/checkout/shipping-address.components";
 import { cn } from "@/lib/utils";
+import { ThemeSegmented } from "@/components/global/theme-toggle";
 
 export default function Settings() {
   const { user, setUser, changePassword } = useAuth();
@@ -109,16 +110,18 @@ export default function Settings() {
     if (user) {
       if (Array.isArray(user.addresses)) {
         user.addresses.forEach((ua) => {
-          const id = ua._id || ua.id;
-          if (id && !combined.some((c) => (c._id || c.id) === id)) {
-            combined.unshift(ua);
+          const id = ua?._id ? String(ua._id) : (ua?.id ? String(ua.id) : "");
+          if (id && !combined.some((c) => String(c?._id || c?.id) === id)) {
+            combined.unshift({ ...ua, id, _id: id });
           }
         });
       }
 
-      if (user.address && user.address.state && !combined.some((c) => c.id === "profile_default")) {
+      if (user.address && user.address.state && !combined.some((c) => String(c?.id || c?._id) === "profile_default")) {
+        const stateVal = typeof user.address.state === "object" ? String(user.address.state._id || "") : String(user.address.state);
         combined.unshift({
           id: "profile_default",
+          _id: "profile_default",
           label: "Primary Profile",
           name: user.name || "Default Contact",
           firstName: user.name ? user.name.split(" ")[0] : "",
@@ -128,7 +131,7 @@ export default function Settings() {
           door: user.address.door || "",
           street: user.address.street || "",
           city: user.address.city || "",
-          state: user.address.state,
+          state: stateVal,
           zip: user.address.pincode ? String(user.address.pincode) : "",
           pincode: user.address.pincode || 0,
           isDefault: true,
@@ -349,6 +352,10 @@ export default function Settings() {
                     <span className="font-bold text-foreground font-mono">
                       {savedAddresses.length} {savedAddresses.length === 1 ? "address" : "addresses"}
                     </span>
+                  </div>
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 pt-1">
+                    <span>Appearance</span>
+                    <ThemeSegmented />
                   </div>
                 </div>
 
