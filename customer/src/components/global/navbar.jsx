@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useMemo } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import {
@@ -10,7 +10,6 @@ import {
   X,
   Package,
   Settings,
-  Home,
   ShoppingBag,
   LogOut,
   ChevronDown,
@@ -19,8 +18,10 @@ import {
   ArrowUpRight,
   Sparkles,
   Car,
-  Clock,
   Compass,
+  Zap,
+  ShieldCheck,
+  Layers,
 } from "lucide-react";
 import {
   Command,
@@ -46,7 +47,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/core/contexts/auth.context";
 import { useApi } from "@/core/contexts/api.context";
@@ -60,14 +61,13 @@ const POPULAR_SEARCHES = [
   "1:18 Diecast Models",
   "RC Drift Cars 4WD",
   "Formula 1 Diecast",
-  "Lamborghini Aventador",
+  "Lamborghini Aventador SVJ",
 ];
 
 export default function Navbar() {
   const { user, logout } = useAuth();
   const api = useApi();
   const ecom = useEcom();
-  const bannerText = ecom?.bannerText;
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -76,21 +76,31 @@ export default function Navbar() {
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [isCommandOpen, setIsCommandOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [isScrolled, setIsScrolled] = useState(false);
 
   const searchContainerRef = useRef(null);
   const inputRef = useRef(null);
 
-  // Store lists
+  // Store lists accessed strictly via useApi()
   const categoriesList = api.categories?.list || [];
   const productsList = api.products?.list || [];
   const cartItemCount = api.cart?.items?.length || 0;
   const wishlistItemCount = api.wishlist?.list?.length || 0;
 
-  // Fetch initial cart, wishlist, categories
+  // Initial fetch for store data
   useEffect(() => {
     api.cart?.fetchCart?.();
     api.wishlist?.fetchAll?.();
     api.categories?.getAll?.({ limit: 50, active: true });
+  }, []);
+
+  // Track scroll for subtle dynamic elevation
+  useEffect(() => {
+    const handleScroll = () => {
+      setIsScrolled(window.scrollY > 15);
+    };
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
   // Sync search input & category with URL params
@@ -104,13 +114,13 @@ export default function Navbar() {
 
     if (cat) setSelectedCategory(cat);
     else setSelectedCategory("all");
-  }, [location]);
+  }, [location.search, location.pathname]);
 
   // Close menus on route change
   useEffect(() => {
     setMobileMenuOpen(false);
     setIsCommandOpen(false);
-  }, [location]);
+  }, [location.pathname, location.search]);
 
   // Click outside listener for command palette
   useEffect(() => {
@@ -178,8 +188,10 @@ export default function Navbar() {
 
   const handleSelectProduct = (product) => {
     setIsCommandOpen(false);
-    if (product?._id) {
-      navigate(`/products/${product.slug || product._id}`);
+    if (product?.slug) {
+      navigate(`/products/${product.slug}`);
+    } else if (product?._id) {
+      navigate(`/products/${product._id}`);
     } else {
       handleSelectSearch(product.name);
     }
@@ -191,19 +203,24 @@ export default function Navbar() {
   };
 
   // Filter products for live suggestions
-  const matchingProducts = searchQuery.trim()
-    ? productsList
-        .filter((p) =>
-          p.name?.toLowerCase().includes(searchQuery.toLowerCase().trim())
-        )
-        .slice(0, 4)
-    : [];
+  const matchingProducts = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+    if (!q) return [];
+    return productsList
+      .filter(
+        (p) =>
+          p.name?.toLowerCase().includes(q) ||
+          p.brand?.toLowerCase().includes(q) ||
+          p.scale?.toLowerCase().includes(q)
+      )
+      .slice(0, 4);
+  }, [productsList, searchQuery]);
 
   const selectedCategoryName =
     selectedCategory === "all"
-      ? "All Toyzz"
+      ? "All Categories"
       : categoriesList.find((c) => (c._id || c.id) === selectedCategory)?.name ||
-        "All Toyzz";
+        "All Categories";
 
   // Initials for avatar
   const userInitials = user?.name
@@ -218,63 +235,60 @@ export default function Navbar() {
     : "TT";
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-border/80 bg-background/95 backdrop-blur-md supports-[backdrop-filter]:bg-background/85 shadow-2xs">
-      {/* Main Navbar with Amazon-Style Horizontal Command Layout */}
-      <div className="container mx-auto flex h-18 items-center justify-between px-3 sm:px-6 lg:px-8 gap-2 sm:gap-4">
+    <header
+      className={cn(
+        "sticky top-0 z-50 w-full transition-all duration-200 border-b",
+        isScrolled
+          ? "bg-background/95 backdrop-blur-xl border-border/80 shadow-[0_10px_30px_-15px_rgba(0,0,0,0.5)]"
+          : "bg-background/90 backdrop-blur-md border-border/60 shadow-xs"
+      )}
+    >
+      {/* ─── MAIN NAVBAR: HORIZONTAL LAYOUT ─── */}
+      <div className="container mx-auto flex h-16 sm:h-17 items-center justify-between px-3 sm:px-6 lg:px-8 gap-2 sm:gap-4 lg:gap-6">
         {/* Left: Brand Logo & Title */}
         <Link
           to="/"
           className="flex items-center gap-2.5 sm:gap-3 group shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-xl p-1"
         >
-          <div className="relative size-10 sm:size-12 rounded-xl bg-gradient-to-br from-neutral-900 via-neutral-950 to-neutral-900 p-1 border border-border/80 shadow-md ring-1 ring-white/5 group-hover:border-primary/60 group-hover:ring-primary/30 transition-all duration-300 flex items-center justify-center overflow-hidden">
+          <div className="relative size-9 sm:size-10 rounded-xl bg-neutral-900/60 p-1 border border-border/80 shadow-xs group-hover:border-primary/50 transition-all flex items-center justify-center overflow-hidden shrink-0">
             <img
               src="/logo.png"
               alt="Torque Toyzz"
-              className="w-full h-full object-contain filter group-hover:scale-108 transition-transform duration-300 drop-shadow-sm"
+              className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-200"
             />
           </div>
-          <div className="flex flex-col text-left">
-            <div className="flex items-center gap-1 font-black text-lg sm:text-2xl tracking-tighter uppercase leading-none">
-              <span className="text-foreground">TORQUE</span>
-              <span className="text-primary italic font-black">TOYZZ</span>
-            </div>
-            <span className="text-[8.5px] sm:text-[9.5px] uppercase tracking-[0.22em] font-extrabold text-muted-foreground group-hover:text-primary transition-colors duration-200 mt-1">
-              Engineered for Fun
-            </span>
-          </div>
+          <span className="font-heading font-bold text-lg sm:text-xl tracking-tight text-foreground select-none">
+            Torque <span className="text-primary font-bold">Toyzz</span>
+          </span>
         </Link>
 
-        {/* ========================================================
-            AMAZON-STYLE HORIZONTAL COMMAND SEARCH BAR
-            Takes the primary middle width:
-            [ Category Dropdown ▼ | Command Input (⌘K) | 🔍 Search Button ]
-            ======================================================== */}
+        {/* ─── CENTER: INTEGRATED COMMAND SEARCH BAR ─── */}
         <div
           ref={searchContainerRef}
-          className="relative hidden md:flex flex-1 max-w-xl lg:max-w-2xl xl:max-w-3xl mx-2 lg:mx-6"
+          className="relative hidden md:flex flex-1 max-w-xl lg:max-w-2xl xl:max-w-3xl mx-2 lg:mx-4"
         >
           <form
             onSubmit={handleSearchSubmit}
-            className="flex items-stretch w-full h-10.5 rounded-xl border border-border/80 bg-card/60 hover:border-border focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/25 shadow-2xs transition-all overflow-hidden"
+            className="flex items-stretch w-full h-10.5 rounded-xl border border-border/80 bg-card/60 hover:border-border focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/25 shadow-xs transition-all overflow-hidden"
           >
-            {/* Left: Amazon Category Selector (shadcn Select) */}
-            <div className="shrink-0 border-r border-border/80 bg-muted/60 hover:bg-muted/90 transition-colors flex items-center">
+            {/* Left: Category Selector */}
+            <div className="shrink-0 border-r border-border/80 bg-muted/40 hover:bg-muted/70 transition-colors flex items-center">
               <Select
                 value={selectedCategory}
                 onValueChange={(val) => setSelectedCategory(val)}
               >
                 <SelectTrigger
                   aria-label="Select Category"
-                  className="h-full border-0 rounded-none bg-transparent shadow-none px-3 py-0 text-xs font-semibold text-foreground focus-visible:ring-0 focus:outline-none max-w-[135px] gap-1 cursor-pointer data-[state=open]:bg-muted"
+                  className="h-full border-0 rounded-none bg-transparent shadow-none px-3 py-0 text-xs font-medium text-foreground/85 focus-visible:ring-0 focus:outline-none max-w-[135px] gap-1 cursor-pointer data-[state=open]:bg-muted"
                 >
-                  <SelectValue placeholder="All Toyzz" />
+                  <SelectValue placeholder="All Categories" />
                 </SelectTrigger>
                 <SelectContent
                   align="start"
-                  className="w-52 rounded-xl border border-border shadow-xl z-50 bg-popover/95 backdrop-blur-md"
+                  className="w-56 rounded-xl border border-border shadow-2xl z-50 bg-popover/95 backdrop-blur-xl p-1"
                 >
                   <SelectItem value="all" className="text-xs font-medium cursor-pointer">
-                    All Toyzz
+                    All Categories
                   </SelectItem>
                   {categoriesList.map((cat) => (
                     <SelectItem
@@ -289,9 +303,9 @@ export default function Navbar() {
               </Select>
             </div>
 
-            {/* Middle: Command Input */}
-            <div className="relative flex-1 flex items-center min-w-0 bg-background/80">
-              <Search className="absolute left-3 size-4 text-muted-foreground pointer-events-none" />
+            {/* Middle: Command Search Input */}
+            <div className="relative flex-1 flex items-center min-w-0 bg-background/90">
+              <Search className="absolute left-3.5 size-4 text-muted-foreground pointer-events-none" />
               <input
                 ref={inputRef}
                 type="text"
@@ -302,11 +316,11 @@ export default function Navbar() {
                 }}
                 onFocus={() => setIsCommandOpen(true)}
                 placeholder={
-                  selectedCategoryName === "All Toyzz"
-                    ? "Search diecast models, RC cars, brands, scales..."
+                  selectedCategoryName === "All Categories"
+                    ? "Search diecast supercars, RC drift, 1:18, brands..."
                     : `Search in ${selectedCategoryName}...`
                 }
-                className="w-full h-full pl-9 pr-14 text-xs sm:text-sm bg-transparent text-foreground placeholder:text-muted-foreground/70 outline-none"
+                className="w-full h-full pl-10 pr-14 text-xs sm:text-sm bg-transparent text-foreground placeholder:text-muted-foreground/60 outline-none font-normal"
               />
               {searchQuery ? (
                 <button
@@ -315,59 +329,63 @@ export default function Navbar() {
                     setSearchQuery("");
                     inputRef.current?.focus();
                   }}
-                  className="absolute right-3 text-muted-foreground hover:text-foreground cursor-pointer"
+                  className="absolute right-3.5 text-muted-foreground hover:text-foreground cursor-pointer p-0.5 rounded transition-colors"
+                  aria-label="Clear search"
                 >
                   <X className="size-3.5" />
                 </button>
               ) : (
-                <kbd className="hidden lg:inline-flex absolute right-3 pointer-events-none items-center gap-0.5 rounded border border-border bg-muted/50 px-1.5 py-0.5 text-[10px] font-mono text-muted-foreground shadow-2xs">
+                <kbd className="hidden lg:inline-flex absolute right-3 pointer-events-none items-center gap-0.5 rounded-md border border-border bg-muted/60 px-1.5 py-0.5 text-[10px] font-mono text-muted-foreground shadow-2xs">
                   ⌘K
                 </kbd>
               )}
             </div>
 
-            {/* Right: Signature Brand Red Search Button */}
+            {/* Right: Modern Search Action Button */}
             <button
               type="submit"
-              className="bg-primary hover:bg-primary/90 text-primary-foreground px-4 sm:px-5 flex items-center justify-center shrink-0 transition-colors cursor-pointer group"
+              className="bg-primary hover:bg-primary/90 text-primary-foreground px-4 sm:px-5 flex items-center justify-center gap-1.5 shrink-0 transition-all cursor-pointer font-heading font-semibold text-xs tracking-wide active:scale-98 shadow-sm group"
               aria-label="Search"
             >
-              <Search className="size-4.5 stroke-[2.5] group-hover:scale-110 transition-transform" />
+              <Search className="size-3.5 stroke-[2.4] group-hover:scale-110 transition-transform" />
+              <span className="hidden xl:inline text-xs font-semibold">
+                Search
+              </span>
             </button>
           </form>
 
           {/* Connected Command Autocomplete Dropdown */}
           {isCommandOpen && (
-            <div className="absolute top-full left-0 right-0 mt-2 z-50 rounded-xl border border-border/80 bg-popover/95 backdrop-blur-xl shadow-2xl overflow-hidden animate-in fade-in-0 zoom-in-98 duration-150">
+            <div className="absolute top-full left-0 right-0 mt-2 z-50 rounded-2xl border border-border/80 bg-popover/98 backdrop-blur-2xl shadow-2xl overflow-hidden animate-in fade-in-0 zoom-in-98 duration-150">
               <Command className="bg-transparent">
-                <CommandList className="max-h-[380px] p-2">
-                  {/* 1. Matching Products if query is typed */}
+                <CommandList className="max-h-[390px] p-2 text-foreground">
+                  {/* 1. Live Matching Products */}
                   {matchingProducts.length > 0 && (
-                    <CommandGroup heading="Matching Products">
+                    <CommandGroup heading="Matching Scale Models" className="text-muted-foreground font-semibold">
                       {matchingProducts.map((item) => (
                         <CommandItem
                           key={item._id}
                           onSelect={() => handleSelectProduct(item)}
-                          className="flex items-center gap-3 p-2 rounded-lg cursor-pointer hover:bg-muted/80 transition-colors"
+                          className="flex items-center gap-3 p-2 rounded-xl cursor-pointer hover:bg-muted/80 transition-colors"
                         >
                           <img
                             src={
                               item.images?.[0] ||
                               item.image ||
-                              "/logo.png"
+                              "/cars/gt3_rs.jpg"
                             }
                             alt={item.name}
-                            className="size-9 rounded-md object-cover bg-muted border border-border shrink-0"
+                            className="size-10 rounded-lg object-cover bg-muted border border-border/70 shrink-0"
                           />
                           <div className="flex-1 min-w-0 text-left">
-                            <p className="text-xs font-semibold text-foreground truncate">
+                            <p className="text-xs font-bold text-foreground truncate">
                               {item.name}
                             </p>
                             <p className="text-[11px] text-muted-foreground">
-                              {item.scale || item.brand || "Torque Collectible"}
+                              {item.scale || item.brand || "Scale Model"} • {item.category?.name || "General"}
                             </p>
                           </div>
-                          <span className="text-xs font-bold text-primary shrink-0">
+                          <span className="text-xs font-mono font-black text-primary shrink-0 pl-2">
                             ₹{Number(item.price || 0).toLocaleString()}
                           </span>
                         </CommandItem>
@@ -377,14 +395,14 @@ export default function Navbar() {
                   )}
 
                   {/* 2. Trending Searches */}
-                  <CommandGroup heading="Trending Searches">
+                  <CommandGroup heading="Trending Searches" className="text-muted-foreground font-semibold">
                     {POPULAR_SEARCHES.map((query) => (
                       <CommandItem
                         key={query}
                         onSelect={() => handleSelectSearch(query)}
-                        className="flex items-center justify-between text-xs py-2 px-2.5 rounded-lg cursor-pointer hover:bg-muted/80"
+                        className="flex items-center justify-between text-xs py-2 px-2.5 rounded-xl cursor-pointer hover:bg-muted/80"
                       >
-                        <div className="flex items-center gap-2 text-foreground">
+                        <div className="flex items-center gap-2 text-foreground font-medium">
                           <Flame className="size-3.5 text-primary" />
                           <span>{query}</span>
                         </div>
@@ -396,18 +414,18 @@ export default function Navbar() {
                   <CommandSeparator className="my-1.5" />
 
                   {/* 3. Browse Categories */}
-                  <CommandGroup heading="Explore Categories">
+                  <CommandGroup heading="Explore Categories" className="text-muted-foreground font-semibold">
                     {categoriesList.slice(0, 5).map((cat) => (
                       <CommandItem
                         key={cat._id || cat.id}
                         onSelect={() => handleSelectCategory(cat._id || cat.id)}
-                        className="flex items-center justify-between text-xs py-2 px-2.5 rounded-lg cursor-pointer hover:bg-muted/80"
+                        className="flex items-center justify-between text-xs py-2 px-2.5 rounded-xl cursor-pointer hover:bg-muted/80"
                       >
-                        <div className="flex items-center gap-2 text-foreground">
+                        <div className="flex items-center gap-2 text-foreground font-medium">
                           <Car className="size-3.5 text-muted-foreground" />
                           <span>{cat.name}</span>
                         </div>
-                        <span className="text-[10px] text-muted-foreground">
+                        <span className="text-[10px] text-muted-foreground font-mono">
                           Category
                         </span>
                       </CommandItem>
@@ -417,12 +435,12 @@ export default function Navbar() {
                   <CommandSeparator className="my-1.5" />
 
                   {/* 4. Quick Navigation */}
-                  <CommandGroup heading="Quick Navigation">
+                  <CommandGroup heading="Quick Navigation" className="text-muted-foreground font-semibold">
                     <CommandItem
                       onSelect={() => handleNavigate("/products")}
-                      className="flex items-center justify-between text-xs py-1.5 px-2.5 rounded-lg cursor-pointer hover:bg-muted/80"
+                      className="flex items-center justify-between text-xs py-1.5 px-2.5 rounded-xl cursor-pointer hover:bg-muted/80"
                     >
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 text-foreground">
                         <Compass className="size-3.5 text-muted-foreground" />
                         <span>All Products Catalog</span>
                       </div>
@@ -430,9 +448,9 @@ export default function Navbar() {
                     </CommandItem>
                     <CommandItem
                       onSelect={() => handleNavigate("/cart")}
-                      className="flex items-center justify-between text-xs py-1.5 px-2.5 rounded-lg cursor-pointer hover:bg-muted/80"
+                      className="flex items-center justify-between text-xs py-1.5 px-2.5 rounded-xl cursor-pointer hover:bg-muted/80"
                     >
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 text-foreground">
                         <ShoppingCart className="size-3.5 text-muted-foreground" />
                         <span>Shopping Cart ({cartItemCount})</span>
                       </div>
@@ -440,19 +458,19 @@ export default function Navbar() {
                     </CommandItem>
                     <CommandItem
                       onSelect={() => handleNavigate("/wishlist")}
-                      className="flex items-center justify-between text-xs py-1.5 px-2.5 rounded-lg cursor-pointer hover:bg-muted/80"
+                      className="flex items-center justify-between text-xs py-1.5 px-2.5 rounded-xl cursor-pointer hover:bg-muted/80"
                     >
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 text-foreground">
                         <Heart className="size-3.5 text-muted-foreground" />
-                        <span>My Wishlist ({wishlistItemCount})</span>
+                        <span>Wishlist ({wishlistItemCount})</span>
                       </div>
                       <CommandShortcut>Wishlist</CommandShortcut>
                     </CommandItem>
                     <CommandItem
                       onSelect={() => handleNavigate("/orders")}
-                      className="flex items-center justify-between text-xs py-1.5 px-2.5 rounded-lg cursor-pointer hover:bg-muted/80"
+                      className="flex items-center justify-between text-xs py-1.5 px-2.5 rounded-xl cursor-pointer hover:bg-muted/80"
                     >
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 text-foreground">
                         <Package className="size-3.5 text-muted-foreground" />
                         <span>Track Orders</span>
                       </div>
@@ -465,50 +483,50 @@ export default function Navbar() {
           )}
         </div>
 
-        {/* Right Section: Amazon-Style Returns & Orders, Account, Wishlist, Cart */}
-        <div className="flex items-center gap-1 sm:gap-2.5 shrink-0">
-          {/* Returns & Orders (Amazon Style) */}
+        {/* ─── RIGHT SECTION: MODERN MODULAR ACTIONS ─── */}
+        <div className="flex items-center gap-1.5 sm:gap-2 lg:gap-3 shrink-0">
+          {/* Orders */}
           <Link
             to="/orders"
-            className="hidden xl:flex flex-col text-left px-2.5 py-1 rounded-lg hover:bg-muted/70 transition-colors"
+            className={cn(
+              "hidden xl:flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors group",
+              location.pathname.startsWith("/orders") && "text-foreground bg-muted/60"
+            )}
           >
-            <span className="text-[10px] text-muted-foreground leading-tight">
-              Returns &amp;
-            </span>
-            <span className="text-xs font-bold text-foreground leading-tight">
-              Orders
-            </span>
+            <Package className="size-4 text-muted-foreground group-hover:text-primary transition-colors" />
+            <span>Orders</span>
           </Link>
 
-          {/* User Account / Sign In (Amazon Style) */}
+          {/* User Account / Sign In */}
           {user ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <button className="flex items-center gap-2 px-2 py-1 rounded-lg hover:bg-muted/70 transition-colors cursor-pointer text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary">
-                  <Avatar className="size-8 bg-primary/10 text-primary border border-primary/20">
-                    <AvatarFallback className="font-bold text-xs bg-primary/10 text-primary">
+                <button className="flex items-center gap-2.5 px-2.5 py-1.5 rounded-xl hover:bg-muted/60 transition-colors cursor-pointer text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary group">
+                  <Avatar className="size-8 sm:size-8.5 bg-primary/10 text-primary border border-primary/20 shadow-xs">
+                    {user.profile?.url && <AvatarImage src={user.profile.url} alt={user.name} className="object-cover" />}
+                    <AvatarFallback className="font-semibold text-xs bg-primary/10 text-primary">
                       {userInitials}
                     </AvatarFallback>
                   </Avatar>
-                  <div className="hidden lg:flex flex-col">
-                    <span className="text-[10px] text-muted-foreground leading-tight">
-                      Hello, {user.name?.split(" ")[0] || "Collector"}
+                  <div className="hidden lg:flex flex-col text-left">
+                    <span className="text-xs font-semibold text-foreground leading-tight truncate max-w-[105px]">
+                      {user.name?.split(" ")[0] || "Account"}
                     </span>
-                    <span className="text-xs font-bold text-foreground leading-tight flex items-center gap-0.5">
-                      Account &amp; Lists
-                      <ChevronDown className="size-3 text-muted-foreground" />
+                    <span className="text-[10px] text-muted-foreground leading-none flex items-center gap-0.5 group-hover:text-primary transition-colors mt-0.5">
+                      My Account
+                      <ChevronDown className="size-3 text-muted-foreground/70 group-hover:text-primary transition-colors" />
                     </span>
                   </div>
                 </button>
               </DropdownMenuTrigger>
               <DropdownMenuContent
                 align="end"
-                className="w-56 p-2 rounded-xl shadow-xl border border-border"
+                className="w-56 p-2 rounded-2xl shadow-2xl border border-border bg-popover/98 backdrop-blur-xl text-foreground"
               >
                 <DropdownMenuLabel className="font-normal px-2 py-1.5">
                   <div className="flex flex-col space-y-1">
-                    <p className="text-sm font-semibold leading-none text-foreground">
-                      {user.name || "Collector"}
+                    <p className="text-sm font-semibold leading-none text-foreground font-heading">
+                      {user.name || "Customer"}
                     </p>
                     <p className="text-xs leading-none text-muted-foreground truncate">
                       {user.email}
@@ -519,16 +537,16 @@ export default function Navbar() {
                 <DropdownMenuItem asChild>
                   <Link
                     to="/profile"
-                    className="flex items-center gap-2 cursor-pointer rounded-lg text-xs font-medium py-2"
+                    className="flex items-center gap-2 cursor-pointer rounded-xl text-xs font-medium py-2 hover:bg-muted hover:text-foreground"
                   >
                     <User className="size-4 text-muted-foreground" />
-                    <span>Your Profile</span>
+                    <span>My Profile</span>
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild>
                   <Link
                     to="/orders"
-                    className="flex items-center gap-2 cursor-pointer rounded-lg text-xs font-medium py-2"
+                    className="flex items-center gap-2 cursor-pointer rounded-xl text-xs font-medium py-2 hover:bg-muted hover:text-foreground"
                   >
                     <Package className="size-4 text-muted-foreground" />
                     <span>Your Orders</span>
@@ -537,10 +555,10 @@ export default function Navbar() {
                 <DropdownMenuItem asChild>
                   <Link
                     to="/wishlist"
-                    className="flex items-center gap-2 cursor-pointer rounded-lg text-xs font-medium py-2"
+                    className="flex items-center gap-2 cursor-pointer rounded-xl text-xs font-medium py-2 hover:bg-muted hover:text-foreground"
                   >
                     <Heart className="size-4 text-muted-foreground" />
-                    <span>Your Wishlist</span>
+                    <span>Wishlist</span>
                     {wishlistItemCount > 0 && (
                       <Badge
                         variant="secondary"
@@ -554,7 +572,7 @@ export default function Navbar() {
                 <DropdownMenuItem asChild>
                   <Link
                     to="/settings"
-                    className="flex items-center gap-2 cursor-pointer rounded-lg text-xs font-medium py-2"
+                    className="flex items-center gap-2 cursor-pointer rounded-xl text-xs font-medium py-2 hover:bg-muted hover:text-foreground"
                   >
                     <Settings className="size-4 text-muted-foreground" />
                     <span>Account Settings</span>
@@ -563,7 +581,7 @@ export default function Navbar() {
                 <DropdownMenuSeparator className="my-1" />
                 <DropdownMenuItem
                   onClick={logout}
-                  className="flex items-center gap-2 cursor-pointer rounded-lg text-xs font-medium py-2 text-destructive focus:text-destructive focus:bg-destructive/10"
+                  className="flex items-center gap-2 cursor-pointer rounded-xl text-xs font-medium py-2 text-destructive focus:text-destructive focus:bg-destructive/10"
                 >
                   <LogOut className="size-4" />
                   <span>Sign Out</span>
@@ -573,54 +591,74 @@ export default function Navbar() {
           ) : (
             <Link
               to="/login"
-              className="flex flex-col text-left px-2 sm:px-2.5 py-1 rounded-lg hover:bg-muted/70 transition-colors"
+              className="flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold text-foreground/90 hover:text-foreground hover:bg-muted/60 transition-colors group"
             >
-              <span className="text-[10px] text-muted-foreground leading-tight">
-                Hello, sign in
-              </span>
-              <span className="text-xs font-bold text-foreground leading-tight flex items-center gap-0.5">
-                Account &amp; Lists
-                <ChevronDown className="size-3 text-muted-foreground hidden sm:inline" />
-              </span>
+              <User className="size-4 text-muted-foreground group-hover:text-primary transition-colors" />
+              <div className="hidden lg:flex flex-col text-left">
+                <span className="text-[10px] text-muted-foreground leading-tight">
+                  Welcome
+                </span>
+                <span className="text-xs font-semibold text-foreground group-hover:text-primary transition-colors leading-none">
+                  Sign In
+                </span>
+              </div>
+              <span className="lg:hidden text-xs font-semibold">Sign In</span>
             </Link>
           )}
 
           {/* Wishlist Button with Badge */}
-          <Link to="/wishlist">
+          <Link to="/wishlist" aria-label="Wishlist">
             <Button
               variant="ghost"
               size="icon"
               className={cn(
-                "rounded-full size-9 sm:size-10 relative text-muted-foreground hover:text-foreground hover:bg-muted/70 transition-colors",
+                "rounded-xl size-9 sm:size-10 relative text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-all group cursor-pointer",
                 location.pathname === "/wishlist" && "text-primary bg-primary/10"
               )}
-              aria-label="Wishlist"
             >
-              <Heart className="size-5" />
+              <Heart className="size-4.5 transition-transform group-hover:scale-110 group-hover:text-primary" />
               {wishlistItemCount > 0 && (
-                <span className="absolute -top-0.5 -right-0.5 flex size-4.5 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground shadow-xs animate-in zoom-in-50">
+                <span className="absolute -top-0.5 -right-0.5 flex size-4 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground shadow-xs animate-in zoom-in-50">
                   {wishlistItemCount > 99 ? "99+" : wishlistItemCount}
                 </span>
               )}
             </Button>
           </Link>
 
-          {/* Amazon-Style Cart Button with Prominent Count */}
+          {/* Cart Button */}
           <Link
             to="/cart"
             className={cn(
-              "flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-1.5 rounded-xl hover:bg-muted/70 transition-colors relative group",
-              location.pathname === "/cart" && "bg-primary/10"
+              "flex items-center gap-2.5 px-3.5 py-2 rounded-xl transition-all relative group cursor-pointer active:scale-95 border",
+              location.pathname === "/cart"
+                ? "bg-primary text-primary-foreground border-primary shadow-[0_0_15px_rgba(239,68,68,0.3)]"
+                : "bg-muted/40 hover:bg-muted/80 text-foreground border-border/70 hover:border-border"
             )}
             aria-label="Cart"
           >
-            <div className="relative">
-              <ShoppingCart className="size-6 text-foreground group-hover:text-primary transition-colors" />
-              <span className="absolute -top-1.5 -right-2 flex size-5 items-center justify-center rounded-full bg-primary text-[10px] font-black text-primary-foreground shadow-xs animate-in zoom-in-50">
-                {cartItemCount > 99 ? "99+" : cartItemCount}
-              </span>
+            <div className="relative flex items-center justify-center">
+              <ShoppingCart
+                className={cn(
+                  "size-4.5 transition-transform group-hover:scale-105",
+                  location.pathname === "/cart"
+                    ? "text-primary-foreground"
+                    : "text-foreground group-hover:text-primary"
+                )}
+              />
+              {cartItemCount > 0 && (
+                <span
+                  className={cn(
+                    "absolute -top-2 -right-2.5 flex min-w-4.5 h-4.5 px-1 items-center justify-center rounded-full text-[9px] font-mono font-bold shadow-xs",
+                    location.pathname === "/cart"
+                      ? "bg-neutral-950 text-white ring-1 ring-white/30"
+                      : "bg-primary text-primary-foreground shadow-[0_0_8px_rgba(239,68,68,0.5)]"
+                  )}
+                >
+                  {cartItemCount > 99 ? "99+" : cartItemCount}
+                </span>
+              )}
             </div>
-            <span className="text-xs font-extrabold text-foreground hidden md:inline-block">
+            <span className="hidden sm:inline text-xs font-semibold font-heading tracking-tight">
               Cart
             </span>
           </Link>
@@ -629,7 +667,7 @@ export default function Navbar() {
           <Button
             variant="ghost"
             size="icon"
-            className="md:hidden rounded-full size-9 text-muted-foreground hover:text-foreground"
+            className="md:hidden rounded-xl size-9 text-muted-foreground hover:text-foreground hover:bg-muted/70"
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
             aria-label="Toggle Menu"
           >
@@ -638,11 +676,9 @@ export default function Navbar() {
         </div>
       </div>
 
-
-
-      {/* 4. Mobile Drawer Menu */}
+      {/* ─── MOBILE DRAWER MENU ─── */}
       {mobileMenuOpen && (
-        <div className="md:hidden border-t border-border bg-background/98 backdrop-blur-xl px-4 py-4 space-y-4 shadow-xl animate-in slide-in-from-top-2 duration-200">
+        <div className="md:hidden border-t border-border bg-background/98 backdrop-blur-2xl px-4 py-4 space-y-4 shadow-2xl animate-in slide-in-from-top-2 duration-200">
           {/* Mobile Search Bar */}
           <form onSubmit={handleSearchSubmit} className="relative w-full">
             <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
@@ -656,53 +692,60 @@ export default function Navbar() {
           </form>
 
           {/* Quick Categories Scroll */}
-          <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-1 text-xs">
-            <button
-              onClick={() => handleSelectCategory("all")}
-              className={cn(
-                "px-3 py-1.5 rounded-lg shrink-0 font-medium",
-                selectedCategory === "all"
-                  ? "bg-primary text-primary-foreground font-bold"
-                  : "bg-muted text-muted-foreground"
-              )}
-            >
-              All Toyzz
-            </button>
-            {categoriesList.map((cat) => (
+          <div className="space-y-1.5">
+            <span className="text-[10px] uppercase font-bold tracking-widest text-muted-foreground">
+              Categories
+            </span>
+            <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pb-1 text-xs">
               <button
-                key={cat._id || cat.id}
-                onClick={() => handleSelectCategory(cat._id || cat.id)}
+                onClick={() => handleSelectCategory("all")}
                 className={cn(
-                  "px-3 py-1.5 rounded-lg shrink-0 font-medium",
-                  selectedCategory === (cat._id || cat.id)
-                    ? "bg-primary text-primary-foreground font-bold"
+                  "px-3 py-1.5 rounded-lg shrink-0 font-bold uppercase text-[11px]",
+                  selectedCategory === "all"
+                    ? "bg-primary text-primary-foreground"
                     : "bg-muted text-muted-foreground"
                 )}
               >
-                {cat.name}
+                All Categories
               </button>
-            ))}
+              {categoriesList.map((cat) => (
+                <button
+                  key={cat._id || cat.id}
+                  onClick={() => handleSelectCategory(cat._id || cat.id)}
+                  className={cn(
+                    "px-3 py-1.5 rounded-lg shrink-0 font-bold uppercase text-[11px]",
+                    selectedCategory === (cat._id || cat.id)
+                      ? "bg-primary text-primary-foreground"
+                      : "bg-muted text-muted-foreground"
+                  )}
+                >
+                  {cat.name}
+                </button>
+              ))}
+            </div>
           </div>
 
           {/* Mobile Navigation Links */}
           <div className="space-y-1 pt-1">
             <Link
               to="/products"
+              onClick={() => setMobileMenuOpen(false)}
               className="flex items-center justify-between px-3.5 py-2.5 rounded-xl text-sm font-semibold text-muted-foreground hover:bg-muted hover:text-foreground"
             >
               <div className="flex items-center gap-3">
-                <ShoppingBag className="size-4.5" />
-                <span>All Products</span>
+                <ShoppingBag className="size-4.5 text-primary" />
+                <span>All Products Catalog</span>
               </div>
               <ChevronRight className="size-4 opacity-50" />
             </Link>
 
             <Link
               to="/wishlist"
+              onClick={() => setMobileMenuOpen(false)}
               className="flex items-center justify-between px-3.5 py-2.5 rounded-xl text-sm font-semibold text-muted-foreground hover:bg-muted hover:text-foreground"
             >
               <div className="flex items-center gap-3">
-                <Heart className="size-4.5" />
+                <Heart className="size-4.5 text-primary" />
                 <span>Wishlist ({wishlistItemCount})</span>
               </div>
               <ChevronRight className="size-4 opacity-50" />
@@ -710,11 +753,12 @@ export default function Navbar() {
 
             <Link
               to="/orders"
+              onClick={() => setMobileMenuOpen(false)}
               className="flex items-center justify-between px-3.5 py-2.5 rounded-xl text-sm font-semibold text-muted-foreground hover:bg-muted hover:text-foreground"
             >
               <div className="flex items-center gap-3">
-                <Package className="size-4.5" />
-                <span>Orders</span>
+                <Package className="size-4.5 text-primary" />
+                <span>Track Orders</span>
               </div>
               <ChevronRight className="size-4 opacity-50" />
             </Link>
@@ -722,11 +766,12 @@ export default function Navbar() {
             {user && (
               <Link
                 to="/profile"
+                onClick={() => setMobileMenuOpen(false)}
                 className="flex items-center justify-between px-3.5 py-2.5 rounded-xl text-sm font-semibold text-muted-foreground hover:bg-muted hover:text-foreground"
               >
                 <div className="flex items-center gap-3">
-                  <User className="size-4.5" />
-                  <span>Profile</span>
+                  <User className="size-4.5 text-primary" />
+                  <span>My Profile</span>
                 </div>
                 <ChevronRight className="size-4 opacity-50" />
               </Link>
@@ -738,14 +783,15 @@ export default function Navbar() {
             {user ? (
               <div className="flex items-center justify-between w-full">
                 <div className="flex items-center gap-2.5">
-                  <Avatar className="size-8 bg-primary/10 text-primary">
-                    <AvatarFallback className="font-bold text-xs bg-primary/10 text-primary">
+                  <Avatar className="size-8 bg-primary text-primary-foreground">
+                    {user.profile?.url && <AvatarImage src={user.profile.url} alt={user.name} className="object-cover" />}
+                    <AvatarFallback className="font-bold text-xs bg-primary text-primary-foreground">
                       {userInitials}
                     </AvatarFallback>
                   </Avatar>
                   <div className="text-left">
-                    <p className="text-xs font-semibold leading-tight text-foreground">
-                      {user.name || "Collector"}
+                    <p className="text-xs font-semibold leading-tight text-foreground font-heading">
+                      {user.name || "Customer"}
                     </p>
                     <p className="text-[11px] text-muted-foreground leading-tight">
                       {user.email}
@@ -756,7 +802,7 @@ export default function Navbar() {
                   variant="outline"
                   size="sm"
                   onClick={logout}
-                  className="text-xs text-destructive hover:bg-destructive/10 hover:text-destructive h-8"
+                  className="text-xs text-destructive hover:bg-destructive/10 hover:text-destructive h-8 rounded-lg"
                 >
                   <LogOut className="size-3.5 mr-1" />
                   Logout
@@ -764,9 +810,9 @@ export default function Navbar() {
               </div>
             ) : (
               <Link to="/login" className="w-full">
-                <Button className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-semibold rounded-xl h-10">
+                <Button className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-heading font-semibold tracking-wide rounded-xl h-10 shadow-md">
                   <User className="size-4 mr-2" />
-                  Sign In to Account
+                  Sign In
                 </Button>
               </Link>
             )}

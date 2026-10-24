@@ -462,11 +462,16 @@
 
 
 /* =========================================
-   FONT
+   TYPOGRAPHY
+   Plus Jakarta Sans for UI / body, Outfit for brand headings
 ========================================= */
 
-* {
-  font-family: "Inter", sans-serif !important;
+html {
+  font-family: var(--font-sans);
+}
+
+body {
+  font-family: var(--font-sans);
 }
 
 
