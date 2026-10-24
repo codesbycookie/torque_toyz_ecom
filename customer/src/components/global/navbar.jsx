@@ -248,9 +248,9 @@ export default function Navbar() {
         {/* Left: Brand Logo & Title */}
         <Link
           to="/"
-          className="flex items-center gap-2.5 sm:gap-3 group shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-xl p-1"
+          className="flex items-center gap-2 sm:gap-3 group shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-xl p-0.5 sm:p-1"
         >
-          <div className="relative size-10 sm:size-11 rounded-xl bg-neutral-900/80 p-1 border border-border/80 shadow-xs group-hover:border-primary/50 transition-all flex items-center justify-center overflow-hidden shrink-0">
+          <div className="relative size-9 sm:size-11 rounded-xl bg-neutral-900/80 p-1 border border-border/80 shadow-xs group-hover:border-primary/50 transition-all flex items-center justify-center overflow-hidden shrink-0">
             <img
               src="/logo.png"
               alt="Torque Toyzz"
@@ -258,10 +258,10 @@ export default function Navbar() {
             />
           </div>
           <div className="flex flex-col text-left">
-            <span className="font-heading font-extrabold text-lg sm:text-xl tracking-tight text-foreground select-none leading-none">
+            <span className="font-heading font-extrabold text-base sm:text-xl tracking-tight text-foreground select-none leading-none">
               Torque <span className="text-primary">Toyzz</span>
             </span>
-            <span className="text-[10px] tracking-wider uppercase font-semibold text-muted-foreground/80 group-hover:text-primary transition-colors duration-200 mt-1 select-none">
+            <span className="hidden xs:block text-[9px] sm:text-[10px] tracking-wider uppercase font-semibold text-muted-foreground/80 group-hover:text-primary transition-colors duration-200 mt-0.5 sm:mt-1 select-none">
               Engineered for Fun
             </span>
           </div>
@@ -506,7 +506,7 @@ export default function Navbar() {
           {user ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <button className="flex items-center gap-2.5 px-2.5 py-1.5 rounded-xl hover:bg-muted/60 transition-colors cursor-pointer text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary group">
+                <button className="hidden sm:flex items-center gap-2.5 px-2.5 py-1.5 rounded-xl hover:bg-muted/60 transition-colors cursor-pointer text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary group">
                   <Avatar className="size-8 sm:size-8.5 bg-primary/10 text-primary border border-primary/20 shadow-xs">
                     {user.profile?.url && <AvatarImage src={user.profile.url} alt={user.name} className="object-cover" />}
                     <AvatarFallback className="font-semibold text-xs bg-primary/10 text-primary">
@@ -596,7 +596,7 @@ export default function Navbar() {
           ) : (
             <Link
               to="/login"
-              className="flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold text-foreground/90 hover:text-foreground hover:bg-muted/60 transition-colors group"
+              className="hidden sm:flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold text-foreground/90 hover:text-foreground hover:bg-muted/60 transition-colors group"
             >
               <User className="size-4 text-muted-foreground group-hover:text-primary transition-colors" />
               <div className="hidden lg:flex flex-col text-left">
@@ -611,8 +611,8 @@ export default function Navbar() {
             </Link>
           )}
 
-          {/* Wishlist Button with Badge */}
-          <Link to="/wishlist" aria-label="Wishlist">
+          {/* Wishlist Button with Badge (Desktop & Tablet) */}
+          <Link to="/wishlist" aria-label="Wishlist" className="hidden sm:inline-flex">
             <Button
               variant="ghost"
               size="icon"
@@ -634,7 +634,7 @@ export default function Navbar() {
           <Link
             to="/cart"
             className={cn(
-              "flex items-center gap-2.5 px-3.5 py-2 rounded-xl transition-all relative group cursor-pointer active:scale-95 border",
+              "flex items-center gap-1.5 sm:gap-2.5 px-2.5 sm:px-3.5 py-1.5 sm:py-2 rounded-xl transition-all relative group cursor-pointer active:scale-95 border",
               location.pathname === "/cart"
                 ? "bg-primary text-primary-foreground border-primary shadow-[0_0_15px_rgba(239,68,68,0.3)]"
                 : "bg-muted/40 hover:bg-muted/80 text-foreground border-border/70 hover:border-border"

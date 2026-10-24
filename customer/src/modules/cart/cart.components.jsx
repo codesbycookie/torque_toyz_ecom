@@ -24,11 +24,12 @@ import {
   Weight,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { resolveProductImage } from "@/modules/product/product.components";
 
 // ─── Cart Progress Stepper (Torque Toyzz Vibe) ──────────────────────
 export function CartStepper({ currentStep = 1 }) {
   const steps = [
-    { number: 1, label: "Garage Cart", sub: "Review Models" },
+    { number: 1, label: "Cart", sub: "Review Models" },
     { number: 2, label: "Shipping Address", sub: "Destination Info" },
     { number: 3, label: "Payment & Order", sub: "Confirmation" },
   ];
@@ -104,7 +105,7 @@ export function CartItemCard({
 
   const productId = getCleanProductId(item);
   const name = item.name || item.product?.name || "Precision Scale Model";
-  const image = item.image || item.product?.images?.[0] || "/logo.png";
+  const image = resolveProductImage(item.image || item.product?.images?.[0], productId);
   const price = Number(item.price ?? item.product?.price ?? 0);
   const quantity = Number(item.quantity || 1);
   const weight = Number(item.weight ?? item.product?.weight ?? 0);
@@ -138,11 +139,14 @@ export function CartItemCard({
           >
             {name}
           </Link>
-          <div className="flex items-center gap-2.5 text-xs text-muted-foreground font-medium pt-0.5 flex-wrap">
-            <span>Unit Price: ₹{price.toLocaleString("en-IN", { minimumFractionDigits: 2 })}</span>
+          <div className="flex items-center justify-between sm:justify-start gap-2.5 text-xs text-muted-foreground font-medium pt-0.5 flex-wrap">
+            <span>Unit: ₹{price.toLocaleString("en-IN", { minimumFractionDigits: 2 })}</span>
+            <span className="sm:hidden font-bold text-foreground">
+              Total: ₹{lineTotal.toLocaleString("en-IN", { minimumFractionDigits: 2 })}
+            </span>
             {weight > 0 && (
               <>
-                <span>•</span>
+                <span className="hidden sm:inline">•</span>
                 <span className="flex items-center gap-1">
                   <Weight className="size-3 text-primary" />
                   {weight} kg / unit
@@ -159,7 +163,7 @@ export function CartItemCard({
           </span>
           <span className="text-muted-foreground text-[11px]">•</span>
           <span className="text-[11px] text-muted-foreground">
-            Garage Quality Checked
+            Quality Checked
           </span>
         </div>
 
@@ -270,7 +274,7 @@ export function CartOrderSummary({
           <Truck className="size-4 text-primary shrink-0 mt-0.5" />
           <div className="space-y-0.5">
             <span className="font-bold text-foreground">
-              Express Garage Dispatch
+              Express Shipping
             </span>
             <p className="text-muted-foreground text-[11px] leading-relaxed">
               Precision models are secured in shock-proof bubble wrapping for safe doorstep delivery across India.
@@ -352,7 +356,7 @@ export function CartOrderSummary({
           </div>
           <div className="flex items-center gap-2">
             <Truck className="size-4 text-primary shrink-0" />
-            <span>Fast Express Dispatch Across India</span>
+            <span>Fast Shipping Across India</span>
           </div>
           <div className="flex items-center gap-2">
             <RotateCcw className="size-4 text-primary shrink-0" />
@@ -376,10 +380,10 @@ export function CartEmptyState() {
 
       <div className="space-y-1">
         <h3 className="text-lg font-bold text-foreground tracking-tight">
-          Your Garage Cart is Empty
+          Your Cart is Empty
         </h3>
         <p className="text-xs sm:text-sm text-muted-foreground max-w-md mx-auto leading-relaxed">
-          You haven't added any diecast scale models or RC cars to your garage cart yet. Explore our precision collection and build your dream showcase.
+          You haven't added any diecast scale models or RC cars to your cart yet. Browse our products to get started.
         </p>
       </div>
 

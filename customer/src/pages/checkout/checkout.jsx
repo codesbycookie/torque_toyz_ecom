@@ -467,7 +467,7 @@ export default function Checkout() {
               </Button>
             )}
 
-            <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-foreground">
+            <h1 className="text-xl sm:text-2xl md:text-3xl font-extrabold tracking-tight text-foreground">
               {checkoutStep === 2 ? "Shipping Destination" : "Payment & Order Finalization"}
             </h1>
           </div>

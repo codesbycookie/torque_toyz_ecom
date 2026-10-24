@@ -318,8 +318,8 @@ export default function Orders() {
           </h1>
 
           {/* Amazon "Search all orders" */}
-          <form onSubmit={handleSearchSubmit} className="flex items-center gap-2">
-            <div className="relative w-full sm:w-72 md:w-80">
+          <form onSubmit={handleSearchSubmit} className="flex items-center gap-2 w-full sm:w-auto">
+            <div className="relative flex-1 sm:w-72 md:w-80">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
               <Input
                 type="search"

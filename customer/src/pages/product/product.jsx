@@ -303,7 +303,7 @@ export default function ProductsPage() {
       <div className="flex items-center justify-between pb-2 border-b">
         <div className="flex items-center gap-2 font-bold text-foreground text-base tracking-tight">
           <SlidersHorizontal className="size-4 text-primary" />
-          <span>Filters &amp; Sorting</span>
+          <span>Filters</span>
           {activeFiltersCount > 0 && (
             <Badge
               variant="secondary"
@@ -322,35 +322,6 @@ export default function ProductsPage() {
           </button>
         )}
       </div>
-
-      {/* 2. Sort By (Amazon Sidebar Style in Brand Colors) */}
-      <div className="space-y-2.5">
-        <h4 className="font-semibold text-xs tracking-wider uppercase text-foreground/80">
-          Sort Results By
-        </h4>
-        <div className="space-y-1">
-          {SORT_OPTIONS.map((opt) => {
-            const isSelected = sort === opt.value;
-            return (
-              <button
-                key={opt.value}
-                onClick={() => handleSortChange(opt.value)}
-                className={cn(
-                  "w-full text-left px-2.5 py-1.5 rounded-md text-xs font-medium flex items-center justify-between transition-colors cursor-pointer",
-                  isSelected
-                    ? "bg-primary/10 text-primary font-semibold border border-primary/20"
-                    : "text-muted-foreground hover:text-foreground hover:bg-muted/60"
-                )}
-              >
-                <span>{opt.label}</span>
-                {isSelected && <Check className="size-3.5 text-primary" />}
-              </button>
-            );
-          })}
-        </div>
-      </div>
-
-      <Separator />
 
       {/* 3. Department / Category (from backend) */}
       <div className="space-y-2.5">
@@ -540,9 +511,9 @@ export default function ProductsPage() {
           <main className="col-span-1 lg:col-span-8 min-w-0 space-y-4">
             {/* Top Toolbar in Right Column */}
             <div className="bg-card border border-border/70 rounded-xl p-3 sm:p-4 shadow-2xs space-y-3">
-              <div className="flex items-center justify-between gap-3 flex-wrap">
-                {/* Results Count */}
-                <div className="flex items-center gap-2">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                {/* Results Count & Mobile View Toggle */}
+                <div className="flex items-center justify-between sm:justify-start gap-2 w-full sm:w-auto">
                   <span className="text-xs sm:text-sm text-muted-foreground font-medium">
                     {totalResults > 0 ? (
                       <>
@@ -553,17 +524,47 @@ export default function ProductsPage() {
                       "0 results"
                     )}
                   </span>
+
+                  {/* Mobile Grid vs List View Toggle */}
+                  <div className="flex sm:hidden items-center border rounded-lg overflow-hidden bg-background p-0.5 shrink-0">
+                    <button
+                      type="button"
+                      aria-label="Grid View"
+                      onClick={() => setViewMode("grid")}
+                      className={cn(
+                        "p-1.5 rounded transition-colors cursor-pointer",
+                        viewMode === "grid"
+                          ? "bg-primary/10 text-primary shadow-2xs font-bold"
+                          : "text-muted-foreground hover:text-foreground"
+                      )}
+                    >
+                      <LayoutGrid className="size-3.5" />
+                    </button>
+                    <button
+                      type="button"
+                      aria-label="List View"
+                      onClick={() => setViewMode("list")}
+                      className={cn(
+                        "p-1.5 rounded transition-colors cursor-pointer",
+                        viewMode === "list"
+                          ? "bg-primary/10 text-primary shadow-2xs font-bold"
+                          : "text-muted-foreground hover:text-foreground"
+                      )}
+                    >
+                      <List className="size-3.5" />
+                    </button>
+                  </div>
                 </div>
 
-                {/* Right controls: Mobile Filter Button, Top Sort Select, View Switch */}
-                <div className="flex items-center gap-2 justify-end flex-wrap ml-auto">
+                {/* Right controls: Mobile Filter Button, Top Sort Select, Desktop View Switch */}
+                <div className="flex items-center gap-2 justify-between sm:justify-end w-full sm:w-auto">
 
                   {/* Mobile Filter Sheet Trigger (visible on < lg) */}
-                  <div className="lg:hidden">
+                  <div className="lg:hidden flex-1 sm:flex-initial">
                     <Sheet open={isMobileFilterOpen} onOpenChange={setIsMobileFilterOpen}>
                       <SheetTrigger asChild>
-                        <Button variant="outline" size="sm" className="h-9 relative">
-                          <SlidersHorizontal className="size-4 mr-1.5 text-primary" />
+                        <Button variant="outline" size="sm" className="h-9 w-full sm:w-auto relative cursor-pointer font-medium text-xs">
+                          <SlidersHorizontal className="size-3.5 mr-1.5 text-primary" />
                           Filters
                           {activeFiltersCount > 0 && (
                             <Badge
@@ -584,13 +585,13 @@ export default function ProductsPage() {
                           <Button
                             variant="outline"
                             onClick={clearAllFilters}
-                            className="flex-1 text-xs"
+                            className="flex-1 text-xs cursor-pointer"
                           >
                             Reset all
                           </Button>
                           <Button
                             onClick={() => setIsMobileFilterOpen(false)}
-                            className="flex-1 text-xs bg-primary hover:bg-primary/90 text-primary-foreground font-semibold"
+                            className="flex-1 text-xs bg-primary hover:bg-primary/90 text-primary-foreground font-semibold cursor-pointer"
                           >
                             Show Results
                           </Button>
@@ -601,20 +602,20 @@ export default function ProductsPage() {
 
                   {/* Quick Sort Dropdown */}
                   <Select value={sort} onValueChange={handleSortChange}>
-                    <SelectTrigger className="h-9 w-44 text-xs bg-background">
+                    <SelectTrigger className="h-9 flex-1 sm:w-44 text-xs bg-background cursor-pointer font-medium">
                       <SelectValue placeholder="Sort by" />
                     </SelectTrigger>
                     <SelectContent>
                       {SORT_OPTIONS.map((opt) => (
-                        <SelectItem key={opt.value} value={opt.value} className="text-xs">
+                        <SelectItem key={opt.value} value={opt.value} className="text-xs cursor-pointer">
                           {opt.label}
                         </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
 
-                  {/* Grid vs List View Toggle */}
-                  <div className="flex items-center border rounded-lg overflow-hidden bg-background p-0.5 shrink-0">
+                  {/* Desktop Grid vs List View Toggle */}
+                  <div className="hidden sm:flex items-center border rounded-lg overflow-hidden bg-background p-0.5 shrink-0">
                     <button
                       type="button"
                       aria-label="Grid View"
@@ -722,7 +723,7 @@ export default function ProductsPage() {
 
             {/* Products Render Area */}
             {loading.getAll ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-5">
+              <div className="grid grid-cols-1 xs:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4 md:gap-5">
                 {Array.from({ length: pageSize }).map((_, i) => (
                   <AmazonProductCardSkeleton key={i} />
                 ))}
@@ -751,7 +752,7 @@ export default function ProductsPage() {
               <>
                 {viewMode === "grid" ? (
                   /* Amazon Grid Type Structure (driven 100% by backend data) */
-                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-5">
+                  <div className="grid grid-cols-1 xs:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4 md:gap-5">
                     {list.map((product) => (
                       <AmazonProductCard
                         key={product._id}

@@ -124,56 +124,22 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-background text-foreground">
-      {/* ─── 1. AMAZON-STYLE SUB-NAV CATEGORY RIBBON ────────────────── */}
-      <div className="bg-card border-b border-border/80 sticky top-18 z-40 backdrop-blur-md">
-        <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center gap-2 overflow-x-auto no-scrollbar py-2 text-xs font-medium">
-            <button
-              onClick={() => navigate("/products")}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-primary/10 text-primary font-semibold hover:bg-primary/20 transition-colors shrink-0"
-            >
-              <Layers className="size-3.5" />
-              <span>All Products</span>
-            </button>
-
-            <div className="h-4 w-px bg-border shrink-0 mx-1" />
-
-            {categoriesList.slice(0, 8).map((cat) => {
-              const catId = cat._id || cat.slug || cat.id;
-              return (
-                <button
-                  key={catId}
-                  onClick={() => navigate(`/products?category=${catId}`)}
-                  className="px-3 py-1.5 rounded-full text-muted-foreground hover:text-foreground hover:bg-muted/70 transition-colors shrink-0 whitespace-nowrap"
-                >
-                  {cat.name}
-                </button>
-              );
-            })}
-
-            <button
-              onClick={() => navigate("/products?sort=price-low")}
-              className="ml-auto hidden md:flex items-center gap-1 px-3 py-1.5 rounded-full text-amber-500 hover:text-amber-600 hover:bg-amber-500/10 transition-colors shrink-0 font-semibold"
-            >
-              <Zap className="size-3.5" />
-              <span>Deals &amp; Offers</span>
-            </button>
-          </div>
-        </div>
-      </div>
-      ```
-      {/* ─── 2. HERO CAROUSEL ────────────────── */}
+      {/* ─── 1. HERO CAROUSEL ────────────────── */}
       <section className="relative overflow-hidden border-b border-border/80 bg-neutral-950">
-        <div className="relative min-h-[380px] sm:min-h-[460px] lg:min-h-[520px] flex items-center">
-          {/* Background image & gradient blend */}
-          <div className="absolute inset-0 z-0">
+        <div className="relative min-h-[400px] sm:min-h-[480px] lg:min-h-[540px] flex items-center">
+          {/* Background image & multi-directional cinematic gradient blend */}
+          <div className="absolute inset-0 z-0 overflow-hidden">
             <img
               src={currentSlide.image}
               alt={currentSlide.title}
-              className="w-full h-full object-cover object-center duration-700"
+              className="w-full h-full object-cover object-center transition-transform duration-1000 scale-100"
             />
-            <div className={cn("absolute inset-0 ", currentSlide.accent)} />
-            <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent" />
+            {/* Horizontal gradient: deep black on the left for maximum text contrast, fading smoothly on the right */}
+            <div className="absolute inset-0 bg-gradient-to-r from-neutral-950/95 via-neutral-950/75 to-neutral-950/20 lg:to-transparent" />
+            {/* Vertical gradient from bottom: seamless blend into neutral-950 base without milky wash */}
+            <div className="absolute inset-0 bg-gradient-to-t from-neutral-950 via-neutral-950/40 to-transparent" />
+            {/* Top subtle vignette to blend with sub-navigation ribbon */}
+            <div className="absolute inset-0 bg-gradient-to-b from-neutral-950/60 via-transparent to-transparent" />
           </div>
 
           {/* Slide Content */}
@@ -199,11 +165,11 @@ export default function Home() {
                 {currentSlide.subtitle}
               </p>
 
-              <div className="flex items-center gap-3 pt-2">
+              <div className="flex flex-col xs:flex-row items-stretch xs:items-center gap-2.5 sm:gap-3 pt-2">
                 <Button
                   size="lg"
                   onClick={() => navigate(currentSlide.ctaLink)}
-                  className="rounded-full bg-primary hover:bg-primary/90 text-primary-foreground font-bold px-6 shadow-md hover:scale-102 transition-all active:scale-95"
+                  className="rounded-full bg-primary hover:bg-primary/90 text-primary-foreground font-bold px-6 shadow-md hover:scale-102 transition-all active:scale-95 text-xs sm:text-sm h-10 sm:h-11 cursor-pointer"
                 >
                   {currentSlide.ctaText}
                   <ArrowRight className="ml-2 size-4" />
@@ -213,7 +179,7 @@ export default function Home() {
                   size="lg"
                   variant="outline"
                   onClick={() => navigate("/products")}
-                  className="rounded-full bg-background/20 backdrop-blur-md border-white/20 text-white hover:bg-white/10 hover:text-white font-semibold"
+                  className="rounded-full bg-background/20 backdrop-blur-md border-white/20 text-white hover:bg-white/10 hover:text-white font-semibold text-xs sm:text-sm h-10 sm:h-11 cursor-pointer"
                 >
                   Browse Catalog
                 </Button>
@@ -221,14 +187,14 @@ export default function Home() {
             </div>
           </div>
 
-          {/* Carousel navigation controls */}
+          {/* Carousel navigation controls (Desktop & Tablet) */}
           <button
             onClick={() =>
               setActiveSlide(
                 (prev) => (prev - 1 + HERO_SLIDES.length) % HERO_SLIDES.length,
               )
             }
-            className="absolute left-4 top-1/2 -translate-y-1/2 z-20 size-10 rounded-full bg-black/40 hover:bg-black/70 backdrop-blur-md text-white flex items-center justify-center transition-transform hover:scale-110 border border-white/10"
+            className="hidden sm:flex absolute left-4 top-1/2 -translate-y-1/2 z-20 size-10 rounded-full bg-black/40 hover:bg-black/70 backdrop-blur-md text-white items-center justify-center transition-transform hover:scale-110 border border-white/10 cursor-pointer"
             aria-label="Previous Slide"
           >
             <ChevronLeft className="size-5" />
@@ -238,7 +204,7 @@ export default function Home() {
             onClick={() =>
               setActiveSlide((prev) => (prev + 1) % HERO_SLIDES.length)
             }
-            className="absolute right-4 top-1/2 -translate-y-1/2 z-20 size-10 rounded-full bg-black/40 hover:bg-black/70 backdrop-blur-md text-white flex items-center justify-center transition-transform hover:scale-110 border border-white/10"
+            className="hidden sm:flex absolute right-4 top-1/2 -translate-y-1/2 z-20 size-10 rounded-full bg-black/40 hover:bg-black/70 backdrop-blur-md text-white items-center justify-center transition-transform hover:scale-110 border border-white/10 cursor-pointer"
             aria-label="Next Slide"
           >
             <ChevronRight className="size-5" />
@@ -262,9 +228,9 @@ export default function Home() {
           </div>
         </div>
       </section>
-      ``` for this too
+
       {/* ─── 3. AMAZON-STYLE OVERLAPPING CATEGORY & FEATURE CARDS ────── */}
-      <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 -mt-10 sm:-mt-16 relative z-30 mb-12 sm:mb-16">
+      <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 -mt-4 sm:-mt-16 relative z-30 mb-12 sm:mb-16">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 sm:gap-6">
           {/* Card 1: Shop Categories Quick Jump */}
           <div className="bg-card border border-border/80 rounded-2xl p-5 sm:p-6 shadow-lg hover:shadow-xl hover:border-primary/40 transition-all duration-300 flex flex-col justify-between group">
@@ -284,9 +250,12 @@ export default function Home() {
                     ]
                 ).map((cat, i) => {
                   const catId = cat._id || cat.slug || cat.id;
+                  const displayName =
+                    cat.name.length > 18 ? `${cat.name.slice(0, 16)}...` : cat.name;
                   return (
                     <button
                       key={catId || i}
+                      title={cat.name}
                       onClick={() =>
                         navigate(
                           catId ? `/products?category=${catId}` : "/products",
@@ -294,8 +263,8 @@ export default function Home() {
                       }
                       className="p-3 rounded-xl bg-muted/40 hover:bg-primary/10 border border-border/60 hover:border-primary/40 text-left transition-all duration-200 group/item"
                     >
-                      <p className="text-xs font-bold line-clamp-1 group-hover/item:text-primary transition-colors">
-                        {cat.name}
+                      <p className="text-xs font-bold truncate group-hover/item:text-primary transition-colors">
+                        {displayName}
                       </p>
                       <span className="text-[10px] text-muted-foreground mt-0.5 block">
                         Explore →
@@ -492,7 +461,7 @@ export default function Home() {
         </div>
 
         {loading.getAll ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-5">
+          <div className="grid grid-cols-1 xs:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4 md:gap-5">
             {Array.from({ length: 8 }).map((_, i) => (
               <AmazonProductCardSkeleton key={i} />
             ))}
@@ -505,7 +474,7 @@ export default function Home() {
             </p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-5">
+          <div className="grid grid-cols-1 xs:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4 md:gap-5">
             {trendingProducts.map((product) => (
               <AmazonProductCard
                 key={product._id}
@@ -546,20 +515,23 @@ export default function Home() {
             </div>
 
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 sm:gap-4">
-              {categoriesList.map((cat) => {
+              {categoriesList.slice(0, 12).map((cat) => {
                 const catId = cat._id || cat.slug || cat.id;
+                const displayName =
+                  cat.name.length > 20 ? `${cat.name.slice(0, 18)}...` : cat.name;
                 return (
                   <button
                     key={catId}
+                    title={cat.name}
                     onClick={() => navigate(`/products?category=${catId}`)}
                     className="p-4 rounded-xl border border-border/70 bg-card hover:bg-card/90 hover:border-primary/50 transition-all text-center flex flex-col items-center justify-center gap-2 group shadow-2xs cursor-pointer hover:-translate-y-0.5"
                   >
                     <div className="size-12 rounded-full bg-primary/10 flex items-center justify-center group-hover:bg-primary text-primary group-hover:text-primary-foreground transition-colors">
                       <Car className="size-5" />
                     </div>
-                    <div>
-                      <p className="text-xs font-bold text-foreground group-hover:text-primary transition-colors line-clamp-1">
-                        {cat.name}
+                    <div className="w-full">
+                      <p className="text-xs font-bold text-foreground group-hover:text-primary transition-colors truncate">
+                        {displayName}
                       </p>
                       <span className="text-[10px] text-muted-foreground">
                         Shop Now &rarr;
@@ -600,7 +572,7 @@ export default function Home() {
             </Button>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-5">
+          <div className="grid grid-cols-1 xs:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4 md:gap-5">
             {productsList.slice(0, 4).map((product) => (
               <AmazonProductCard
                 key={product._id}
@@ -628,7 +600,7 @@ export default function Home() {
             </span>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-5">
+          <div className="grid grid-cols-1 xs:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4 md:gap-5">
             {recentlyViewed.slice(0, 4).map((product) => (
               <AmazonProductCard
                 key={product._id}
