@@ -61,6 +61,22 @@ const seedUsers = async (locations: any[]) => {
   }).save();
   console.log('  created  1 admin user');
 
+  await new User({
+    name: 'Torquetoyzz',
+    email: 'torquetoyzz@gmail.com',
+    phone: '9840402938',
+    password: '@Harisha260206',
+    role: 'user',
+    address: {
+      door: '42B',
+      street: 'Pit Lane Circuit',
+      city: 'Chennai',
+      state: locations[0]._id,
+      pincode: 600028
+    }
+  }).save();
+  console.log('  created  1 primary user (torquetoyzz@gmail.com)');
+
   const created: any[] = [];
   for (let i = 0; i < COUNT; i++) {
     const first = pick(FIRST_NAMES);
@@ -90,11 +106,13 @@ const seedUsers = async (locations: any[]) => {
 // insertMany is safe here — Location has no pre('save') hook.
 
 const INDIAN_STATES = [
-  'Tamil Nadu', 'Kerala', 'Karnataka', 'Andhra Pradesh', 'Telangana',
-  'Maharashtra', 'Gujarat', 'Rajasthan', 'Madhya Pradesh', 'Uttar Pradesh',
-  'Bihar', 'West Bengal', 'Odisha', 'Punjab', 'Haryana', 'Delhi', 'Assam',
-  'Jharkhand', 'Chhattisgarh', 'Uttarakhand', 'Himachal Pradesh', 'Goa',
-  'Tripura', 'Manipur', 'Meghalaya', 'Nagaland', 'Mizoram', 'Sikkim',
+  'Andaman and Nicobar Islands', 'Andhra Pradesh', 'Arunachal Pradesh', 'Assam',
+  'Bihar', 'Chandigarh', 'Chhattisgarh', 'Dadra and Nagar Haveli and Daman and Diu',
+  'Delhi', 'Goa', 'Gujarat', 'Haryana', 'Himachal Pradesh', 'Jammu and Kashmir',
+  'Jharkhand', 'Karnataka', 'Kerala', 'Ladakh', 'Lakshadweep', 'Madhya Pradesh',
+  'Maharashtra', 'Manipur', 'Meghalaya', 'Mizoram', 'Nagaland', 'Odisha',
+  'Puducherry', 'Punjab', 'Rajasthan', 'Sikkim', 'Tamil Nadu', 'Telangana',
+  'Tripura', 'Uttar Pradesh', 'Uttarakhand', 'West Bengal',
 ];
 
 const eraseLocations = async () => {
@@ -141,10 +159,13 @@ const seedLocations = async () => {
 // Category has no such hook, this can safely switch to insertMany.
 
 const CATEGORY_NAMES = [
-  'Alloy Wheel', 'Shock Absorber', 'Brake Pad', 'Air Filter', 'Headlight Assembly',
-  'Tail Light', 'Seat Cover', 'Floor Mat', 'Side Mirror', 'Bumper Guard',
-  'Exhaust Muffler', 'Clutch Plate', 'Radiator', 'Battery', 'Spark Plug',
-  'Wiper Blade', 'Horn', 'Fog Lamp', 'Roof Rack', 'Steering Wheel Cover',
+  '1:18 Diecast Hypercars', 'Formula 1 Collectibles', 'RC Drift Cars 4WD',
+  'Endurance & GT Racers', 'Classic Muscle & Roadsters', 'Supercars & Exotics',
+  'RC Crawlers & Buggies', 'Precision Scale Models', 'Tuning & Performance',
+  'Alloy Wheels & Slicks', 'Brushless Motors & ESCs', 'Pit Lane Accessories',
+  'Championship Liveries', 'JDM Street Icons', 'European GT Racers',
+  'Aerodynamic Body Kits', 'RC Radios & Controls', 'LiPo Fast Chargers',
+  'Collector Display Cases', 'Limited Edition Releases'
 ];
 
 const eraseCategories = async () => {
@@ -173,22 +194,35 @@ const eraseProducts = async () => {
   console.log(`  erased   ${result.deletedCount} product(s)`);
 };
 
+const CAR_IMAGES = [
+  '/cars/gt3_rs.jpg',
+  '/cars/redbull_f1.jpg',
+  '/cars/rx7_lbwk.jpg',
+  '/cars/bmw_m4_gt3.jpg',
+  '/cars/daytona_sp3.jpg',
+  '/cars/ferrari_499p.jpg',
+  '/cars/r34_gtr.jpg',
+  '/cars/shelby_cobra.jpg',
+];
+
 const seedProducts = async (categories: any[]) => {
   const specs: any[] = [];
+  let imgIndex = 0;
   for (const category of categories) {
     for (const variant of VARIANTS) {
+      const img1 = CAR_IMAGES[imgIndex % CAR_IMAGES.length];
+      const img2 = CAR_IMAGES[(imgIndex + 1) % CAR_IMAGES.length];
+      const img3 = CAR_IMAGES[(imgIndex + 2) % CAR_IMAGES.length];
+      imgIndex++;
+
       specs.push({
         name: `${variant} ${category.name}`,
         category: category._id,
-        description: `${variant} grade ${category.name.toLowerCase()} built for durability and performance.`,
-        stock: randInt(0, 99),
-        weight: randFloat(0.5, 10),
+        description: `${variant} edition ${category.name.toLowerCase()} precision built for collectors with authentic racing aerodynamic details and display case.`,
+        stock: randInt(4, 99),
+        weight: randFloat(0.5, 3.5),
         price: randInt(20, 500) * 10, // ₹200–5000
-        images: [
-          'https://placehold.co/600x400?text=Product+1',
-          'https://placehold.co/600x400?text=Product+2',
-          'https://placehold.co/600x400?text=Product+3'
-        ],
+        images: [img1, img2, img3],
       });
     }
   } // 20 × 5 = 100
@@ -217,9 +251,9 @@ const REAL_SETTINGS = [
   {
     key: 'default_product_images',
     value: [
-      'https://placehold.co/600x400?text=Product+1',
-      'https://placehold.co/600x400?text=Product+2',
-      'https://placehold.co/600x400?text=Product+3',
+      '/cars/gt3_rs.jpg',
+      '/cars/redbull_f1.jpg',
+      '/cars/bmw_m4_gt3.jpg',
     ],
     description: 'Fallback images used when a product has none',
   },

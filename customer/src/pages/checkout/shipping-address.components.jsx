@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -40,6 +40,48 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
 /**
+ * Standard list of all 36 Indian States & Union Territories
+ */
+export const INDIAN_STATES = [
+  "Andaman and Nicobar Islands",
+  "Andhra Pradesh",
+  "Arunachal Pradesh",
+  "Assam",
+  "Bihar",
+  "Chandigarh",
+  "Chhattisgarh",
+  "Dadra and Nagar Haveli and Daman and Diu",
+  "Delhi",
+  "Goa",
+  "Gujarat",
+  "Haryana",
+  "Himachal Pradesh",
+  "Jammu and Kashmir",
+  "Jharkhand",
+  "Karnataka",
+  "Kerala",
+  "Ladakh",
+  "Lakshadweep",
+  "Madhya Pradesh",
+  "Maharashtra",
+  "Manipur",
+  "Meghalaya",
+  "Mizoram",
+  "Nagaland",
+  "Odisha",
+  "Puducherry",
+  "Punjab",
+  "Rajasthan",
+  "Sikkim",
+  "Tamil Nadu",
+  "Telangana",
+  "Tripura",
+  "Uttar Pradesh",
+  "Uttarakhand",
+  "West Bengal",
+];
+
+/**
  * Dialog Popup for Adding or Editing an Address
  */
 export function AddressModalDialog({
@@ -49,6 +91,25 @@ export function AddressModalDialog({
   locations = [],
   initialData = null,
 }) {
+  // Resolve all 36 Indian states cleanly mapped to backend locations where available
+  const availableStates = useMemo(() => {
+    return INDIAN_STATES.map((stateName) => {
+      const locMatch =
+        locations.find(
+          (l) => l.state?.trim().toLowerCase() === stateName.toLowerCase()
+        ) ||
+        locations.find((l) =>
+          l.state?.trim().toLowerCase().startsWith(stateName.toLowerCase())
+        );
+
+      return {
+        name: stateName,
+        locationId: locMatch ? String(locMatch._id) : stateName,
+        deliverable: locMatch ? locMatch.deliverable : true,
+      };
+    });
+  }, [locations]);
+
   const getInitialForm = (data) => {
     const rawName = data?.name || data?.full_name || "";
     const nameParts = rawName.trim().split(" ");
@@ -57,7 +118,16 @@ export function AddressModalDialog({
 
     let stateVal = "";
     if (data?.state) {
-      stateVal = typeof data.state === "object" ? String(data.state._id || "") : String(data.state);
+      const raw = typeof data.state === "object" ? String(data.state._id || "") : String(data.state);
+      const matched = availableStates.find(
+        (s) => String(s.locationId) === raw || s.name.toLowerCase() === raw.toLowerCase()
+      );
+      stateVal = matched ? matched.locationId : raw;
+    } else if (data?.stateName) {
+      const matched = availableStates.find(
+        (s) => s.name.toLowerCase() === data.stateName.toLowerCase()
+      );
+      stateVal = matched ? matched.locationId : "";
     }
 
     const zipVal = data?.zip ?? data?.pincode ?? "";
@@ -84,10 +154,7 @@ export function AddressModalDialog({
     if (isOpen) {
       setModalForm(getInitialForm(initialData));
     }
-  }, [isOpen, initialData]);
-
-  const selectedLoc = locations.find((l) => String(l._id) === String(modalForm.state));
-  const isDeliverable = selectedLoc ? selectedLoc.deliverable : true;
+  }, [isOpen, initialData, availableStates]);
 
   const handleChange = (e) => {
     const { id, value, type, checked } = e.target;
@@ -124,6 +191,12 @@ export function AddressModalDialog({
     const assignedId = existingId || `addr_${Date.now()}`;
     const fullName = `${modalForm.firstName.trim()} ${modalForm.lastName.trim()}`.trim();
 
+    const matchedState = availableStates.find(
+      (s) => String(s.locationId) === String(modalForm.state) || s.name.toLowerCase() === modalForm.state.toLowerCase()
+    );
+    const resolvedStateId = matchedState?.locationId || modalForm.state;
+    const resolvedStateName = matchedState?.name || "";
+
     const payload = {
       id: assignedId,
       _id: assignedId,
@@ -137,8 +210,8 @@ export function AddressModalDialog({
       door: modalForm.door.trim(),
       street: modalForm.street.trim(),
       city: modalForm.city.trim(),
-      state: modalForm.state,
-      stateName: selectedLoc?.state || "",
+      state: resolvedStateId,
+      stateName: resolvedStateName,
       zip: modalForm.zip.trim(),
       pincode: Number(modalForm.zip.trim()),
       isDefault: modalForm.isDefault,
@@ -325,19 +398,12 @@ export function AddressModalDialog({
               </Label>
               <Select value={modalForm.state} onValueChange={handleStateChange}>
                 <SelectTrigger id="modal-state" className="h-9.5 text-xs rounded-xl">
-                  <SelectValue placeholder="Select State" />
+                  <SelectValue placeholder="Select State / UT" />
                 </SelectTrigger>
                 <SelectContent className="rounded-xl border-border bg-popover shadow-lg max-h-56">
-                  {locations.map((loc) => (
-                    <SelectItem key={loc._id} value={loc._id} className="text-xs py-1.5">
-                      <div className="flex items-center justify-between w-full gap-2">
-                        <span>{loc.state}</span>
-                        {!loc.deliverable && (
-                          <span className="text-[10px] text-destructive font-semibold">
-                            (Restricted)
-                          </span>
-                        )}
-                      </div>
+                  {availableStates.map((st) => (
+                    <SelectItem key={st.name} value={st.locationId} className="text-xs py-1.5 cursor-pointer">
+                      {st.name}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -358,19 +424,6 @@ export function AddressModalDialog({
               />
             </div>
           </div>
-
-          {/* Live Deliverability Warning inside Dialog */}
-          {modalForm.state && !isDeliverable && (
-            <div className="flex items-start gap-2.5 p-3 rounded-xl bg-destructive/10 border border-destructive/20 text-destructive text-xs">
-              <AlertCircle className="size-4 shrink-0 mt-0.5" />
-              <div>
-                <span className="font-bold">Logistics Alert: </span>
-                <span>
-                  We currently do not deliver to {selectedLoc?.state}. You can still save this address, but orders will require a deliverable location.
-                </span>
-              </div>
-            </div>
-          )}
 
           {/* Checkbox: Set as default */}
           <label className="flex items-center gap-2 cursor-pointer text-xs font-medium text-foreground select-none pt-1">
@@ -419,12 +472,19 @@ export function SavedAddressCard({
   onEdit,
   onDelete,
   locations = [],
+  showDeliverability = false,
 }) {
-  const loc = locations.find((l) => l._id === address.state);
-  const stateLabel = loc?.state || address.stateName || "State";
+  const loc =
+    locations.find((l) => String(l._id) === String(address?.state)) ||
+    locations.find(
+      (l) =>
+        l.state?.trim().toLowerCase() ===
+        (address?.stateName || address?.state || "").trim().toLowerCase()
+    );
+  const stateLabel = address?.stateName || loc?.state || "State";
   const isDeliverable = loc ? loc.deliverable : true;
 
-  const fullName = address.name || [address.firstName, address.lastName].filter(Boolean).join(" ") || "Saved Contact";
+  const fullName = address?.name || [address?.firstName, address?.lastName].filter(Boolean).join(" ") || "Saved Contact";
 
   return (
     <div
@@ -432,25 +492,23 @@ export function SavedAddressCard({
       className={cn(
         "relative rounded-xl border p-4.5 transition-all cursor-pointer flex flex-col justify-between gap-3 text-left group",
         isSelected
-          ? isDeliverable
-            ? "border-primary bg-primary/5 ring-1.5 ring-primary shadow-xs"
-            : "border-destructive bg-destructive/5 ring-1.5 ring-destructive shadow-xs"
-          : isDeliverable
-          ? "border-border/80 bg-card hover:border-primary/50 hover:bg-muted/30"
-          : "border-destructive/30 bg-card/60 hover:border-destructive/60"
+          ? showDeliverability && !isDeliverable
+            ? "border-destructive bg-destructive/5 ring-1.5 ring-destructive shadow-xs"
+            : "border-primary bg-primary/5 ring-1.5 ring-primary shadow-xs"
+          : "border-border/80 bg-card hover:border-primary/50 hover:bg-muted/30"
       )}
     >
       <div className="space-y-2.5">
-        {/* Top Header: Radio mark, Tag, and Deliverability Pill */}
+        {/* Top Header: Radio mark, Tag, and Optional Deliverability Pill (checkout only) */}
         <div className="flex items-center justify-between gap-2 flex-wrap">
           <div className="flex items-center gap-2">
             <div
               className={cn(
                 "size-4.5 rounded-full border flex items-center justify-center transition-all",
                 isSelected
-                  ? isDeliverable
-                    ? "border-primary bg-primary text-primary-foreground"
-                    : "border-destructive bg-destructive text-destructive-foreground"
+                  ? showDeliverability && !isDeliverable
+                    ? "border-destructive bg-destructive text-destructive-foreground"
+                    : "border-primary bg-primary text-primary-foreground"
                   : "border-muted-foreground/60 group-hover:border-primary"
               )}
             >
@@ -464,10 +522,10 @@ export function SavedAddressCard({
                 isSelected ? "border-primary/40 text-primary" : "text-muted-foreground"
               )}
             >
-              {address.label || "Home"}
+              {address?.label || "Home"}
             </Badge>
 
-            {address.isDefault && (
+            {address?.isDefault && (
               <Badge className="bg-primary/10 text-primary border border-primary/20 text-[10px] font-semibold py-0 px-1.5">
                 Default
               </Badge>
@@ -475,16 +533,18 @@ export function SavedAddressCard({
           </div>
 
           <div className="flex items-center gap-1.5">
-            {isDeliverable ? (
-              <Badge className="bg-primary/10 text-primary border border-primary/20 text-[10px] font-semibold gap-1 py-0.5 px-2">
-                <Truck className="size-3" />
-                <span>Deliverable</span>
-              </Badge>
-            ) : (
-              <Badge className="bg-destructive/10 text-destructive border border-destructive/20 text-[10px] font-bold gap-1 py-0.5 px-2">
-                <Ban className="size-3" />
-                <span>Not Deliverable</span>
-              </Badge>
+            {showDeliverability && (
+              isDeliverable ? (
+                <Badge className="bg-primary/10 text-primary border border-primary/20 text-[10px] font-semibold gap-1 py-0.5 px-2">
+                  <Truck className="size-3" />
+                  <span>Deliverable</span>
+                </Badge>
+              ) : (
+                <Badge className="bg-destructive/10 text-destructive border border-destructive/20 text-[10px] font-bold gap-1 py-0.5 px-2">
+                  <Ban className="size-3" />
+                  <span>Not Deliverable</span>
+                </Badge>
+              )
             )}
 
             {/* Quick edit */}
@@ -524,7 +584,7 @@ export function SavedAddressCard({
           <h4 className="font-bold text-sm text-foreground leading-snug">
             {fullName}
           </h4>
-          {address.phone && (
+          {address?.phone && (
             <p className="text-xs text-muted-foreground flex items-center gap-1 pt-0.5">
               <Phone className="size-3 text-primary shrink-0" />
               <span>{address.phone}</span>
@@ -534,17 +594,17 @@ export function SavedAddressCard({
 
         {/* Formatted Address Lines */}
         <div className="text-xs text-muted-foreground space-y-0.5 leading-relaxed">
-          {address.door && <p className="truncate">{address.door}</p>}
-          {address.street && <p className="line-clamp-2">{address.street}</p>}
+          {address?.door && <p className="truncate">{address.door}</p>}
+          {address?.street && <p className="line-clamp-2">{address.street}</p>}
           <p className="font-medium text-foreground">
-            {[address.city, stateLabel].filter(Boolean).join(", ")}
-            {address.zip ? ` - ${address.zip}` : address.pincode ? ` - ${address.pincode}` : ""}
+            {[address?.city, stateLabel].filter(Boolean).join(", ")}
+            {address?.zip ? ` - ${address.zip}` : address?.pincode ? ` - ${address.pincode}` : ""}
           </p>
         </div>
       </div>
 
-      {/* Warning banner if not deliverable */}
-      {!isDeliverable && (
+      {/* Warning banner if not deliverable (CHECKOUT ONLY) */}
+      {showDeliverability && !isDeliverable && (
         <div className="pt-2 border-t border-destructive/30 flex items-center gap-1.5 text-[11px] font-medium text-destructive">
           <AlertCircle className="size-3.5 shrink-0" />
           <span>We do not deliver to this state yet.</span>
@@ -557,16 +617,16 @@ export function SavedAddressCard({
           className={cn(
             "text-[11px] font-semibold",
             isSelected
-              ? isDeliverable
-                ? "text-primary"
-                : "text-destructive"
+              ? showDeliverability && !isDeliverable
+                ? "text-destructive"
+                : "text-primary"
               : "text-muted-foreground group-hover:text-primary"
           )}
         >
           {isSelected
-            ? isDeliverable
-              ? "Selected Delivery Destination"
-              : "Selected (Not Deliverable)"
+            ? showDeliverability && !isDeliverable
+              ? "Selected (Not Deliverable)"
+              : "Selected Delivery Destination"
             : "Click to Select This Address"}
         </span>
         <ArrowRight className="size-3 text-muted-foreground group-hover:translate-x-0.5 transition-transform" />
@@ -592,7 +652,19 @@ export function ShippingAddressManager({
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingAddress, setEditingAddress] = useState(null);
 
-  const selectedLoc = locations.find((l) => l._id === selectedAddress?.state);
+  const selectedLoc = useMemo(() => {
+    if (!selectedAddress) return null;
+    return (
+      locations.find((l) => String(l._id) === String(selectedAddress.state)) ||
+      locations.find(
+        (l) =>
+          l.state?.trim().toLowerCase() ===
+          (selectedAddress.stateName || selectedAddress.state || "").trim().toLowerCase()
+      ) ||
+      null
+    );
+  }, [locations, selectedAddress]);
+
   const isSelectedDeliverable = selectedLoc ? selectedLoc.deliverable : true;
 
   const handleOpenAddModal = () => {
@@ -650,6 +722,7 @@ export function ShippingAddressManager({
                     onEdit={handleOpenEditModal}
                     onDelete={onDeleteAddress}
                     locations={locations}
+                    showDeliverability={true}
                   />
                 );
               })}

@@ -104,7 +104,13 @@ export default function Checkout() {
     if (savedAddresses.length > 0) {
       return (
         savedAddresses.find((a) => {
-          const loc = locations.find((l) => l._id === a.state);
+          const loc =
+            locations.find((l) => String(l._id) === String(a.state)) ||
+            locations.find(
+              (l) =>
+                l.state?.trim().toLowerCase() ===
+                (a.stateName || a.state || "").trim().toLowerCase()
+            );
           return loc && loc.deliverable;
         }) || savedAddresses[0]
       );
@@ -112,23 +118,43 @@ export default function Checkout() {
     return null;
   }, [selectedAddressId, savedAddresses, locations]);
 
-  const selectedLoc = locations.find((l) => l._id === selectedAddress?.state);
+  const selectedLoc = useMemo(() => {
+    if (!selectedAddress) return null;
+    return (
+      locations.find((l) => String(l._id) === String(selectedAddress.state)) ||
+      locations.find(
+        (l) =>
+          l.state?.trim().toLowerCase() ===
+          (selectedAddress.stateName || selectedAddress.state || "").trim().toLowerCase()
+      ) ||
+      null
+    );
+  }, [locations, selectedAddress]);
+
   const isStateDeliverable = selectedLoc ? selectedLoc.deliverable : true;
 
   // Handle selecting an address
   const handleSelectAddress = async (addr) => {
     setSelectedAddressId(addr.id || addr._id);
 
-    const loc = locations.find((l) => l._id === addr.state);
+    const loc =
+      locations.find((l) => String(l._id) === String(addr.state)) ||
+      locations.find(
+        (l) =>
+          l.state?.trim().toLowerCase() ===
+          (addr.stateName || addr.state || "").trim().toLowerCase()
+      );
+
     if (loc && !loc.deliverable) {
       toast.error(`Notice: Deliveries to ${loc.state} are currently restricted. You cannot proceed until a deliverable address is selected.`);
     } else if (addr.state && (addr.zip || addr.pincode)) {
       try {
+        const stateId = loc?._id || addr.state;
         await updateShippingAddress({
           door: addr.door || "",
           street: addr.street || "",
           city: addr.city || "",
-          state: addr.state,
+          state: stateId,
           pincode: Number(addr.zip || addr.pincode) || 0,
         });
       } catch {
@@ -157,7 +183,7 @@ export default function Checkout() {
     }
 
     handleSelectAddress(newAddr);
-    toast.success("Shipping address saved to your Garage Address Book!");
+    toast.success("Shipping address saved!");
   };
 
   // Delete saved address
@@ -199,7 +225,7 @@ export default function Checkout() {
         door: selectedAddress.door ? selectedAddress.door.trim() : undefined,
         street: selectedAddress.street ? selectedAddress.street.trim() : undefined,
         city: selectedAddress.city ? selectedAddress.city.trim() : undefined,
-        state: selectedAddress.state,
+        state: selectedLoc?._id || selectedAddress.state,
         pincode: Number(selectedAddress.zip || selectedAddress.pincode),
       };
       await updateShippingAddress(address);
@@ -398,21 +424,6 @@ export default function Checkout() {
     <div className="min-h-screen bg-background text-foreground pb-12">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
 
-        {/* ─── Breadcrumb Navigation ─── */}
-        <div className="flex items-center gap-1.5 text-xs text-muted-foreground flex-wrap">
-          <Link to="/profile" className="hover:text-primary transition-colors">
-            Your Account
-          </Link>
-          <span>›</span>
-          <Link to="/cart" className="hover:text-primary transition-colors">
-            Shopping Cart
-          </Link>
-          <span>›</span>
-          <span className="text-foreground font-bold">
-            Checkout {checkoutStep === 2 ? "› Shipping Destination" : "› Payment & Review"}
-          </span>
-        </div>
-
         {/* ─── Stepper Progress ─── */}
         <CartStepper currentStep={checkoutStep} />
 
@@ -448,7 +459,7 @@ export default function Checkout() {
 
           <div className="flex items-center gap-2 text-xs text-muted-foreground">
             <Lock className="size-3.5 text-primary" />
-            <span className="font-medium text-foreground">256-Bit SSL Encrypted Garage Checkout</span>
+            <span className="font-medium text-foreground">Secure Checkout (256-bit SSL)</span>
           </div>
         </div>
 
@@ -488,7 +499,7 @@ export default function Checkout() {
                           Payment Method Selection
                         </h2>
                         <p className="text-xs text-muted-foreground">
-                          Select your preferred settlement channel for this dispatch
+                          Choose a payment method
                         </p>
                       </div>
                     </div>
@@ -560,7 +571,7 @@ export default function Checkout() {
                   className="w-full h-12 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground font-bold text-sm shadow-xs transition-all gap-2 cursor-pointer"
                 >
                   {isProcessing
-                    ? "Securing Dispatch & Order..."
+                    ? "Placing Order..."
                     : paymentMethod === "cod"
                     ? `Confirm Order (COD) - ₹${grandTotal.toLocaleString("en-IN", { maximumFractionDigits: 2 })}`
                     : `Pay ₹${grandTotal.toLocaleString("en-IN", { maximumFractionDigits: 2 })} via Razorpay`}
@@ -663,7 +674,7 @@ export default function Checkout() {
                 <div className="pt-3 border-t border-border/80 space-y-2 text-[11px] text-muted-foreground">
                   <div className="flex items-center gap-2">
                     <ShieldCheck className="size-3.5 text-primary shrink-0" />
-                    <span>Buyer Protection & Garage Quality Assurance</span>
+                    <span>Buyer Protection & Quality Check</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <Truck className="size-3.5 text-primary shrink-0" />
