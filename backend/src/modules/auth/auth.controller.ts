@@ -56,7 +56,10 @@ const controllers = {
   },
 
   getCurrentUser: async (req: Request, res: Response, next: NextFunction) => {
-    const token = req.cookies?.access_token;
+    const bearer = req.headers.authorization?.startsWith('Bearer ')
+      ? req.headers.authorization.split(' ')[1]
+      : undefined;
+    const token = req.cookies?.access_token || bearer;
 
     if (!token) {
       return sendResponse.unauthorized(res, ERROR.UNAUTHENTICATED);
@@ -125,7 +128,19 @@ const controllers = {
 
     return sendResponse.success(res, result.message);
   },
+
+  resetPassword: async (req: Request, res: Response, next: NextFunction) => {
+    const result = await service.resetPassword(req.body);
+    return sendResponse.success(res, result.message);
+  },
 };
 
-export const { loginUser, registerUser, logoutUser, getCurrentUser, adminResetPassword, changePassword } =
-  wrapControllers(controllers);
+export const {
+  loginUser,
+  registerUser,
+  logoutUser,
+  getCurrentUser,
+  adminResetPassword,
+  changePassword,
+  resetPassword,
+} = wrapControllers(controllers);

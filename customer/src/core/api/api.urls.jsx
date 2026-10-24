@@ -1,4 +1,4 @@
-const base_url = import.meta.env.VITE_BASE_URL;
+const base_url = import.meta.env.VITE_BASE_URL || '/api/v1';
 
 const apiurls = {
   auth: {
@@ -14,6 +14,15 @@ const apiurls = {
       method: "post",
       url: () => `${base_url}/auths/admin/reset-password`,
     },
+    resetPassword: {
+      method: "post",
+      url: () => `${base_url}/auths/reset-password`,
+    },
+  },
+
+  otps: {
+    send: { method: "post", url: () => `${base_url}/otps/send` },
+    verify: { method: "post", url: () => `${base_url}/otps/verify` },
   },
 
   users: {
