@@ -40,10 +40,8 @@ import {
   ArrowRight,
   CheckCircle2,
   ChevronRight,
-  Car,
   ShieldCheck,
   Calendar,
-  Sparkles,
   Camera,
 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -114,7 +112,7 @@ function AvatarUploader({ user, onUploaded }) {
 
   return (
     <div className="relative group shrink-0">
-      <div className="relative size-24 sm:size-26 rounded-2xl border-4 border-card bg-muted p-1 shadow-md ring-1 ring-border/80 flex items-center justify-center overflow-hidden bg-gradient-to-br from-neutral-800 to-neutral-950">
+      <div className="relative size-20 sm:size-24 rounded-2xl border-2 border-border/80 bg-muted p-1 shadow-xs ring-1 ring-border/40 flex items-center justify-center overflow-hidden bg-gradient-to-br from-neutral-900 to-neutral-950">
         {src ? (
           <img
             src={src}
@@ -547,93 +545,13 @@ export default function Profile() {
         </div>
       </div>
 
-      {/* ─── Collector Hero Profile Card ─── */}
-      <div className="rounded-2xl border border-border/80 bg-card overflow-hidden shadow-lg relative">
-        {/* High-Performance Automotive Collector Banner */}
-        <div className="relative h-44 sm:h-52 md:h-60 w-full overflow-hidden bg-neutral-950 border-b border-border/80 flex flex-col justify-between p-4 sm:p-6 select-none">
-          {/* Background Hypercar Image & Vignette */}
-          <div className="absolute inset-0 z-0">
-            <img
-              src="/cars/daytona_sp3.jpg"
-              alt="Torque Toyzz Garage"
-              className="w-full h-full object-cover object-[center_35%] filter brightness-[0.65] contrast-[1.1] scale-105"
-            />
-            {/* Multi-directional Gradient Overlay */}
-            <div className="absolute inset-0 bg-gradient-to-r from-neutral-950 via-neutral-950/85 to-neutral-950/25 sm:to-transparent" />
-            <div className="absolute inset-0 bg-gradient-to-t from-neutral-950 via-neutral-950/60 to-transparent" />
-            <div
-              className="absolute inset-0 opacity-40 pointer-events-none"
-              style={{
-                background:
-                  "radial-gradient(circle at 85% 20%, rgba(225, 29, 72, 0.45), transparent 60%)",
-              }}
-            />
-            {/* Subtle Carbon Fiber Pattern */}
-            <div
-              className="absolute inset-0 opacity-15 pointer-events-none"
-              style={{
-                backgroundImage:
-                  "repeating-linear-gradient(45deg, rgba(255,255,255,.05) 0 2px, transparent 2px 8px)",
-              }}
-            />
-          </div>
+      {/* ─── Elevated Collector Profile Card (Clean Minimalist Luxury) ─── */}
+      <div className="rounded-2xl border border-border/80 bg-card p-6 sm:p-7 shadow-xs relative overflow-hidden transition-all">
+        {/* Subtle Elevated Accent Line */}
+        <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-primary via-primary/80 to-transparent" />
 
-          {/* Top Banner Row: Badges & Telemetry */}
-          <div className="relative z-10 flex items-center justify-between gap-2 flex-wrap">
-            <div className="flex items-center gap-2">
-              <div className="flex items-center gap-2 bg-neutral-900/90 backdrop-blur-md border border-white/10 px-3 py-1 rounded-full shadow-md text-xs text-neutral-200">
-                <span className="relative flex size-2">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-                  <span className="relative inline-flex rounded-full size-2 bg-emerald-500" />
-                </span>
-                <span className="font-semibold tracking-wide text-[11px] sm:text-xs">
-                  VIP PADDOCK
-                </span>
-                <span className="text-white/30">•</span>
-                <span className="text-[10px] text-primary font-mono font-bold uppercase tracking-wider">
-                  VERIFIED COLLECTOR
-                </span>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-2">
-              <div className="hidden xs:flex items-center gap-1.5 bg-neutral-900/90 backdrop-blur-md border border-white/10 px-2.5 py-1 rounded-full text-[10px] font-mono uppercase font-bold text-neutral-300 shadow-md">
-                <Sparkles className="size-3 text-amber-400" />
-                <span>APEX TIER</span>
-              </div>
-              <Badge className="bg-primary text-primary-foreground border-transparent font-mono font-bold text-[10px] sm:text-xs tracking-wider px-2.5 py-1 shadow-md uppercase">
-                {collectorId}
-              </Badge>
-            </div>
-          </div>
-
-          {/* Lower Banner Row: Automotive Watermark & Slogan */}
-          <div className="relative z-10 flex items-end justify-between">
-            <div className="space-y-0.5">
-              <div className="flex items-center gap-2 text-white/95">
-                <Car className="size-4 sm:size-5 text-primary stroke-[2.2]" />
-                <span className="font-heading font-black text-sm sm:text-lg tracking-wide uppercase">
-                  Collector Garage
-                </span>
-              </div>
-              <p className="text-[10px] sm:text-xs text-neutral-300 font-medium tracking-wide">
-                Engineered for speed, scale, and precision.
-              </p>
-            </div>
-
-            <div className="hidden sm:flex items-center gap-2 text-[10px] font-mono text-neutral-400 bg-neutral-950/70 backdrop-blur-sm border border-white/10 px-2.5 py-1 rounded-lg">
-              <span className="text-primary font-bold">100%</span>
-              <span>AUTHENTIC LICENSED</span>
-            </div>
-          </div>
-
-          {/* Racing Neon Redline Divider */}
-          <div className="absolute bottom-0 left-0 right-0 h-[2.5px] bg-gradient-to-r from-primary via-primary/90 to-transparent shadow-[0_0_12px_rgba(225,29,72,0.8)] z-10" />
-        </div>
-
-        {/* Profile Identity Bar */}
-        <div className="p-5 sm:p-6 relative -mt-12 sm:-mt-14 flex flex-col sm:flex-row items-center sm:items-end justify-between gap-5">
-          <div className="flex flex-col sm:flex-row items-center sm:items-end gap-4 text-center sm:text-left">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+          <div className="flex flex-col sm:flex-row items-center sm:items-start md:items-center gap-5 text-center sm:text-left flex-1 min-w-0">
             {/* Avatar */}
             <AvatarUploader
               user={user}
@@ -641,43 +559,58 @@ export default function Profile() {
             />
 
             {/* User Meta */}
-            <div className="space-y-1.5 pb-1">
-              <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2">
-                <h2 className="text-xl sm:text-2xl font-black text-foreground tracking-tight">
+            <div className="space-y-2 flex-1 min-w-0">
+              <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2.5">
+                <h2 className="text-2xl sm:text-3xl font-heading font-black text-foreground tracking-tight">
                   {user.name}
                 </h2>
-                <Badge className="bg-primary/10 text-primary border border-primary/20 text-[10px] font-bold uppercase tracking-wider">
-                  Verified Customer
+                <Badge className="bg-primary/10 text-primary border border-primary/20 text-[11px] font-bold uppercase tracking-wider">
+                  Verified Collector
                 </Badge>
                 {user.role && (
-                  <Badge variant="outline" className="text-[10px] font-medium capitalize border-border/80 text-muted-foreground">
+                  <Badge variant="outline" className="text-[10px] font-medium capitalize border-border text-muted-foreground">
                     {user.role}
                   </Badge>
                 )}
+                <Badge variant="secondary" className="font-mono text-[11px] font-semibold text-muted-foreground">
+                  {collectorId}
+                </Badge>
               </div>
 
-              <div className="flex flex-wrap items-center justify-center sm:justify-start gap-x-4 gap-y-1 text-xs text-muted-foreground">
+              <div className="flex flex-wrap items-center justify-center sm:justify-start gap-x-4 gap-y-1.5 text-xs text-muted-foreground">
                 {user.username && (
                   <span className="font-mono text-foreground font-semibold">
                     @{user.username}
                   </span>
                 )}
                 <span>{user.email}</span>
-                <span className="flex items-center gap-1 font-mono text-[11px]">
+                {user.phone && <span>• {user.phone}</span>}
+                <span className="flex items-center gap-1 font-mono text-[11px] text-muted-foreground">
                   <Calendar className="size-3 text-primary" />
                   Member since {joinedDate}
+                </span>
+              </div>
+
+              <div className="flex items-center justify-center sm:justify-start gap-3 pt-0.5 text-xs">
+                <span className="inline-flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400 font-medium">
+                  <span className="size-2 rounded-full bg-emerald-500 animate-pulse" />
+                  Account Active &amp; Verified
+                </span>
+                <span className="text-muted-foreground/40">•</span>
+                <span className="text-muted-foreground font-mono text-[11px]">
+                  VIP Paddock Member
                 </span>
               </div>
             </div>
           </div>
 
           {/* Quick Action Links */}
-          <div className="flex items-center gap-2 shrink-0">
+          <div className="flex items-center gap-2.5 shrink-0 flex-wrap justify-center sm:justify-end border-t md:border-t-0 pt-4 md:pt-0 border-border/60">
             <Button
               asChild
               variant="outline"
               size="sm"
-              className="rounded-xl border-border/80 text-xs font-semibold gap-1.5 hover:border-primary hover:text-primary cursor-pointer shadow-2xs h-9"
+              className="rounded-xl border-border/80 text-xs font-semibold gap-1.5 hover:border-primary hover:text-primary cursor-pointer shadow-2xs h-9.5"
             >
               <Link to="/wishlist">
                 <Heart className="size-3.5 text-primary" />
@@ -687,7 +620,7 @@ export default function Profile() {
             <Button
               asChild
               size="sm"
-              className="rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground font-semibold text-xs gap-1.5 cursor-pointer shadow-xs h-9"
+              className="rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground font-semibold text-xs gap-1.5 cursor-pointer shadow-xs h-9.5"
             >
               <Link to="/orders">
                 <Package className="size-3.5" />
