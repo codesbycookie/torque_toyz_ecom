@@ -485,252 +485,269 @@ export default function OrderTracking() {
     <div className="min-h-screen bg-background text-foreground pb-12">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
 
-        {/* ─── Action Bar ─── */}
-        <div className="flex items-center justify-end gap-2 flex-wrap">
-          <Button
-            variant="outline"
-            size="sm"
-            disabled={isReorderingAll}
-            onClick={handleBuyAgainAll}
-            className="h-8.5 rounded-xl text-xs gap-1.5 font-medium hover:border-primary hover:text-primary cursor-pointer"
-          >
-            {isReorderingAll ? (
-              <Loader2 className="size-3.5 animate-spin text-primary" />
+        {/* ─── Action Bar & View Switcher ─── */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border/70 pb-4 print:hidden">
+          {/* View switcher tabs */}
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setSearchParams({ view: "tracking" })}
+              className={cn(
+                "px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all flex items-center gap-2 cursor-pointer border",
+                activeView === "tracking"
+                  ? "bg-primary text-primary-foreground border-primary shadow-2xs"
+                  : "bg-muted/40 text-muted-foreground border-border/80 hover:text-foreground hover:bg-muted"
+              )}
+            >
+              <Truck className="size-3.5" />
+              <span>Delivery Tracking</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setSearchParams({ view: "invoice" })}
+              className={cn(
+                "px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all flex items-center gap-2 cursor-pointer border",
+                activeView === "invoice"
+                  ? "bg-primary text-primary-foreground border-primary shadow-2xs"
+                  : "bg-muted/40 text-muted-foreground border-border/80 hover:text-foreground hover:bg-muted"
+              )}
+            >
+              <FileText className="size-3.5" />
+              <span>Invoice</span>
+            </button>
+          </div>
+
+          <div className="flex items-center gap-2 flex-wrap">
+            {activeView === "invoice" ? (
+              <Button
+                size="sm"
+                onClick={() => window.print()}
+                className="h-8.5 rounded-xl text-xs gap-1.5 font-semibold bg-primary hover:bg-primary/90 text-primary-foreground shadow-2xs cursor-pointer"
+              >
+                <Printer className="size-3.5" />
+                <span>Print / Save as PDF</span>
+              </Button>
             ) : (
-              <RotateCcw className="size-3.5 text-primary" />
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setSearchParams({ view: "invoice" });
+                  setTimeout(() => window.print(), 250);
+                }}
+                className="h-8.5 rounded-xl text-xs gap-1.5 font-medium cursor-pointer hover:border-primary hover:text-primary"
+              >
+                <Printer className="size-3.5 text-muted-foreground" />
+                <span>Print Invoice</span>
+              </Button>
             )}
-            <span>Buy Order Again</span>
-          </Button>
 
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleShareTracking}
-            className="h-8.5 rounded-xl text-xs gap-1.5 font-medium cursor-pointer"
-          >
-            <Share2 className="size-3.5 text-primary" />
-            <span>Share</span>
-          </Button>
-
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => window.print()}
-            className="h-8.5 rounded-xl text-xs gap-1.5 font-medium cursor-pointer"
-          >
-            <Printer className="size-3.5 text-muted-foreground" />
-            <span>Print</span>
-          </Button>
-
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => navigate("/orders")}
-            className="h-8.5 rounded-xl text-xs gap-1.5 font-medium cursor-pointer"
-          >
-            <ArrowLeft className="size-3.5" />
-            <span>Back to Orders</span>
-          </Button>
-        </div>
-
-        {/* ─── Hero Delivery Tracker Card ─── */}
-        <div className="rounded-2xl border border-border/80 bg-card overflow-hidden shadow-xs">
-          {/* Header Strip with Order Code, Live Status & Metadata */}
-          <div className="p-6 sm:p-8 border-b border-border/70 flex flex-col md:flex-row md:items-center justify-between gap-6">
-            <div className="space-y-2">
-              <div className="flex items-center gap-3 flex-wrap">
-                <span className="text-xs font-mono font-bold uppercase tracking-wider text-muted-foreground">
-                  Order Reference:
-                </span>
-                <span className="font-mono font-extrabold text-foreground text-sm">
-                  #{orderCode}
-                </span>
-                {getStatusBadge(orderDetails.status)}
-              </div>
-
-              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black tracking-tight text-foreground">
-                {isDelivered
-                  ? `Delivered on ${orderDateShort}`
-                  : isShipped
-                  ? "Shipped & In Transit"
-                  : isConfirmed
-                  ? "Checked & Packed"
-                  : isCancelled
-                  ? "Order Was Cancelled"
-                  : "Order Placed & Confirmed"}
-              </h1>
-
-              <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed max-w-2xl">
-                {isDelivered
-                  ? `Package delivered safely on ${orderDateFormatted}. Your scale model collection has been updated.`
-                  : isShipped
-                  ? "Package is currently in transit with our logistics partner and headed toward your local hub."
-                  : isCancelled
-                  ? "This order was cancelled and inventory quantities were restored to the catalog."
-                  : "Your order is confirmed and our technicians are inspecting precision models prior to boxing."}
-              </p>
-            </div>
-
-            {/* Logistics & Dispatch Summary Pill */}
-            <div className="bg-muted/40 dark:bg-muted/20 border border-border/80 rounded-xl p-4 shrink-0 space-y-2 text-xs md:min-w-[260px]">
-              <div className="flex items-center justify-between text-muted-foreground">
-                <span>Order Placed</span>
-                <span className="text-foreground font-semibold">{orderDateShort}</span>
-              </div>
-              
-              {totalWeightKg > 0 && (
-                <div className="flex items-center justify-between text-muted-foreground">
-                  <span className="flex items-center gap-1">
-                    <Weight className="size-3 text-primary" /> Total Weight
-                  </span>
-                  <span className="text-foreground font-semibold">{totalWeightKg} kg</span>
-                </div>
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={isReorderingAll}
+              onClick={handleBuyAgainAll}
+              className="h-8.5 rounded-xl text-xs gap-1.5 font-medium hover:border-primary hover:text-primary cursor-pointer"
+            >
+              {isReorderingAll ? (
+                <Loader2 className="size-3.5 animate-spin text-primary" />
+              ) : (
+                <RotateCcw className="size-3.5 text-primary" />
               )}
+              <span>Buy Order Again</span>
+            </Button>
 
-              <div className="flex items-center justify-between text-muted-foreground">
-                <span>Payment Method</span>
-                <span className="text-foreground font-semibold uppercase">{payment.method}</span>
-              </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleShareTracking}
+              className="h-8.5 rounded-xl text-xs gap-1.5 font-medium cursor-pointer"
+            >
+              <Share2 className="size-3.5 text-primary" />
+              <span>Share</span>
+            </Button>
 
-              <div className="flex items-center justify-between text-muted-foreground pt-1 border-t border-border/60">
-                <span>Order Total</span>
-                <strong className="text-primary font-bold text-sm">
-                  ₹{Number(pricing.total || 0).toLocaleString("en-IN", { minimumFractionDigits: 2 })}
-                </strong>
-              </div>
-            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => navigate("/orders")}
+              className="h-8.5 rounded-xl text-xs gap-1.5 font-medium cursor-pointer"
+            >
+              <ArrowLeft className="size-3.5" />
+              <span>Back to Orders</span>
+            </Button>
           </div>
-
-          {/* ─── 4-Stage Visual Delivery Stepper ─── */}
-          {!isCancelled && (
-            <div className="p-6 sm:p-8 bg-muted/10">
-              <div className="relative">
-                {/* Background Connecting Line */}
-                <div className="hidden sm:block absolute left-[12%] right-[12%] top-5.5 h-1 bg-border rounded-full" />
-
-                {/* Active Colored Fill Line */}
-                <div
-                  className={cn(
-                    "hidden sm:block absolute left-[12%] top-5.5 h-1 rounded-full transition-all duration-700 bg-primary",
-                    isDelivered
-                      ? "right-[12%]"
-                      : currentRank === 3
-                      ? "w-[50%]"
-                      : currentRank === 2
-                      ? "w-[25%]"
-                      : "w-0"
-                  )}
-                />
-
-                {/* Milestones */}
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-6 sm:gap-2">
-                  {pipelineMilestones.map((milestone) => {
-                    const stepState = getMilestoneState(milestone.key);
-                    const isCompleted = stepState.state === "completed";
-                    const isCurrent = stepState.state === "current";
-                    const StepIcon = milestone.icon;
-
-                    return (
-                      <div key={milestone.key} className="flex flex-col items-center text-center relative z-10">
-                        <div
-                          className={cn(
-                            "size-11 sm:size-12 rounded-2xl flex items-center justify-center border-2 transition-all shadow-xs",
-                            isCompleted
-                              ? "bg-primary border-primary text-primary-foreground"
-                              : isCurrent
-                              ? "bg-background border-primary text-primary ring-4 ring-primary/20 font-bold"
-                              : "bg-background border-border text-muted-foreground"
-                          )}
-                        >
-                          {isCompleted ? (
-                            <Check className="size-5 stroke-[2.5]" />
-                          ) : isCurrent ? (
-                            <StepIcon className="size-5 text-primary animate-pulse" />
-                          ) : (
-                            <StepIcon className="size-5 text-muted-foreground/60" />
-                          )}
-                        </div>
-
-                        <span
-                          className={cn(
-                            "text-xs sm:text-sm font-bold mt-2.5",
-                            isCompleted
-                              ? "text-foreground"
-                              : isCurrent
-                              ? "text-primary font-black"
-                              : "text-muted-foreground"
-                          )}
-                        >
-                          {milestone.title}
-                        </span>
-
-                        <span className="text-[11px] text-muted-foreground hidden sm:block mt-0.5">
-                          {stepState.date !== "Pending" ? stepState.date : milestone.subTitle}
-                        </span>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* ─── Cancelled Order Notice ─── */}
-        {isCancelled && (
-          <div className="rounded-2xl border border-destructive/30 bg-destructive/10 p-5 sm:p-6 flex items-start gap-4 shadow-2xs">
-            <AlertTriangle className="size-6 text-destructive shrink-0 mt-0.5" />
-            <div className="space-y-1">
-              <h3 className="font-bold text-destructive text-base">Order Cancelled</h3>
-              <p className="text-xs sm:text-sm text-muted-foreground">
-                {historyMap.cancelled?.note ||
-                  "This order has been cancelled and the items have been restocked."}
-              </p>
-              {historyMap.cancelled?.timestamp && (
-                <p className="text-xs text-muted-foreground pt-1">
-                  Cancellation recorded: {new Date(historyMap.cancelled.timestamp).toLocaleString("en-IN")}
-                </p>
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* ─── View Switcher Tabs: Tracking vs Invoice ─── */}
-        <div className="flex items-center gap-6 border-b border-border/80 text-sm font-semibold">
-          <button
-            type="button"
-            onClick={() => setSearchParams({ view: "tracking" })}
-            className={cn(
-              "pb-3 pt-1 transition-all flex items-center gap-2 cursor-pointer border-b-2",
-              activeView === "tracking"
-                ? "border-primary text-primary font-bold"
-                : "border-transparent text-muted-foreground hover:text-foreground hover:border-border"
-            )}
-          >
-            <Truck className="size-4" />
-            <span>Delivery Tracking</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setSearchParams({ view: "invoice" })}
-            className={cn(
-              "pb-3 pt-1 transition-all flex items-center gap-2 cursor-pointer border-b-2",
-              activeView === "invoice"
-                ? "border-primary text-primary font-bold"
-                : "border-transparent text-muted-foreground hover:text-foreground hover:border-border"
-            )}
-          >
-            <FileText className="size-4" />
-            <span>Tax Invoice Details</span>
-          </button>
         </div>
 
         {/* ════════════════════════════════════════════════════════════════════
-            VIEW 1: TRACKING DASHBOARD
+            VIEW 1: TRACKING DASHBOARD (Only rendered in tracking view)
             ════════════════════════════════════════════════════════════════════ */}
         {activeView === "tracking" && (
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+          <>
+            {/* ─── Hero Delivery Tracker Card ─── */}
+            <div className="rounded-2xl border border-border/80 bg-card overflow-hidden shadow-xs">
+              {/* Header Strip with Order Code, Live Status & Metadata */}
+              <div className="p-6 sm:p-8 border-b border-border/70 flex flex-col md:flex-row md:items-center justify-between gap-6">
+                <div className="space-y-2">
+                  <div className="flex items-center gap-3 flex-wrap">
+                    <span className="text-xs font-mono font-bold uppercase tracking-wider text-muted-foreground">
+                      Order Reference:
+                    </span>
+                    <span className="font-mono font-extrabold text-foreground text-sm">
+                      #{orderCode}
+                    </span>
+                    {getStatusBadge(orderDetails.status)}
+                  </div>
+
+                  <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black tracking-tight text-foreground">
+                    {isDelivered
+                      ? `Delivered on ${orderDateShort}`
+                      : isShipped
+                      ? "Shipped & In Transit"
+                      : isConfirmed
+                      ? "Checked & Packed"
+                      : isCancelled
+                      ? "Order Was Cancelled"
+                      : "Order Placed & Confirmed"}
+                  </h1>
+
+                  <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed max-w-2xl">
+                    {isDelivered
+                      ? `Package delivered safely on ${orderDateFormatted}. Your scale model collection has been updated.`
+                      : isShipped
+                      ? "Package is currently in transit with our logistics partner and headed toward your local hub."
+                      : isCancelled
+                      ? "This order was cancelled and inventory quantities were restored to the catalog."
+                      : "Your order is confirmed and our technicians are inspecting precision models prior to boxing."}
+                  </p>
+                </div>
+
+                {/* Logistics & Dispatch Summary Pill */}
+                <div className="bg-muted/40 dark:bg-muted/20 border border-border/80 rounded-xl p-4 shrink-0 space-y-2 text-xs md:min-w-[260px]">
+                  <div className="flex items-center justify-between text-muted-foreground">
+                    <span>Order Placed</span>
+                    <span className="text-foreground font-semibold">{orderDateShort}</span>
+                  </div>
+                  
+                  {totalWeightKg > 0 && (
+                    <div className="flex items-center justify-between text-muted-foreground">
+                      <span className="flex items-center gap-1">
+                        <Weight className="size-3 text-primary" /> Total Weight
+                      </span>
+                      <span className="text-foreground font-semibold">{totalWeightKg} kg</span>
+                    </div>
+                  )}
+
+                  <div className="flex items-center justify-between text-muted-foreground">
+                    <span>Payment Method</span>
+                    <span className="text-foreground font-semibold uppercase">{payment.method}</span>
+                  </div>
+
+                  <div className="flex items-center justify-between text-muted-foreground pt-1 border-t border-border/60">
+                    <span>Order Total</span>
+                    <strong className="text-primary font-bold text-sm">
+                      ₹{Number(pricing.total || 0).toLocaleString("en-IN", { minimumFractionDigits: 2 })}
+                    </strong>
+                  </div>
+                </div>
+              </div>
+
+              {/* ─── 4-Stage Visual Delivery Stepper ─── */}
+              {!isCancelled && (
+                <div className="p-6 sm:p-8 bg-muted/10">
+                  <div className="relative">
+                    {/* Background Connecting Line */}
+                    <div className="hidden sm:block absolute left-[12%] right-[12%] top-5.5 h-1 bg-border rounded-full" />
+
+                    {/* Active Colored Fill Line */}
+                    <div
+                      className={cn(
+                        "hidden sm:block absolute left-[12%] top-5.5 h-1 rounded-full transition-all duration-700 bg-primary",
+                        isDelivered
+                          ? "right-[12%]"
+                          : currentRank === 3
+                          ? "w-[50%]"
+                          : currentRank === 2
+                          ? "w-[25%]"
+                          : "w-0"
+                      )}
+                    />
+
+                    {/* Milestones */}
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-6 sm:gap-2">
+                      {pipelineMilestones.map((milestone) => {
+                        const stepState = getMilestoneState(milestone.key);
+                        const isCompleted = stepState.state === "completed";
+                        const isCurrent = stepState.state === "current";
+                        const StepIcon = milestone.icon;
+
+                        return (
+                          <div key={milestone.key} className="flex flex-col items-center text-center relative z-10">
+                            <div
+                              className={cn(
+                                "size-11 sm:size-12 rounded-2xl flex items-center justify-center border-2 transition-all shadow-xs",
+                                isCompleted
+                                  ? "bg-primary border-primary text-primary-foreground"
+                                  : isCurrent
+                                  ? "bg-background border-primary text-primary ring-4 ring-primary/20 font-bold"
+                                  : "bg-background border-border text-muted-foreground"
+                              )}
+                            >
+                              {isCompleted ? (
+                                <Check className="size-5 stroke-[2.5]" />
+                              ) : isCurrent ? (
+                                <StepIcon className="size-5 text-primary animate-pulse" />
+                              ) : (
+                                <StepIcon className="size-5 text-muted-foreground/60" />
+                              )}
+                            </div>
+
+                            <span
+                              className={cn(
+                                "text-xs sm:text-sm font-bold mt-2.5",
+                                isCompleted
+                                  ? "text-foreground"
+                                  : isCurrent
+                                  ? "text-primary font-black"
+                                  : "text-muted-foreground"
+                              )}
+                            >
+                              {milestone.title}
+                            </span>
+
+                            <span className="text-[11px] text-muted-foreground hidden sm:block mt-0.5">
+                              {stepState.date !== "Pending" ? stepState.date : milestone.subTitle}
+                            </span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* ─── Cancelled Order Notice ─── */}
+            {isCancelled && (
+              <div className="rounded-2xl border border-destructive/30 bg-destructive/10 p-5 sm:p-6 flex items-start gap-4 shadow-2xs">
+                <AlertTriangle className="size-6 text-destructive shrink-0 mt-0.5" />
+                <div className="space-y-1">
+                  <h3 className="font-bold text-destructive text-base">Order Cancelled</h3>
+                  <p className="text-xs sm:text-sm text-muted-foreground">
+                    {historyMap.cancelled?.note ||
+                      "This order has been cancelled and the items have been restocked."}
+                  </p>
+                  {historyMap.cancelled?.timestamp && (
+                    <p className="text-xs text-muted-foreground pt-1">
+                      Cancellation recorded: {new Date(historyMap.cancelled.timestamp).toLocaleString("en-IN")}
+                    </p>
+                  )}
+                </div>
+              </div>
+            )}
+
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
 
             {/* Left 8 Cols: Checkpoints, Models, Courier Map */}
             <div className="lg:col-span-8 space-y-6">
@@ -1076,7 +1093,7 @@ export default function OrderTracking() {
                     className="w-full h-8.5 text-xs justify-start font-medium rounded-xl cursor-pointer"
                   >
                     <FileText className="size-3.5 mr-2 text-primary" />
-                    <span>View Official Tax Invoice</span>
+                    <span>View Invoice</span>
                   </Button>
 
                   <Button
@@ -1156,48 +1173,59 @@ export default function OrderTracking() {
                   )}
                 </div>
               </div>
-
             </div>
           </div>
-        )}
+        </>
+      )}
 
         {/* ════════════════════════════════════════════════════════════════════
-            VIEW 2: FORMAL TAX INVOICE
+            VIEW 2: PRINTABLE PDF INVOICE
             ════════════════════════════════════════════════════════════════════ */}
         {activeView === "invoice" && (
-          <div className="space-y-6">
-            <div className="rounded-2xl border border-border/80 bg-card overflow-hidden shadow-xs">
-              {/* Header with Torque Toyzz & Invoice Code */}
-              <div className="p-6 sm:p-8 border-b border-border/70 flex flex-col sm:flex-row justify-between gap-6">
-                <div>
-                  <h2 className="text-2xl font-black text-foreground tracking-tight">
-                    Torque Toyzz
-                  </h2>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Scale Model Cars & RC Toys
-                  </p>
-                  <p className="text-xs text-muted-foreground">GSTIN: 33AAAAA0000A1Z5</p>
+          <div className="space-y-6 printable-invoice-wrapper">
+            <div className="printable-invoice-card rounded-2xl border border-border/80 bg-card overflow-hidden shadow-xs print:border-none print:shadow-none print:bg-white print:text-black">
+              {/* Header with Torque Toyzz Logo & Invoice Metadata */}
+              <div className="p-6 sm:p-8 border-b border-border/70 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6 print:border-b-2 print:border-black/20 print:p-0 print:pb-6">
+                <div className="flex items-center gap-4">
+                  <img
+                    src="/logo.png"
+                    alt="Torque Toyzz"
+                    className="h-16 sm:h-20 w-auto object-contain"
+                  />
+                  <div>
+                    <h2 className="text-2xl font-black text-foreground print:text-black tracking-tight">
+                      Torque Toyzz
+                    </h2>
+                    <p className="text-xs text-muted-foreground print:text-gray-600 mt-0.5">
+                      Precision Diecast & RC Hypercars
+                    </p>
+                    <p className="text-xs text-muted-foreground print:text-gray-600">
+                      support@torquetoyzz.com • www.torquetoyzz.com
+                    </p>
+                  </div>
                 </div>
 
                 <div className="sm:text-right space-y-1 text-xs">
-                  <Badge className="bg-primary text-primary-foreground font-semibold text-xs">
-                    Tax Invoice
+                  <Badge className="bg-primary text-primary-foreground font-bold text-xs uppercase tracking-wider px-2.5 py-0.5 print:bg-black print:text-white">
+                    Invoice
                   </Badge>
-                  <p className="font-mono font-bold text-sm text-foreground pt-1">
-                    Invoice #{orderCode}
+                  <p className="font-mono font-bold text-base text-foreground print:text-black pt-1">
+                    #{orderCode}
                   </p>
-                  <p className="text-muted-foreground">Order Date: {orderDateFormatted}</p>
+                  <p className="text-muted-foreground print:text-gray-600">
+                    Order Date: {orderDateFormatted}
+                  </p>
                 </div>
               </div>
 
-              {/* Customer & Payment details */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-6 sm:p-8 border-b border-border/70 text-xs">
-                <div className="space-y-1">
-                  <span className="font-bold text-muted-foreground uppercase text-[11px] tracking-wider">
-                    Billed & Shipped To:
+              {/* Customer & Order Details */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 p-6 sm:p-8 border-b border-border/70 text-xs print:border-b print:border-black/10 print:p-0 print:py-6">
+                <div className="space-y-1.5">
+                  <span className="font-bold text-muted-foreground print:text-gray-500 uppercase text-[11px] tracking-wider block">
+                    Deliver To:
                   </span>
-                  <p className="font-bold text-sm text-foreground">{customerName}</p>
-                  <div className="text-muted-foreground space-y-0.5">
+                  <p className="font-bold text-sm text-foreground print:text-black">{customerName}</p>
+                  <div className="text-muted-foreground print:text-gray-700 space-y-0.5 leading-relaxed">
                     {shippingAddress.door && <p>{shippingAddress.door}</p>}
                     {shippingAddress.street && <p>{shippingAddress.street}</p>}
                     <p>
@@ -1205,105 +1233,132 @@ export default function OrderTracking() {
                       {shippingAddress.pincode ? ` - ${shippingAddress.pincode}` : ""}
                     </p>
                     <p>India</p>
-                    {customerPhone && <p>Phone: {customerPhone}</p>}
-                    {customerEmail && <p>Email: {customerEmail}</p>}
+                    {customerPhone && (
+                      <p className="pt-1">
+                        <span className="font-semibold text-foreground print:text-black">Phone:</span> {customerPhone}
+                      </p>
+                    )}
+                    {customerEmail && (
+                      <p>
+                        <span className="font-semibold text-foreground print:text-black">Email:</span> {customerEmail}
+                      </p>
+                    )}
                   </div>
                 </div>
 
-                <div className="space-y-1 md:text-right">
-                  <span className="font-bold text-muted-foreground uppercase text-[11px] tracking-wider">
-                    Payment Method & Transaction:
+                <div className="space-y-1.5 sm:text-right">
+                  <span className="font-bold text-muted-foreground print:text-gray-500 uppercase text-[11px] tracking-wider block">
+                    Order & Payment Details:
                   </span>
-                  <p className="font-semibold text-foreground capitalize">
-                    {paymentMethodLabel}
-                  </p>
-                  <p className="text-muted-foreground capitalize">
-                    Payment Status: {payment.status || "Authorized"}
-                  </p>
-                  {payment.transaction_id && (
-                    <p className="font-mono text-[11px] text-muted-foreground">
-                      Transaction Ref: {payment.transaction_id}
+                  <div className="space-y-1 leading-relaxed text-muted-foreground print:text-gray-700">
+                    <p>
+                      <span className="font-semibold text-foreground print:text-black">Payment Method: </span>
+                      <span className="capitalize">{paymentMethodLabel}</span>
                     </p>
-                  )}
-                  {totalWeightKg > 0 && (
-                    <p className="text-muted-foreground pt-1">
-                      Consignment Weight: {totalWeightKg} kg
+                    <p>
+                      <span className="font-semibold text-foreground print:text-black">Payment Status: </span>
+                      <span className="capitalize font-medium">{payment.status || "Pending"}</span>
                     </p>
-                  )}
+                    {payment.transaction_id && (
+                      <p className="font-mono text-[11px]">
+                        <span className="font-semibold text-foreground print:text-black">Transaction ID: </span>
+                        {payment.transaction_id}
+                      </p>
+                    )}
+                    <p>
+                      <span className="font-semibold text-foreground print:text-black">Order Status: </span>
+                      <span className="capitalize font-semibold text-primary print:text-black">{status}</span>
+                    </p>
+                  </div>
                 </div>
               </div>
 
-              {/* Itemized Table */}
-              <div className="p-6 sm:p-8 space-y-4">
-                <h4 className="font-bold text-sm text-foreground">
+              {/* Items Table */}
+              <div className="p-6 sm:p-8 space-y-4 print:p-0 print:py-6">
+                <h4 className="font-bold text-sm text-foreground print:text-black uppercase tracking-wider text-[11px]">
                   Purchased Items
                 </h4>
-                <div className="divide-y divide-border/60">
-                  {items.map((item, idx) => {
-                    const prod = typeof item.product === "object" && item.product !== null ? item.product : {};
-                    const qty = Number(item.quantity || 1);
-                    const unitPrice = Number(item.price || prod.price || 0);
-                    const lineTotal = unitPrice * qty;
 
-                    return (
-                      <div key={idx} className="flex items-center justify-between py-3.5 text-xs first:pt-0 last:pb-0">
-                        <div className="space-y-0.5">
-                          <p className="font-bold text-foreground">
-                            {item.name || prod.name || "Precision Scale Model"}
-                          </p>
-                          <p className="text-muted-foreground">
-                            Qty: {qty} × ₹{unitPrice.toLocaleString("en-IN", { minimumFractionDigits: 2 })}
-                          </p>
-                        </div>
-                        <div className="font-bold text-sm text-foreground">
-                          ₹{lineTotal.toLocaleString("en-IN", { minimumFractionDigits: 2 })}
-                        </div>
-                      </div>
-                    );
-                  })}
+                <div className="w-full overflow-x-auto">
+                  <table className="w-full text-xs text-left">
+                    <thead>
+                      <tr className="border-b border-border/70 print:border-b-2 print:border-black/20 text-muted-foreground print:text-gray-600 font-semibold uppercase text-[10px] tracking-wider">
+                        <th className="py-2.5 pr-4">#</th>
+                        <th className="py-2.5 pr-4">Item Description</th>
+                        <th className="py-2.5 px-4 text-center">Qty</th>
+                        <th className="py-2.5 px-4 text-right">Price</th>
+                        <th className="py-2.5 pl-4 text-right">Total</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-border/60 print:divide-black/10">
+                      {items.map((item, idx) => {
+                        const prod = typeof item.product === "object" && item.product !== null ? item.product : {};
+                        const qty = Number(item.quantity || 1);
+                        const unitPrice = Number(item.price || prod.price || 0);
+                        const lineTotal = unitPrice * qty;
+
+                        return (
+                          <tr key={idx} className="text-foreground print:text-black">
+                            <td className="py-3 pr-4 text-muted-foreground print:text-gray-500 font-mono">{idx + 1}</td>
+                            <td className="py-3 pr-4">
+                              <p className="font-bold text-foreground print:text-black">
+                                {item.name || prod.name || "Precision Scale Model"}
+                              </p>
+                              {prod.scale && (
+                                <span className="text-[11px] text-muted-foreground print:text-gray-500">
+                                  Scale: {prod.scale}
+                                </span>
+                              )}
+                            </td>
+                            <td className="py-3 px-4 text-center font-medium">{qty}</td>
+                            <td className="py-3 px-4 text-right font-mono text-muted-foreground print:text-gray-700">
+                              ₹{unitPrice.toLocaleString("en-IN", { minimumFractionDigits: 2 })}
+                            </td>
+                            <td className="py-3 pl-4 text-right font-bold font-mono">
+                              ₹{lineTotal.toLocaleString("en-IN", { minimumFractionDigits: 2 })}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
                 </div>
 
-                <Separator />
-
-                {/* Financial Summary */}
-                <div className="space-y-2 text-xs max-w-xs ml-auto pt-2">
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Subtotal:</span>
-                    <span className="font-medium text-foreground">
-                      ₹{Number(pricing.subtotal || 0).toLocaleString("en-IN", { minimumFractionDigits: 2 })}
-                    </span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Shipping:</span>
-                    <span>
-                      {Number(pricing.shipping_cost || 0) > 0
-                        ? `₹${Number(pricing.shipping_cost).toLocaleString("en-IN", { minimumFractionDigits: 2 })}`
-                        : "FREE"}
-                    </span>
-                  </div>
-                  {Number(pricing.tax || 0) > 0 && (
+                <div className="border-t border-border/70 print:border-t print:border-black/20 pt-4 flex justify-end">
+                  <div className="space-y-2 text-xs w-full max-w-xs">
                     <div className="flex justify-between">
-                      <span className="text-muted-foreground">GST (18%):</span>
-                      <span>₹{Number(pricing.tax).toLocaleString("en-IN", { minimumFractionDigits: 2 })}</span>
+                      <span className="text-muted-foreground print:text-gray-600">Subtotal:</span>
+                      <span className="font-medium text-foreground print:text-black font-mono">
+                        ₹{Number(pricing.subtotal || 0).toLocaleString("en-IN", { minimumFractionDigits: 2 })}
+                      </span>
                     </div>
-                  )}
-                  <Separator />
-                  <div className="flex justify-between font-black text-base text-primary">
-                    <span>Grand Total:</span>
-                    <span>₹{Number(pricing.total || 0).toLocaleString("en-IN", { minimumFractionDigits: 2 })}</span>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground print:text-gray-600">Shipping:</span>
+                      <span className="font-medium text-foreground print:text-black">
+                        {Number(pricing.shipping_cost || 0) > 0
+                          ? `₹${Number(pricing.shipping_cost).toLocaleString("en-IN", { minimumFractionDigits: 2 })}`
+                          : "FREE"}
+                      </span>
+                    </div>
+                    <div className="border-t border-border/70 print:border-t-2 print:border-black/30 pt-2 flex justify-between font-black text-base text-primary print:text-black">
+                      <span>Total Amount:</span>
+                      <span className="font-mono">
+                        ₹{Number(pricing.total || 0).toLocaleString("en-IN", { minimumFractionDigits: 2 })}
+                      </span>
+                    </div>
                   </div>
                 </div>
               </div>
 
-              {/* Invoice Footer */}
-              <div className="bg-muted/30 border-t border-border/70 p-5 sm:p-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-muted-foreground">
-                <p>Torque Toyzz certified tax invoice. System generated.</p>
+              {/* Invoice Footer (on screen: note + print button; in print: note only) */}
+              <div className="bg-muted/30 border-t border-border/70 p-5 sm:p-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-muted-foreground print:bg-white print:border-t print:border-black/10 print:p-0 print:pt-6 print:text-gray-500">
+                <p>Thank you for shopping with Torque Toyzz! For questions, email support@torquetoyzz.com</p>
                 <Button
                   size="sm"
                   onClick={() => window.print()}
-                  className="rounded-xl text-xs gap-1.5 font-semibold bg-primary hover:bg-primary/90 text-primary-foreground shadow-2xs"
+                  className="rounded-xl text-xs gap-1.5 font-semibold bg-primary hover:bg-primary/90 text-primary-foreground shadow-2xs cursor-pointer print:hidden"
                 >
-                  <Printer className="size-3.5" /> Print Tax Invoice
+                  <Printer className="size-3.5" /> Print / Save as PDF
                 </Button>
               </div>
             </div>
