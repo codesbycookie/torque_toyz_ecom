@@ -142,7 +142,32 @@ export const updateOrderStatus = async (id: string, status: OrderStatus, note?: 
     );
   }
 
-  const updated = await Order.updateStatus(existingOrder._id, status, note);
+  const updateFields: Record<string, any> = { status };
+  const isPaid = existingOrder.payment?.status === "paid";
+  if (status === "cancelled" && isPaid) {
+    updateFields["payment.status"] = "refund_pending";
+  }
+
+  const statusNote =
+    status === "cancelled" && isPaid
+      ? (note ? `${note} (Refund pending)` : "Cancelled - Refund pending")
+      : note;
+
+  const updated = await Order.findOneAndUpdate(
+    { _id: existingOrder._id, deleted: false },
+    {
+      $set: updateFields,
+      $push: {
+        status_history: {
+          status,
+          timestamp: new Date(),
+          ...(statusNote && { note: statusNote }),
+        },
+      },
+    },
+    { new: true }
+  );
+
   if (!updated) return null;
   return enhanceOrder(updated);
 };

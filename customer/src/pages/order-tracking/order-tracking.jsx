@@ -87,10 +87,24 @@ export default function OrderTracking() {
   const handleCancelOrder = async () => {
     if (!orderDetails) return;
     const orderId = orderDetails._id || orderDetails.id;
+    const wasPaid =
+      orderDetails.payment?.status === "paid" ||
+      orderDetails.payment?.status === "refund_pending" ||
+      (orderDetails.payment?.method === "online" && orderDetails.payment?.status !== "failed");
+
     try {
       setIsCancelling(true);
       await orders.cancelOrder(orderId, cancelReason);
-      toast.success("Order cancelled successfully");
+      if (wasPaid) {
+        toast.success("Order cancelled successfully. Refund pending.");
+      } else {
+        toast.success("Order cancelled successfully");
+      }
+      try {
+        await orders.getOne(orderId);
+      } catch {
+        // ignore
+      }
     } catch {
       toast.error("Failed to cancel order");
     } finally {
@@ -303,7 +317,12 @@ export default function OrderTracking() {
   };
   const paymentMethodLabel =
     payment.method === "cod" ? "Cash on Delivery" : "Prepaid Online Payment";
-  const isPaymentPaid = payment.status === "paid";
+  const isPaymentPaid = payment.status === "paid" || payment.status === "refund_pending";
+  const isOrderPaid =
+    payment.status === "paid" ||
+    payment.status === "refund_pending" ||
+    payment.status === "refunded" ||
+    (payment.method === "online" && payment.status !== "failed");
 
   // Delivery Partner URL from model: string
   const deliveryPartnerUrl = orderDetails.delivery_partner_url || "";
@@ -468,9 +487,16 @@ export default function OrderTracking() {
         );
       case "cancelled":
         return (
-          <Badge className="bg-destructive/10 text-destructive border border-destructive/20 font-semibold gap-1.5 px-3 py-1 text-xs">
-            <Ban className="size-3.5" /> Cancelled
-          </Badge>
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <Badge className="bg-destructive/10 text-destructive border border-destructive/20 font-semibold gap-1.5 px-3 py-1 text-xs">
+              <Ban className="size-3.5" /> Cancelled
+            </Badge>
+            {isOrderPaid && (
+              <Badge className="bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30 font-semibold gap-1.5 px-2.5 py-1 text-xs">
+                <Clock className="size-3" /> Refund Pending
+              </Badge>
+            )}
+          </div>
         );
       default:
         return (
@@ -608,7 +634,7 @@ export default function OrderTracking() {
                       : isConfirmed
                       ? "Checked & Packed"
                       : isCancelled
-                      ? "Order Was Cancelled"
+                      ? (isOrderPaid ? "Order Cancelled • Refund Pending" : "Order Was Cancelled")
                       : "Order Placed & Confirmed"}
                   </h1>
 
@@ -618,7 +644,9 @@ export default function OrderTracking() {
                       : isShipped
                       ? "Package is currently in transit with our logistics partner and headed toward your local hub."
                       : isCancelled
-                      ? "This order was cancelled and inventory quantities were restored to the catalog."
+                      ? (isOrderPaid
+                          ? "This order was cancelled. Since payment was received, your refund is currently pending and will be processed back to your original payment method."
+                          : "This order was cancelled and inventory quantities were restored to the catalog.")
                       : "Your order is confirmed and our technicians are inspecting precision models prior to boxing."}
                   </p>
                 </div>
@@ -730,13 +758,40 @@ export default function OrderTracking() {
 
             {/* ─── Cancelled Order Notice ─── */}
             {isCancelled && (
-              <div className="rounded-2xl border border-destructive/30 bg-destructive/10 p-5 sm:p-6 flex items-start gap-4 shadow-2xs">
-                <AlertTriangle className="size-6 text-destructive shrink-0 mt-0.5" />
+              <div
+                className={cn(
+                  "rounded-2xl border p-5 sm:p-6 flex items-start gap-4 shadow-2xs",
+                  isOrderPaid
+                    ? "border-amber-500/30 bg-amber-500/10"
+                    : "border-destructive/30 bg-destructive/10"
+                )}
+              >
+                {isOrderPaid ? (
+                  <Clock className="size-6 text-amber-500 shrink-0 mt-0.5" />
+                ) : (
+                  <AlertTriangle className="size-6 text-destructive shrink-0 mt-0.5" />
+                )}
                 <div className="space-y-1">
-                  <h3 className="font-bold text-destructive text-base">Order Cancelled</h3>
-                  <p className="text-xs sm:text-sm text-muted-foreground">
-                    {historyMap.cancelled?.note ||
-                      "This order has been cancelled and the items have been restocked."}
+                  <div className="flex items-center gap-2.5 flex-wrap">
+                    <h3
+                      className={cn(
+                        "font-bold text-base",
+                        isOrderPaid ? "text-amber-600 dark:text-amber-400" : "text-destructive"
+                      )}
+                    >
+                      Order Cancelled
+                    </h3>
+                    {isOrderPaid && (
+                      <Badge className="bg-amber-500 text-white font-bold text-xs">
+                        Refund Pending
+                      </Badge>
+                    )}
+                  </div>
+                  <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
+                    {isOrderPaid
+                      ? `This order was cancelled successfully. Your payment refund of ₹${Number(pricing.total || 0).toLocaleString("en-IN", { minimumFractionDigits: 2 })} is currently pending and will be credited to your account / original payment method within 5–7 business days.`
+                      : (historyMap.cancelled?.note ||
+                        "This order has been cancelled and the items have been restocked.")}
                   </p>
                   {historyMap.cancelled?.timestamp && (
                     <p className="text-xs text-muted-foreground pt-1">
@@ -1066,7 +1121,7 @@ export default function OrderTracking() {
                           : "bg-muted text-muted-foreground"
                       )}
                     >
-                      {paymentMethodLabel} ({payment.status || "pending"})
+                      {paymentMethodLabel} ({isCancelled && isOrderPaid ? "Refund Pending" : (payment.status || "pending")})
                     </Badge>
                   </div>
 
@@ -1257,7 +1312,9 @@ export default function OrderTracking() {
                     </p>
                     <p>
                       <span className="font-semibold text-foreground print:text-black">Payment Status: </span>
-                      <span className="capitalize font-medium">{payment.status || "Pending"}</span>
+                      <span className="capitalize font-medium">
+                        {isCancelled && isOrderPaid ? "Refund Pending" : (payment.status || "Pending")}
+                      </span>
                     </p>
                     {payment.transaction_id && (
                       <p className="font-mono text-[11px]">

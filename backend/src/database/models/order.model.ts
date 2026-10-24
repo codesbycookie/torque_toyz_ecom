@@ -31,7 +31,7 @@ export interface IPricing {
 
 export interface IPayment {
   method: "cod" | "online";
-  status: "pending" | "paid" | "failed" | "refunded";
+  status: "pending" | "paid" | "failed" | "refunded" | "refund_pending";
   transaction_id?: string;
 }
 
@@ -128,7 +128,7 @@ const PaymentSchema = new Schema<IPayment>(
     },
     status: {
       type: String,
-      enum: ["pending", "paid", "failed", "refunded"],
+      enum: ["pending", "paid", "failed", "refunded", "refund_pending"],
       default: "pending",
     },
     transaction_id: { type: String },

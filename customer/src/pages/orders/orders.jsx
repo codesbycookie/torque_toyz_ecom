@@ -63,7 +63,7 @@ const STATUS_OPTIONS = [
   { id: "all", label: "All Orders" },
   { id: "placed", label: "Order Placed" },
   { id: "confirmed", label: "Confirmed" },
-  { id: "shipped", label: "Dispatched / Shipped" },
+  { id: "shipped", label: "Shipped" },
   { id: "delivered", label: "Delivered" },
   { id: "cancelled", label: "Cancelled" },
 ];
@@ -187,8 +187,18 @@ export default function Orders() {
   const handleCancelOrder = async (orderId) => {
     try {
       setCancellingOrderId(orderId);
+      const targetOrder = orderList.find((o) => (o._id || o.id) === orderId);
+      const wasPaid =
+        targetOrder?.payment?.status === "paid" ||
+        targetOrder?.payment?.status === "refund_pending" ||
+        (targetOrder?.payment?.method === "online" && targetOrder?.payment?.status !== "failed");
+
       await orders.cancelOrder(orderId, cancelReason);
-      toast.success("Order cancelled successfully");
+      if (wasPaid) {
+        toast.success("Order cancelled successfully. Refund pending.");
+      } else {
+        toast.success("Order cancelled successfully");
+      }
       fetchBackendOrders(currentPage);
     } catch {
       toast.error("Failed to cancel order");
@@ -262,7 +272,7 @@ export default function Orders() {
       case "shipped":
         return (
           <Badge className="bg-sky-500/10 text-sky-600 dark:text-sky-400 border border-sky-500/20 font-semibold gap-1 text-xs">
-            <Truck className="size-3" /> Dispatched
+            <Truck className="size-3" /> Shipped
           </Badge>
         );
       case "confirmed":
@@ -301,15 +311,6 @@ export default function Orders() {
     <div className="min-h-screen bg-background text-foreground" ref={ordersTopRef}>
       {/* ─── Orders Container (max-w-7xl) ─── */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
-        {/* Breadcrumb Navigation */}
-        <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-          <Link to="/profile" className="hover:text-primary transition-colors">
-            Your Account
-          </Link>
-          <span>›</span>
-          <span className="text-foreground font-medium">Your Orders</span>
-        </div>
-
         {/* Heading & Amazon Search Bar */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground">
@@ -508,7 +509,7 @@ export default function Orders() {
               <p className="text-xs sm:text-sm text-muted-foreground max-w-md mx-auto">
                 {search || selectedStatus !== "all"
                   ? "No orders match your current filter settings. Try clearing some filters."
-                  : "Your garage is empty right now. Start building your diecast and RC car collection!"}
+                  : "You haven't placed any orders yet."}
               </p>
             </div>
             <div className="pt-2 flex items-center justify-center gap-3 flex-wrap">
@@ -556,6 +557,11 @@ export default function Orders() {
               const isConfirmed = statusLower === "confirmed";
               const canCancel = ["placed", "confirmed"].includes(statusLower);
 
+              const isPaid =
+                order.payment?.status === "paid" ||
+                order.payment?.status === "refund_pending" ||
+                (order.payment?.method === "online" && order.payment?.status !== "failed");
+
               const shippingName =
                 order.shipping_address?.full_name ||
                 order.shipping_address?.name ||
@@ -587,17 +593,22 @@ export default function Orders() {
                       </div>
 
                       <div>
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 flex-wrap">
                           <span className="font-bold text-sm sm:text-base text-foreground">
                             {isDelivered
                               ? `Delivered on ${orderDate}`
                               : isShipped
-                              ? "Dispatched • In Transit"
+                              ? "Shipped • In Transit"
                               : isCancelled
                               ? "Order Cancelled"
                               : `Order Placed on ${orderDate}`}
                           </span>
                           {getStatusBadge(order.status)}
+                          {isCancelled && isPaid && (
+                            <Badge className="bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30 text-xs font-semibold gap-1">
+                              <Clock className="size-3" /> Refund Pending
+                            </Badge>
+                          )}
                         </div>
                         <p className="text-xs text-muted-foreground mt-0.5">
                           {isDelivered
@@ -605,7 +616,9 @@ export default function Orders() {
                             : isShipped
                             ? `Package on the way with courier${shippingCity ? ` to ${shippingCity}` : ""}`
                             : isCancelled
-                            ? "This order was cancelled and models were restocked"
+                            ? (isPaid
+                                ? "Order cancelled. Refund of payment is currently pending."
+                                : "This order was cancelled and models were restocked")
                             : "Your order is confirmed and being prepared for carrier pickup"}
                         </p>
                       </div>
@@ -634,8 +647,11 @@ export default function Orders() {
                           ₹{orderTotal.toLocaleString("en-IN", { minimumFractionDigits: 2 })}
                         </div>
                         {isCancelled && (
-                          <div className="text-[10px] font-semibold text-destructive uppercase tracking-wider">
-                            Refunded / Void
+                          <div className={cn(
+                            "text-[10px] font-semibold uppercase tracking-wider",
+                            isPaid ? "text-amber-600 dark:text-amber-400 font-bold" : "text-destructive"
+                          )}>
+                            {isPaid ? "Refund Pending" : "Void / Cancelled"}
                           </div>
                         )}
                       </div>
@@ -704,7 +720,7 @@ export default function Orders() {
                                   ? "Eligible for 7-day return / replacement guarantee"
                                   : isCancelled
                                   ? "Item cancelled and restocked into inventory"
-                                  : "Collector grade packaging with authentic documentation"}
+                                  : "Securely packed with original documentation"}
                               </p>
                             </div>
                           </div>
