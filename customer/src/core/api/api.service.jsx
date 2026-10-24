@@ -1,18 +1,40 @@
 import axios from 'axios';
 
+const getBaseURL = () => {
+  if (typeof window !== 'undefined' && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
+    return '/api/v1';
+  }
+  return import.meta.env.VITE_BASE_URL || '/api/v1';
+};
+
 const api = axios.create({
-  baseURL: import.meta.env.VITE_BASE_URL,
+  baseURL: getBaseURL(),
   timeout: 15000,
   withCredentials: true,
 });
 
 let isLoggingOut = false;
 
+export const resetLogoutState = () => {
+  isLoggingOut = false;
+};
+
 export const setupInterceptors = (onUnauthorized) => {
   api.interceptors.response.use(
     (res) => res,
     (error) => {
       if (error.response?.status === 401) {
+        const url = error.config?.url || '';
+        const isAuthCheck = url.includes('/auth/me');
+        const isExplicitSilent = error.config?.__options?.silent || error.config?.silent;
+        const isAuthPage = typeof window !== 'undefined' && 
+          (window.location.pathname === '/login' || window.location.pathname === '/register');
+
+        // Do not trigger session expiry toast for routine initial auth check or if already on login/register
+        if (isAuthCheck || isExplicitSilent || isAuthPage) {
+          return Promise.reject(error);
+        }
+
         if (!isLoggingOut) {
           isLoggingOut = true;
           const message =
@@ -20,6 +42,9 @@ export const setupInterceptors = (onUnauthorized) => {
             error.response?.data?.error ||
             'Session expired. Please login again.';
           onUnauthorized?.(message);
+          setTimeout(() => {
+            isLoggingOut = false;
+          }, 3000);
         }
       }
       return Promise.reject(error);
