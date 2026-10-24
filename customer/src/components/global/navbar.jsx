@@ -250,16 +250,21 @@ export default function Navbar() {
           to="/"
           className="flex items-center gap-2.5 sm:gap-3 group shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-xl p-1"
         >
-          <div className="relative size-9 sm:size-10 rounded-xl bg-neutral-900/60 p-1 border border-border/80 shadow-xs group-hover:border-primary/50 transition-all flex items-center justify-center overflow-hidden shrink-0">
+          <div className="relative size-10 sm:size-11 rounded-xl bg-neutral-900/80 p-1 border border-border/80 shadow-xs group-hover:border-primary/50 transition-all flex items-center justify-center overflow-hidden shrink-0">
             <img
               src="/logo.png"
               alt="Torque Toyzz"
               className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-200"
             />
           </div>
-          <span className="font-heading font-bold text-lg sm:text-xl tracking-tight text-foreground select-none">
-            Torque <span className="text-primary font-bold">Toyzz</span>
-          </span>
+          <div className="flex flex-col text-left">
+            <span className="font-heading font-extrabold text-lg sm:text-xl tracking-tight text-foreground select-none leading-none">
+              Torque <span className="text-primary">Toyzz</span>
+            </span>
+            <span className="text-[10px] tracking-wider uppercase font-semibold text-muted-foreground/80 group-hover:text-primary transition-colors duration-200 mt-1 select-none">
+              Engineered for Fun
+            </span>
+          </div>
         </Link>
 
         {/* ─── CENTER: INTEGRATED COMMAND SEARCH BAR ─── */}
