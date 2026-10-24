@@ -75,62 +75,62 @@ export default function Footer() {
   };
 
   return (
-    <footer className="border-t border-border/80 bg-neutral-950 text-neutral-200 transition-colors">
+    <footer className="border-t border-border/80 bg-card dark:bg-neutral-950 text-foreground dark:text-neutral-200 transition-colors">
       {/* ─── 1. TOP TRUST BADGES STRIP ─── */}
-      <div className="border-b border-border/40 bg-neutral-900/50 py-6 sm:py-8">
+      <div className="border-b border-border/80 bg-muted/40 dark:bg-neutral-900/50 py-6 sm:py-8">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6">
             <div className="flex items-center gap-3 p-2 rounded-xl">
-              <div className="size-10 sm:size-11 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary shrink-0">
+              <div className="size-10 sm:size-11 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary shrink-0 shadow-2xs">
                 <Truck className="size-5" />
               </div>
               <div className="min-w-0">
-                <p className="font-heading font-bold text-xs sm:text-sm text-white truncate">
+                <p className="font-heading font-bold text-xs sm:text-sm text-foreground dark:text-white truncate">
                   Free Express Shipping
                 </p>
-                <p className="text-[11px] text-neutral-400 truncate">
+                <p className="text-[11px] text-muted-foreground dark:text-neutral-400 truncate">
                   On all prepaid orders over ₹999
                 </p>
               </div>
             </div>
 
             <div className="flex items-center gap-3 p-2 rounded-xl">
-              <div className="size-10 sm:size-11 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary shrink-0">
-                <ShieldCheck className="size-5 text-emerald-400" />
+              <div className="size-10 sm:size-11 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary shrink-0 shadow-2xs">
+                <ShieldCheck className="size-5 text-emerald-500" />
               </div>
               <div className="min-w-0">
-                <p className="font-heading font-bold text-xs sm:text-sm text-white truncate">
+                <p className="font-heading font-bold text-xs sm:text-sm text-foreground dark:text-white truncate">
                   100% Genuine Models
                 </p>
-                <p className="text-[11px] text-neutral-400 truncate">
+                <p className="text-[11px] text-muted-foreground dark:text-neutral-400 truncate">
                   Officially licensed manufacturer replicas
                 </p>
               </div>
             </div>
 
             <div className="flex items-center gap-3 p-2 rounded-xl">
-              <div className="size-10 sm:size-11 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary shrink-0">
-                <RotateCcw className="size-5 text-sky-400" />
+              <div className="size-10 sm:size-11 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary shrink-0 shadow-2xs">
+                <RotateCcw className="size-5 text-sky-500" />
               </div>
               <div className="min-w-0">
-                <p className="font-heading font-bold text-xs sm:text-sm text-white truncate">
+                <p className="font-heading font-bold text-xs sm:text-sm text-foreground dark:text-white truncate">
                   7-Day Easy Returns
                 </p>
-                <p className="text-[11px] text-neutral-400 truncate">
-                  Instant replacement for in-transit transit flaws
+                <p className="text-[11px] text-muted-foreground dark:text-neutral-400 truncate">
+                  Instant replacement for transit flaws
                 </p>
               </div>
             </div>
 
             <div className="flex items-center gap-3 p-2 rounded-xl">
-              <div className="size-10 sm:size-11 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary shrink-0">
-                <Award className="size-5 text-amber-400" />
+              <div className="size-10 sm:size-11 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary shrink-0 shadow-2xs">
+                <Award className="size-5 text-amber-500" />
               </div>
               <div className="min-w-0">
-                <p className="font-heading font-bold text-xs sm:text-sm text-white truncate">
+                <p className="font-heading font-bold text-xs sm:text-sm text-foreground dark:text-white truncate">
                   Armored Packaging
                 </p>
-                <p className="text-[11px] text-neutral-400 truncate">
+                <p className="text-[11px] text-muted-foreground dark:text-neutral-400 truncate">
                   Triple-layer collector box cushioning
                 </p>
               </div>
@@ -145,7 +145,7 @@ export default function Footer() {
           {/* Brand Info & Mission (Col 1-4) */}
           <div className="lg:col-span-4 space-y-4">
             <Link to="/" className="flex items-center gap-3 group inline-block">
-              <div className="relative size-10 rounded-xl bg-neutral-900 p-1 border border-border/80 shadow-xs group-hover:border-primary/50 transition-all flex items-center justify-center overflow-hidden shrink-0">
+              <div className="relative size-10 rounded-xl bg-muted dark:bg-neutral-900 p-1 border border-border/80 shadow-xs group-hover:border-primary/50 transition-all flex items-center justify-center overflow-hidden shrink-0">
                 <img
                   src="/logo.png"
                   alt="Torque Toyzz"
@@ -153,28 +153,28 @@ export default function Footer() {
                 />
               </div>
               <div className="flex flex-col text-left">
-                <span className="font-heading font-extrabold text-xl tracking-tight text-white select-none leading-none">
+                <span className="font-heading font-extrabold text-xl tracking-tight text-foreground dark:text-white select-none leading-none">
                   Torque <span className="text-primary">Toyzz</span>
                 </span>
-                <span className="text-[10px] tracking-wider uppercase font-semibold text-neutral-400 group-hover:text-primary transition-colors duration-200 mt-1 select-none">
+                <span className="text-[10px] tracking-wider uppercase font-semibold text-muted-foreground dark:text-neutral-400 group-hover:text-primary transition-colors duration-200 mt-1 select-none">
                   Engineered for Fun
                 </span>
               </div>
             </Link>
 
-            <p className="text-xs sm:text-sm text-neutral-400 leading-relaxed max-w-sm">
+            <p className="text-xs sm:text-sm text-muted-foreground dark:text-neutral-400 leading-relaxed max-w-sm">
               India's premier scale-model destination for automotive purists. We curate officially licensed precision diecast hypercars, Formula 1 champions, and hobby-grade RC drift machines.
             </p>
 
             {/* Quick Contact & Dispatch */}
-            <div className="space-y-2.5 pt-2 text-xs text-neutral-400">
+            <div className="space-y-2.5 pt-2 text-xs text-muted-foreground dark:text-neutral-400">
               <div className="flex items-center gap-2.5">
                 <MapPin className="size-3.5 text-primary shrink-0" />
                 <span>Chennai, Tamil Nadu, India</span>
               </div>
               <a
                 href="mailto:torquetoyzz@gmail.com"
-                className="flex items-center gap-2.5 hover:text-white transition-colors group"
+                className="flex items-center gap-2.5 hover:text-foreground dark:hover:text-white transition-colors group"
               >
                 <Mail className="size-3.5 text-primary shrink-0 group-hover:scale-110 transition-transform" />
                 <span>torquetoyzz@gmail.com</span>
@@ -183,7 +183,7 @@ export default function Footer() {
 
             {/* Social Channels */}
             <div className="pt-2">
-              <p className="text-[11px] font-semibold uppercase tracking-wider text-neutral-400 mb-2">
+              <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground dark:text-neutral-400 mb-2">
                 Follow the Grid
               </p>
               <div className="flex items-center gap-2.5">
@@ -191,7 +191,7 @@ export default function Footer() {
                   href="https://instagram.com/torquetoyzz"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="size-9 rounded-xl bg-neutral-900 border border-border/80 hover:border-primary/60 hover:bg-neutral-800 text-neutral-300 hover:text-rose-500 flex items-center justify-center transition-all hover:scale-105 shadow-xs"
+                  className="size-9 rounded-xl bg-muted/60 dark:bg-neutral-900 border border-border/80 hover:border-primary/60 text-muted-foreground hover:text-rose-500 dark:text-neutral-300 flex items-center justify-center transition-all hover:scale-105 shadow-2xs"
                   aria-label="Follow Torque Toyzz on Instagram"
                 >
                   <InstagramIcon className="size-4" />
@@ -201,7 +201,7 @@ export default function Footer() {
                   href="https://youtube.com/@torquetoyzz"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="size-9 rounded-xl bg-neutral-900 border border-border/80 hover:border-primary/60 hover:bg-neutral-800 text-neutral-300 hover:text-red-500 flex items-center justify-center transition-all hover:scale-105 shadow-xs"
+                  className="size-9 rounded-xl bg-muted/60 dark:bg-neutral-900 border border-border/80 hover:border-primary/60 text-muted-foreground hover:text-red-500 dark:text-neutral-300 flex items-center justify-center transition-all hover:scale-105 shadow-2xs"
                   aria-label="Subscribe to Torque Toyzz on YouTube"
                 >
                   <YoutubeIcon className="size-4" />
@@ -212,10 +212,10 @@ export default function Footer() {
 
           {/* Quick Categories & Scale (Col 5-6) */}
           <div className="lg:col-span-2 space-y-3">
-            <h4 className="font-heading font-bold text-sm tracking-wide text-white uppercase">
+            <h4 className="font-heading font-bold text-sm tracking-wide text-foreground dark:text-white uppercase">
               Collections
             </h4>
-            <ul className="space-y-2 text-xs text-neutral-400">
+            <ul className="space-y-2 text-xs text-muted-foreground dark:text-neutral-400">
               {categoriesList.slice(0, 5).map((cat) => (
                 <li key={cat._id || cat.id}>
                   <Link
@@ -229,7 +229,7 @@ export default function Footer() {
               <li>
                 <Link
                   to="/products?sort=latest"
-                  className="hover:text-primary transition-colors font-medium text-neutral-300"
+                  className="hover:text-primary transition-colors font-medium text-foreground dark:text-neutral-300"
                 >
                   New Arrivals
                 </Link>
@@ -237,7 +237,7 @@ export default function Footer() {
               <li>
                 <Link
                   to="/products?sort=price-low"
-                  className="hover:text-primary transition-colors font-medium text-neutral-300"
+                  className="hover:text-primary transition-colors font-medium text-foreground dark:text-neutral-300"
                 >
                   Budget Picks Under ₹2,500
                 </Link>
@@ -247,10 +247,10 @@ export default function Footer() {
 
           {/* Customer Care & Orders (Col 7-8) */}
           <div className="lg:col-span-3 space-y-3">
-            <h4 className="font-heading font-bold text-sm tracking-wide text-white uppercase">
+            <h4 className="font-heading font-bold text-sm tracking-wide text-foreground dark:text-white uppercase">
               Customer Concierge
             </h4>
-            <ul className="space-y-2 text-xs text-neutral-400">
+            <ul className="space-y-2 text-xs text-muted-foreground dark:text-neutral-400">
               <li>
                 <Link to="/orders" className="hover:text-primary transition-colors flex items-center gap-1.5">
                   <Package className="size-3.5 text-primary/80" />
@@ -286,12 +286,12 @@ export default function Footer() {
           <div className="lg:col-span-3 space-y-3.5">
             <div className="flex items-center gap-2">
               <Sparkles className="size-4 text-primary" />
-              <h4 className="font-heading font-bold text-sm tracking-wide text-white uppercase">
+              <h4 className="font-heading font-bold text-sm tracking-wide text-foreground dark:text-white uppercase">
                 Pit Lane VIP Club
               </h4>
             </div>
 
-            <p className="text-xs text-neutral-400 leading-relaxed">
+            <p className="text-xs text-muted-foreground dark:text-neutral-400 leading-relaxed">
               Get secret drops, low-stock alerts, and 10% off your next rare scale replica.
             </p>
 
@@ -302,7 +302,7 @@ export default function Footer() {
                   placeholder="Enter your email"
                   value={newsletterEmail}
                   onChange={(e) => setNewsletterEmail(e.target.value)}
-                  className="bg-neutral-900 border-border/80 text-xs h-10 pr-10 text-white placeholder:text-neutral-500 rounded-xl focus-visible:ring-primary"
+                  className="bg-muted/50 dark:bg-neutral-900 border-border/80 text-xs h-10 pr-10 text-foreground dark:text-white placeholder:text-muted-foreground dark:placeholder:text-neutral-500 rounded-xl focus-visible:ring-primary"
                 />
                 <button
                   type="submit"
@@ -314,14 +314,14 @@ export default function Footer() {
               </div>
 
               {subscribed && (
-                <div className="flex items-center gap-1.5 text-emerald-400 text-[11px] font-medium pt-1">
+                <div className="flex items-center gap-1.5 text-emerald-500 text-[11px] font-medium pt-1">
                   <CheckCircle2 className="size-3.5" />
                   <span>You're on the priority allocation list!</span>
                 </div>
               )}
             </form>
 
-            <div className="flex items-center gap-1.5 text-[11px] text-neutral-500">
+            <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground/80 dark:text-neutral-500">
               <Lock className="size-3" />
               <span>Zero spam. Unsubscribe anytime in one click.</span>
             </div>
@@ -330,8 +330,8 @@ export default function Footer() {
       </div>
 
       {/* ─── 3. BOTTOM COPYRIGHT & BACK-TO-TOP STRIP ─── */}
-      <div className="border-t border-border/40 bg-neutral-950 py-5">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-neutral-500">
+      <div className="border-t border-border/80 bg-muted/20 dark:bg-neutral-950 py-5">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-muted-foreground dark:text-neutral-500">
           <div className="flex flex-col sm:flex-row items-center gap-2 text-center sm:text-left">
             <span>© {new Date().getFullYear()} Torque Toyzz. All rights reserved.</span>
             <span className="hidden sm:inline">•</span>
@@ -339,12 +339,12 @@ export default function Footer() {
           </div>
 
           <div className="flex items-center gap-4">
-            <span className="text-[11px] text-neutral-400 font-mono">
+            <span className="text-[11px] text-muted-foreground/80 dark:text-neutral-400 font-mono">
               256-BIT SSL ENCRYPTED
             </span>
             <button
               onClick={scrollToTop}
-              className="flex items-center gap-1.5 text-xs text-neutral-400 hover:text-white transition-colors cursor-pointer px-2.5 py-1 rounded-lg hover:bg-neutral-900 border border-border/40"
+              className="flex items-center gap-1.5 text-xs text-muted-foreground dark:text-neutral-400 hover:text-foreground dark:hover:text-white transition-colors cursor-pointer px-2.5 py-1 rounded-lg hover:bg-muted dark:hover:bg-neutral-900 border border-border/60"
               aria-label="Scroll back to top"
             >
               <span>Back to Top</span>
