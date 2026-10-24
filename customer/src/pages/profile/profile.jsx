@@ -40,6 +40,7 @@ import {
   ArrowRight,
   CheckCircle2,
   ChevronRight,
+  Car,
   ShieldCheck,
   Calendar,
   Camera,
@@ -403,16 +404,18 @@ export default function Profile() {
     }
   }, []);
 
-  // Fetch recent orders & wishlist for live metrics
+  // Fetch recent orders & wishlist for live metrics when authenticated
   useEffect(() => {
-    if (api.orders?.getMine) {
-      api.orders.getMine({ page: 1, limit: 3, sortBy: 'createdAt', order: 'desc' });
-    }
-    if (api.wishlist?.fetchAll) {
-      api.wishlist.fetchAll();
+    if (user) {
+      if (api.orders?.getMine) {
+        api.orders.getMine({ page: 1, limit: 3, sortBy: 'createdAt', order: 'desc' }).catch(() => {});
+      }
+      if (api.wishlist?.fetchAll) {
+        api.wishlist.fetchAll().catch?.(() => {});
+      }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [user]);
 
   // Compute all saved addresses
   const savedAddresses = useMemo(() => {
