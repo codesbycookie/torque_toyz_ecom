@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -49,21 +49,44 @@ export function AddressModalDialog({
   locations = [],
   initialData = null,
 }) {
-  const [modalForm, setModalForm] = useState({
-    label: initialData?.label || "Home",
-    firstName: initialData?.firstName || "",
-    lastName: initialData?.lastName || "",
-    email: initialData?.email || "",
-    phone: initialData?.phone || "",
-    door: initialData?.door || "",
-    street: initialData?.street || "",
-    city: initialData?.city || "",
-    state: initialData?.state || "",
-    zip: initialData?.zip || initialData?.pincode ? String(initialData.zip || initialData.pincode) : "",
-    isDefault: initialData?.isDefault || false,
-  });
+  const getInitialForm = (data) => {
+    const rawName = data?.name || data?.full_name || "";
+    const nameParts = rawName.trim().split(" ");
+    const firstName = data?.firstName || (nameParts.length > 0 ? nameParts[0] : "");
+    const lastName = data?.lastName || (nameParts.length > 1 ? nameParts.slice(1).join(" ") : "");
 
-  const selectedLoc = locations.find((l) => l._id === modalForm.state);
+    let stateVal = "";
+    if (data?.state) {
+      stateVal = typeof data.state === "object" ? String(data.state._id || "") : String(data.state);
+    }
+
+    const zipVal = data?.zip ?? data?.pincode ?? "";
+
+    return {
+      label: data?.label || "Home",
+      firstName: firstName || "",
+      lastName: lastName || "",
+      email: data?.email || "",
+      phone: data?.phone || "",
+      door: data?.door || "",
+      street: data?.street || "",
+      city: data?.city || "",
+      state: stateVal || "",
+      zip: zipVal ? String(zipVal) : "",
+      isDefault: Boolean(data?.isDefault ?? data?.is_default ?? false),
+    };
+  };
+
+  const [modalForm, setModalForm] = useState(() => getInitialForm(initialData));
+
+  // Synchronize form values whenever modal opens or editing address changes
+  useEffect(() => {
+    if (isOpen) {
+      setModalForm(getInitialForm(initialData));
+    }
+  }, [isOpen, initialData]);
+
+  const selectedLoc = locations.find((l) => String(l._id) === String(modalForm.state));
   const isDeliverable = selectedLoc ? selectedLoc.deliverable : true;
 
   const handleChange = (e) => {
@@ -97,12 +120,18 @@ export function AddressModalDialog({
       return;
     }
 
+    const existingId = initialData?.id || initialData?._id;
+    const assignedId = existingId || `addr_${Date.now()}`;
+    const fullName = `${modalForm.firstName.trim()} ${modalForm.lastName.trim()}`.trim();
+
     const payload = {
-      id: initialData?.id || initialData?._id || `addr_${Date.now()}`,
+      id: assignedId,
+      _id: assignedId,
       label: modalForm.label.trim() || "Home",
       firstName: modalForm.firstName.trim(),
       lastName: modalForm.lastName.trim(),
-      name: `${modalForm.firstName.trim()} ${modalForm.lastName.trim()}`.trim(),
+      name: fullName,
+      full_name: fullName,
       email: modalForm.email.trim(),
       phone: modalForm.phone.trim(),
       door: modalForm.door.trim(),
@@ -113,6 +142,7 @@ export function AddressModalDialog({
       zip: modalForm.zip.trim(),
       pincode: Number(modalForm.zip.trim()),
       isDefault: modalForm.isDefault,
+      is_default: modalForm.isDefault,
     };
 
     onSaveAddress(payload);
@@ -121,7 +151,16 @@ export function AddressModalDialog({
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-xl w-[95vw] rounded-2xl p-6 max-h-[90vh] overflow-y-auto">
+      <DialogContent
+        className="sm:max-w-xl w-[95vw] sm:w-full rounded-2xl p-6 max-h-[90vh] overflow-y-auto"
+        onPointerDownOutside={(e) => {
+          // Prevent accidental dialog closing / collapsing when interacting with select dropdowns or clicking outside
+          e.preventDefault();
+        }}
+        onInteractOutside={(e) => {
+          e.preventDefault();
+        }}
+      >
         <DialogHeader className="pb-2 border-b border-border/70">
           <div className="flex items-center gap-2.5">
             <div className="size-9 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary">
@@ -132,7 +171,7 @@ export function AddressModalDialog({
                 {initialData ? "Edit Shipping Address" : "Add New Shipping Address"}
               </DialogTitle>
               <DialogDescription className="text-xs text-muted-foreground">
-                Enter delivery and recipient details for garage logistics dispatch
+                Enter the delivery address and recipient details
               </DialogDescription>
             </div>
           </div>
@@ -145,7 +184,7 @@ export function AddressModalDialog({
               Address Label
             </Label>
             <div className="flex items-center gap-2 flex-wrap">
-              {["Home", "Office", "Garage / Studio", "Other"].map((tag) => (
+              {["Home", "Office", "Other"].map((tag) => (
                 <button
                   type="button"
                   key={tag}
@@ -327,7 +366,7 @@ export function AddressModalDialog({
               <div>
                 <span className="font-bold">Logistics Alert: </span>
                 <span>
-                  Orders cannot currently be dispatched to {selectedLoc?.state}. You can still save this address, but orders will require a deliverable location.
+                  We currently do not deliver to {selectedLoc?.state}. You can still save this address, but orders will require a deliverable location.
                 </span>
               </div>
             </div>
@@ -508,7 +547,7 @@ export function SavedAddressCard({
       {!isDeliverable && (
         <div className="pt-2 border-t border-destructive/30 flex items-center gap-1.5 text-[11px] font-medium text-destructive">
           <AlertCircle className="size-3.5 shrink-0" />
-          <span>Cannot dispatch to this state. Orders blocked.</span>
+          <span>We do not deliver to this state yet.</span>
         </div>
       )}
 
@@ -648,7 +687,7 @@ export function ShippingAddressManager({
                       Logistics Restriction: Delivery Not Available to {selectedLoc?.state || "Selected State"}
                     </p>
                     <p className="text-destructive/90 text-xs">
-                      We cannot dispatch precision scale models to this location currently. You cannot proceed to payment with this address. Please choose another address or add a deliverable destination.
+                      We do not deliver to this location yet. You cannot proceed to payment with this address. Please choose another address or add a deliverable destination.
                     </p>
                   </div>
                 </div>
@@ -660,7 +699,7 @@ export function ShippingAddressManager({
                       Delivery Route Active to {selectedLoc?.state || "Destination"}
                     </p>
                     <p className="text-muted-foreground text-xs">
-                      Express carrier logistics confirmed. Precision scale models will be sealed in custom foam garage crates.
+                      Delivery is available for this address.
                     </p>
                   </div>
                 </div>
