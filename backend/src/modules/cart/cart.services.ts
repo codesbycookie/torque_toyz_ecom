@@ -3,6 +3,7 @@ import Order from "@db/models/order.model.ts";
 import Product from "@db/models/product.model.ts";
 import Location from "@db/models/location.model.ts";
 import Setting from "@db/models/setting.model.ts";
+import Wishlist from "@db/models/wishlist.model.ts";
 import { Types } from "mongoose";
 import { ApiError } from "@core/errors/api.error.ts";
 import { getShippingSlab } from "@modules/order/order.services.ts";
@@ -74,6 +75,11 @@ export const getCart = async (guestId: string, userId?: string) => {
           } else {
             userCart.items.push(gItem);
           }
+          if (userId) {
+            try {
+              await Wishlist.removeProduct(userId, String(gItem.product));
+            } catch {}
+          }
         }
         guestCart.items = [];
         await guestCart.save();
@@ -83,6 +89,13 @@ export const getCart = async (guestId: string, userId?: string) => {
     } else if (guestCart && !userCart) {
       guestCart.user = new Types.ObjectId(userId);
       await guestCart.save();
+      if (guestCart.items && guestCart.items.length > 0) {
+        for (const gItem of guestCart.items) {
+          try {
+            await Wishlist.removeProduct(userId, String(gItem.product));
+          } catch {}
+        }
+      }
       cart = guestCart;
     } else if (userCart) {
       cart = userCart;
@@ -158,6 +171,15 @@ export const addItemToCart = async (
   }
 
   await recalculateCartPricing(cartRaw);
+
+  if (userId) {
+    try {
+      await Wishlist.removeProduct(userId, cleanProductId);
+    } catch {
+      // Ignore if wishlist removal fails
+    }
+  }
+
   return enhanceCart(cartRaw);
 };
 

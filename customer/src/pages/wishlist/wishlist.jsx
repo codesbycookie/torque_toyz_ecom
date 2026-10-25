@@ -179,6 +179,7 @@ export default function Wishlist() {
     try {
       setAddingProductIds((prev) => [...prev, product._id]);
       await cart.addToCart(product);
+      setSelectedIds((prev) => prev.filter((id) => id !== product._id));
       toast.success(`${product.name} added to cart!`);
     } catch {
       toast.error('Failed to add product to cart');

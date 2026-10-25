@@ -95,7 +95,7 @@ export function ThemeToggle({ className, align = 'end', showLabel = false }) {
 }
 
 // Inline segmented control for Settings & Profile pages
-export function ThemeSegmented({ className }) {
+export function ThemeSegmented({ className, fullWidth = false }) {
   const { theme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
 
@@ -104,7 +104,14 @@ export function ThemeSegmented({ className }) {
   }, []);
 
   if (!mounted) {
-    return <div className="h-9 w-48 rounded-xl bg-muted animate-pulse" />;
+    return (
+      <div
+        className={cn(
+          'h-9 rounded-xl bg-muted animate-pulse',
+          fullWidth ? 'w-full' : 'w-48'
+        )}
+      />
+    );
   }
 
   const options = [
@@ -116,7 +123,9 @@ export function ThemeSegmented({ className }) {
   return (
     <div
       className={cn(
-        'inline-flex items-center p-1 rounded-xl bg-muted/60 border border-border/80 gap-1 select-none',
+        fullWidth
+          ? 'grid grid-cols-3 w-full p-1 rounded-xl bg-muted/60 border border-border/80 gap-1 select-none'
+          : 'inline-flex items-center p-1 rounded-xl bg-muted/60 border border-border/80 gap-1 select-none',
         className
       )}
       role="radiogroup"
@@ -133,7 +142,8 @@ export function ThemeSegmented({ className }) {
             aria-checked={active}
             onClick={() => setTheme(opt.key)}
             className={cn(
-              'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer',
+              'flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer',
+              fullWidth && 'w-full py-2',
               active
                 ? 'bg-card text-foreground shadow-2xs border border-border/80 font-bold'
                 : 'text-muted-foreground hover:text-foreground hover:bg-card/50'

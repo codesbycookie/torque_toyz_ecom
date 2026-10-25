@@ -593,7 +593,7 @@ export default function Profile() {
                 {user.phone && <span>• {user.phone}</span>}
                 <span className="flex items-center gap-1 font-mono text-[11px] text-muted-foreground">
                   <Calendar className="size-3 text-primary" />
-                  Member since {joinedDate}
+                  Joined {joinedDate}
                 </span>
               </div>
 
@@ -601,10 +601,6 @@ export default function Profile() {
                 <span className="inline-flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400 font-medium">
                   <span className="size-2 rounded-full bg-emerald-500 animate-pulse" />
                   Account Active &amp; Verified
-                </span>
-                <span className="text-muted-foreground/40">•</span>
-                <span className="text-muted-foreground font-mono text-[11px]">
-                  VIP Paddock Member
                 </span>
               </div>
             </div>
@@ -1026,11 +1022,11 @@ export default function Profile() {
 
               <div className="flex items-center justify-between text-xs pt-3.5">
                 <span className="text-muted-foreground flex items-center gap-2">
-                  <Sparkles className="size-3.5 text-primary" />
-                  <span>Membership</span>
+                  <ShieldCheck className="size-3.5 text-primary" />
+                  <span>Account Status</span>
                 </span>
-                <Badge className="bg-primary/10 text-primary border border-primary/20 text-[10px] font-semibold">
-                  Standard Member
+                <Badge className="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 text-[10px] font-semibold">
+                  Active
                 </Badge>
               </div>
 

@@ -52,17 +52,25 @@ export const useWishlistModule = () => {
     }
   };
 
-  const removeProduct = async (productId) => {
+  const removeProduct = async (productId, options = {}) => {
+    const cleanId = String(productId?._id || productId?.id || productId || "");
     try {
-      updateProductWishlistState(productId, false);
-      const res = await crud.removeProduct(productId, {
+      updateProductWishlistState(cleanId, false);
+      const currentList = useWishlistStore.getState().list || [];
+      useWishlistStore.getState().set(
+        currentList.filter((p) => String(p._id || p.id || p) !== cleanId)
+      );
+      const res = await crud.removeProduct(cleanId, {
         __options: { toast: false },
       });
       await fetchAll();
-      toast.success("Removed from wishlist");
+      if (!options?.silent) {
+        toast.success("Removed from wishlist");
+      }
       return res;
     } catch (err) {
-      updateProductWishlistState(productId, true);
+      updateProductWishlistState(cleanId, true);
+      await fetchAll();
       throw err;
     }
   };
@@ -83,8 +91,13 @@ export const useWishlistModule = () => {
   const toggle = (product, isWishlisted) =>
     isWishlisted ? removeProduct(product._id) : addProduct(product._id);
 
-  const isWishlisted = (productId) =>
-    useWishlistStore.getState().list.some((p) => p._id === productId);
+  const isWishlisted = (productId) => {
+    const cleanId = String(productId?._id || productId?.id || productId || "");
+    if (!cleanId) return false;
+    return (useWishlistStore.getState().list || []).some(
+      (p) => String(p._id || p.id || p) === cleanId
+    );
+  };
 
   return {
     crud,

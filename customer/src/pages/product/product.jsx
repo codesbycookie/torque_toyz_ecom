@@ -278,9 +278,8 @@ export default function ProductsPage() {
     });
   };
 
-  const handleAddToCart = (product) => {
-    cart.addToCart(product, 1);
-    toast.success(`${product.name} added to cart`);
+  const handleAddToCart = async (product) => {
+    return cart.addToCart(product, 1);
   };
 
   const handleToggleWishlist = (product) => {
@@ -723,7 +722,7 @@ export default function ProductsPage() {
 
             {/* Products Render Area */}
             {loading.getAll ? (
-              <div className="grid grid-cols-1 xs:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4 md:gap-5">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4 md:gap-5">
                 {Array.from({ length: pageSize }).map((_, i) => (
                   <AmazonProductCardSkeleton key={i} />
                 ))}
@@ -752,7 +751,7 @@ export default function ProductsPage() {
               <>
                 {viewMode === "grid" ? (
                   /* Amazon Grid Type Structure (driven 100% by backend data) */
-                  <div className="grid grid-cols-1 xs:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4 md:gap-5">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4 md:gap-5">
                     {list.map((product) => (
                       <AmazonProductCard
                         key={product._id}
