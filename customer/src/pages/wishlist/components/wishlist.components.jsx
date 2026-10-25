@@ -478,15 +478,15 @@ export function WishlistGridCard({
     <div
       onClick={handleCardClick}
       className={cn(
-        'group relative flex flex-col justify-between h-full bg-card hover:bg-card/95 border rounded-xl overflow-hidden shadow-xs hover:shadow-lg transition-all duration-200 cursor-pointer',
+        'group relative flex flex-row sm:flex-col justify-between h-auto sm:h-full bg-card hover:bg-card/95 border rounded-xl overflow-hidden shadow-xs hover:shadow-lg transition-all duration-200 cursor-pointer',
         isSelected
           ? 'border-primary ring-2 ring-primary/20 bg-primary/5'
           : 'border-border/70 hover:border-primary/50',
         leaving && 'scale-95 opacity-0'
       )}
     >
-      {/* Top Media Area */}
-      <div className="relative aspect-square w-full overflow-hidden bg-muted/20 dark:bg-muted/10 p-4 flex items-center justify-center border-b border-border/40">
+      {/* Media Area (Left on mobile, Top on desktop) */}
+      <div className="relative w-32 xs:w-36 sm:w-full shrink-0 aspect-square overflow-hidden bg-muted/20 dark:bg-muted/10 p-2.5 sm:p-4 flex items-center justify-center border-r sm:border-r-0 sm:border-b border-border/40">
         {firstImage ? (
           <img
             src={firstImage}
@@ -555,9 +555,9 @@ export function WishlistGridCard({
         </button>
       </div>
 
-      {/* Product Details */}
-      <div className="p-3.5 sm:p-4 flex flex-col flex-1 justify-between gap-2.5">
-        <div className="space-y-1.5">
+      {/* Product Details (Right on mobile, Bottom on desktop) */}
+      <div className="p-3 sm:p-4 flex flex-col flex-1 justify-between gap-2 min-w-0">
+        <div className="space-y-1 sm:space-y-1.5">
           {/* Category */}
           {product.category?.name && (
             <p className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground line-clamp-1">
@@ -566,12 +566,9 @@ export function WishlistGridCard({
           )}
 
           {/* Title */}
-          <h3 className="font-medium text-sm sm:text-[15px] leading-snug line-clamp-2 text-foreground group-hover:text-primary transition-colors">
+          <h3 className="font-semibold text-xs sm:text-[15px] leading-snug line-clamp-2 text-foreground group-hover:text-primary transition-colors">
             {product.name}
           </h3>
-          <p className=" leading-snug line-clamp-2 text-foreground group-hover:text-primary transition-colors">
-            {product.description}
-          </p>
 
           {/* Star Rating */}
           <div className="flex items-center gap-1.5 text-xs pt-0.5">
@@ -623,12 +620,12 @@ export function WishlistGridCard({
         </div>
 
         {/* Action Button */}
-        <div className="pt-2">
+        <div className="pt-1.5 sm:pt-2">
           <Button
             type="button"
             size="sm"
             disabled={isOutOfStock || isAddingToCart}
-            className="w-full rounded-full bg-primary hover:bg-primary/90 active:bg-primary/95 text-primary-foreground font-semibold text-xs sm:text-sm shadow-xs border border-transparent transition-transform active:scale-[0.98] h-9"
+            className="w-full rounded-full bg-primary hover:bg-primary/90 active:bg-primary/95 text-primary-foreground font-semibold text-xs sm:text-sm shadow-xs border border-transparent transition-transform active:scale-[0.98] h-8 sm:h-9"
             onClick={(e) => {
               e.stopPropagation();
               onAddToCart?.(product);
@@ -717,15 +714,16 @@ export function WishlistListCard({
         {/* Details */}
         <div className="flex-1 min-w-0 flex flex-col justify-between gap-3">
           <div className="space-y-1.5">
-            <h3 className="font-medium text-[15px] sm:text-base leading-snug line-clamp-2 group-hover:text-primary transition-colors">
-              {product.name}
-            </h3>
-
+            {/* Category */}
             {product.category?.name && (
               <Badge variant="secondary" className="text-xs font-normal">
                 {product.category.name}
               </Badge>
             )}
+
+            <h3 className="font-semibold text-[15px] sm:text-base leading-snug line-clamp-2 group-hover:text-primary transition-colors">
+              {product.name}
+            </h3>
 
             {avgRating && (
               <div className="flex items-center gap-1.5 pt-0.5">
@@ -966,15 +964,15 @@ export function WishlistSkeleton({ viewMode = 'grid' }) {
         {Array.from({ length: 8 }).map((_, i) => (
           <div
             key={i}
-            className="rounded-xl border border-border/70 overflow-hidden bg-card p-0 flex flex-col justify-between"
+            className="rounded-xl border border-border/70 overflow-hidden bg-card p-0 flex flex-row sm:flex-col justify-between h-auto sm:h-full"
           >
-            <Skeleton className="aspect-square w-full rounded-none" />
-            <div className="p-3.5 space-y-2">
-              <Skeleton className="h-3 w-1/3" />
-              <Skeleton className="h-4 w-4/5" />
-              <Skeleton className="h-3 w-1/4" />
-              <Skeleton className="h-5 w-1/2 mt-2" />
-              <Skeleton className="h-9 w-full rounded-full mt-3" />
+            <Skeleton className="w-32 xs:w-36 sm:w-full aspect-square shrink-0 rounded-none" />
+            <div className="p-3 sm:p-3.5 space-y-2 flex-1 min-w-0">
+              <Skeleton className="h-2.5 sm:h-3 w-1/3" />
+              <Skeleton className="h-3.5 sm:h-4 w-4/5" />
+              <Skeleton className="h-2.5 sm:h-3 w-1/4" />
+              <Skeleton className="h-4 sm:h-5 w-1/2 mt-1 sm:mt-2" />
+              <Skeleton className="h-8 sm:h-9 w-full rounded-full mt-2 sm:mt-3" />
             </div>
           </div>
         ))}

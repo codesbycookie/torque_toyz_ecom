@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { CartQuantityControl } from "@/modules/product/product.components";
 
 export default function ProductDetail() {
   const { slug } = useParams();
@@ -170,14 +171,11 @@ export default function ProductDetail() {
 
               {/* Mobile actions (shown only on small screens) */}
               <div className="flex gap-2.5 lg:hidden pt-1">
-                <Button
-                  className="flex-1 bg-primary hover:bg-primary/90 text-primary-foreground font-bold rounded-xl h-11 shadow-sm cursor-pointer"
-                  disabled={isOutOfStock || !product.active}
-                  onClick={handleAddToCart}
-                >
-                  <ShoppingCart className="size-4.5 mr-2" />
-                  Add to Cart
-                </Button>
+                <CartQuantityControl
+                  product={product}
+                  size="md"
+                  className="flex-1"
+                />
                 <Button
                   size="icon"
                   variant="outline"
@@ -253,15 +251,11 @@ export default function ProductDetail() {
 
             {/* Desktop Actions */}
             <div className="hidden lg:flex gap-3">
-              <Button
+              <CartQuantityControl
+                product={product}
                 size="lg"
-                className="flex-1 max-w-xs bg-primary hover:bg-primary/90 text-primary-foreground font-bold rounded-xl h-12 shadow-sm cursor-pointer"
-                disabled={isOutOfStock || !product.active}
-                onClick={handleAddToCart}
-              >
-                <ShoppingCart className="size-5 mr-2" />
-                Add to Cart
-              </Button>
+                className="flex-1 max-w-xs"
+              />
               <Button
                 size="lg"
                 variant="outline"

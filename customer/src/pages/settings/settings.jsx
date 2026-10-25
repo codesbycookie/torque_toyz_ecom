@@ -310,7 +310,7 @@ export default function Settings() {
             <div className="rounded-2xl border border-border/80 bg-card overflow-hidden shadow-xs">
               <div className="bg-muted/40 dark:bg-muted/20 border-b border-border/80 px-5 py-3.5 flex items-center justify-between">
                 <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
-                  Membership
+                  Account Status
                 </span>
                 <span className="flex items-center gap-1.5 text-xs font-semibold text-primary">
                   <span className="size-2 rounded-full bg-primary animate-pulse" />
@@ -785,7 +785,7 @@ export default function Settings() {
                         </h4>
                       </div>
                       <p className="text-xs text-muted-foreground leading-relaxed">
-                        Early VIP access to limited 1:18, 1:43, and 1:64 diecast models before general catalog release.
+                        Early access to limited 1:18, 1:43, and 1:64 diecast models before general catalog release.
                       </p>
                     </div>
                     <Switch

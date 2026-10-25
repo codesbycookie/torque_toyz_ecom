@@ -94,9 +94,8 @@ export default function Home() {
     return () => clearInterval(timer);
   }, []);
 
-  const handleAddToCart = (product) => {
-    cart.addToCart(product, 1);
-    toast.success(`${product.name} added to cart`);
+  const handleAddToCart = async (product) => {
+    return cart.addToCart(product, 1);
   };
 
   const handleToggleWishlist = (product) => {
@@ -461,7 +460,7 @@ export default function Home() {
         </div>
 
         {loading.getAll ? (
-          <div className="grid grid-cols-1 xs:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4 md:gap-5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4 md:gap-5">
             {Array.from({ length: 8 }).map((_, i) => (
               <AmazonProductCardSkeleton key={i} />
             ))}
@@ -474,7 +473,7 @@ export default function Home() {
             </p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 xs:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4 md:gap-5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4 md:gap-5">
             {trendingProducts.map((product) => (
               <AmazonProductCard
                 key={product._id}
@@ -572,7 +571,7 @@ export default function Home() {
             </Button>
           </div>
 
-          <div className="grid grid-cols-1 xs:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4 md:gap-5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4 md:gap-5">
             {productsList.slice(0, 4).map((product) => (
               <AmazonProductCard
                 key={product._id}
@@ -600,7 +599,7 @@ export default function Home() {
             </span>
           </div>
 
-          <div className="grid grid-cols-1 xs:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4 md:gap-5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4 md:gap-5">
             {recentlyViewed.slice(0, 4).map((product) => (
               <AmazonProductCard
                 key={product._id}

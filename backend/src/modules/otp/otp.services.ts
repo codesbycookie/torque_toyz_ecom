@@ -7,7 +7,7 @@ export const sendOtp = async (email: string, purpose: OtpPurpose) => {
   let recipientName = 'Collector';
   if (purpose === 'login' || purpose === 'password_reset') {
     const user = await User.findOne({ email, active: true, deleted: false });
-    if (!user) throw new ApiError(404, 'No account found with this email');
+    if (!user) throw new ApiError(404, 'No account found with this email not found');
     recipientName = user.name || 'Collector';
   }
 

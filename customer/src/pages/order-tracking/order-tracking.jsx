@@ -310,19 +310,23 @@ export default function OrderTracking() {
   const customerPhone = user.phone || "";
   const customerEmail = user.email || "";
 
-  // Payment from model: IPayment ({ method: 'cod'|'online', status: 'pending'|'paid'|'failed'|'refunded', transaction_id })
+  // Payment from model: IPayment ({ method: 'cod'|'online', status: 'pending'|'paid'|'failed'|'refunded'|'refund_pending', transaction_id })
   const payment = orderDetails.payment || {
     method: "online",
     status: "pending",
   };
+  const paymentStatus = payment.status?.toLowerCase();
   const paymentMethodLabel =
     payment.method === "cod" ? "Cash on Delivery" : "Prepaid Online Payment";
-  const isPaymentPaid = payment.status === "paid" || payment.status === "refund_pending";
-  const isOrderPaid =
-    payment.status === "paid" ||
-    payment.status === "refund_pending" ||
-    payment.status === "refunded" ||
-    (payment.method === "online" && payment.status !== "failed");
+  const isRefunded = paymentStatus === "refunded";
+  const isRefundPending =
+    isCancelled &&
+    !isRefunded &&
+    (paymentStatus === "refund_pending" ||
+      paymentStatus === "paid" ||
+      (payment.method === "online" && paymentStatus !== "failed"));
+  const isPaymentPaid = paymentStatus === "paid" || isRefunded || isRefundPending;
+  const isOrderPaid = isPaymentPaid;
 
   // Delivery Partner URL from model: string
   const deliveryPartnerUrl = orderDetails.delivery_partner_url || "";
@@ -361,32 +365,43 @@ export default function OrderTracking() {
     {
       key: "placed",
       title: "Order Placed",
-      subTitle: "Verified in system",
+      subTitle: "Received & Verified",
       icon: Package,
-      note: historyMap.placed?.note || "Order registered and payment verified",
+      note: historyMap.placed?.note || "Order placed and payment verified in system",
     },
     {
       key: "confirmed",
-      title: "Confirmed & Boxed",
-      subTitle: "Quality check",
+      title: "Confirmed & Packed",
+      subTitle: "Quality Checked & Boxed",
       icon: ShieldCheck,
-      note: historyMap.confirmed?.note || "Precision models inspected and prepared for courier",
+      note: historyMap.confirmed?.note || "Precision models inspected, packed, and boxed securely",
     },
     {
       key: "shipped",
       title: "Shipped",
-      subTitle: "With courier partner",
+      subTitle: "In Transit with Courier",
       icon: Truck,
-      note: historyMap.shipped?.note || "Package handed to courier and en route",
+      note: historyMap.shipped?.note || "Package handed over to courier partner and is en route",
     },
     {
       key: "delivered",
       title: "Delivered",
-      subTitle: "At doorstep",
+      subTitle: "Delivered to Doorstep",
       icon: CheckCircle2,
-      note: historyMap.delivered?.note || "Delivered successfully to shipping destination",
+      note: historyMap.delivered?.note || "Delivered successfully to destination address",
     },
   ];
+
+  const progressPercent = isDelivered
+    ? 100
+    : currentRank === 3
+    ? 66.66
+    : currentRank === 2
+    ? 33.33
+    : 0;
+
+  const currentMilestoneIndex = Math.min(Math.max((currentRank || 1) - 1, 0), 3);
+  const activeMilestone = pipelineMilestones[currentMilestoneIndex];
 
   const getMilestoneState = (key) => {
     const rank = statusRankMap[key];
@@ -446,9 +461,9 @@ export default function OrderTracking() {
     if (isConfirmed || isShipped || isDelivered) {
       trackingScans.push({
         status: "confirmed",
-        title: "Confirmed & Boxed",
+        title: "Confirmed & Packed",
         date: formatCheckpointDate("confirmed"),
-        note: "Scale models inspected and packed securely.",
+        note: "Scale models inspected, packed, and boxed securely.",
       });
     }
     trackingScans.push({
@@ -491,11 +506,15 @@ export default function OrderTracking() {
             <Badge className="bg-destructive/10 text-destructive border border-destructive/20 font-semibold gap-1.5 px-3 py-1 text-xs">
               <Ban className="size-3.5" /> Cancelled
             </Badge>
-            {isOrderPaid && (
+            {isRefunded ? (
+              <Badge className="bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 font-semibold gap-1.5 px-2.5 py-1 text-xs">
+                <CheckCircle2 className="size-3" /> Refunded
+              </Badge>
+            ) : isRefundPending ? (
               <Badge className="bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30 font-semibold gap-1.5 px-2.5 py-1 text-xs">
                 <Clock className="size-3" /> Refund Pending
               </Badge>
-            )}
+            ) : null}
           </div>
         );
       default:
@@ -634,7 +653,11 @@ export default function OrderTracking() {
                       : isConfirmed
                       ? "Checked & Packed"
                       : isCancelled
-                      ? (isOrderPaid ? "Order Cancelled • Refund Pending" : "Order Was Cancelled")
+                      ? (isRefunded
+                          ? "Order Cancelled • Refund Processed"
+                          : isRefundPending
+                          ? "Order Cancelled • Refund Pending"
+                          : "Order Was Cancelled")
                       : "Order Placed & Confirmed"}
                   </h1>
 
@@ -644,8 +667,10 @@ export default function OrderTracking() {
                       : isShipped
                       ? "Package is currently in transit with our logistics partner and headed toward your local hub."
                       : isCancelled
-                      ? (isOrderPaid
-                          ? "This order was cancelled. Since payment was received, your refund is currently pending and will be processed back to your original payment method."
+                      ? (isRefunded
+                          ? `This order was cancelled and a full refund of ₹${Number(pricing.total || 0).toLocaleString("en-IN", { minimumFractionDigits: 2 })} has been processed back to your original payment method.`
+                          : isRefundPending
+                          ? `This order was cancelled. Since payment was received, your refund of ₹${Number(pricing.total || 0).toLocaleString("en-IN", { minimumFractionDigits: 2 })} is currently pending and will be processed back to your original payment method.`
                           : "This order was cancelled and inventory quantities were restored to the catalog.")
                       : "Your order is confirmed and our technicians are inspecting precision models prior to boxing."}
                   </p>
@@ -683,70 +708,227 @@ export default function OrderTracking() {
 
               {/* ─── 4-Stage Visual Delivery Stepper ─── */}
               {!isCancelled && (
-                <div className="p-6 sm:p-8 bg-muted/10">
-                  <div className="relative">
-                    {/* Background Connecting Line */}
-                    <div className="hidden sm:block absolute left-[12%] right-[12%] top-5.5 h-1 bg-border rounded-full" />
+                <div className="p-5 sm:p-8 bg-gradient-to-b from-muted/30 via-muted/10 to-transparent border-t border-border/60">
+                  {/* Stage Progress Summary Header */}
+                  <div className="flex flex-wrap items-center justify-between gap-3 mb-6 sm:mb-8 pb-4 border-b border-border/50">
+                    <div className="flex items-center gap-2.5">
+                      <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold bg-primary/10 text-primary border border-primary/20">
+                        <span className="relative flex h-2 w-2">
+                          {!isDelivered && (
+                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75" />
+                          )}
+                          <span
+                            className={cn(
+                              "relative inline-flex rounded-full h-2 w-2",
+                              isDelivered ? "bg-emerald-500" : "bg-primary"
+                            )}
+                          />
+                        </span>
+                        {isDelivered
+                          ? "Delivery Complete"
+                          : `Stage ${currentRank} of 4: ${activeMilestone?.title || ""}`}
+                      </span>
+                      <span className="text-xs text-muted-foreground hidden md:inline">
+                        {isDelivered
+                          ? "Your package has been successfully delivered."
+                          : activeMilestone?.subTitle}
+                      </span>
+                    </div>
 
-                    {/* Active Colored Fill Line */}
-                    <div
-                      className={cn(
-                        "hidden sm:block absolute left-[12%] top-5.5 h-1 rounded-full transition-all duration-700 bg-primary",
-                        isDelivered
-                          ? "right-[12%]"
-                          : currentRank === 3
-                          ? "w-[50%]"
-                          : currentRank === 2
-                          ? "w-[25%]"
-                          : "w-0"
-                      )}
-                    />
+                    <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground ml-auto">
+                      <span>Fulfillment:</span>
+                      <span className="font-bold text-foreground">
+                        {isDelivered ? "100%" : `${Math.round((Math.max(currentRank - 1, 0) / 3) * 100)}%`}
+                      </span>
+                    </div>
+                  </div>
 
-                    {/* Milestones */}
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-6 sm:gap-2">
-                      {pipelineMilestones.map((milestone) => {
+                  {/* Desktop Horizontal Stepper (hidden sm:block) */}
+                  <div className="hidden sm:block">
+                    <div className="relative">
+                      {/* Background Track: connects centers of Step 1 (12.5%) and Step 4 (87.5%) */}
+                      <div className="absolute left-[12.5%] right-[12.5%] top-6 -translate-y-1/2 h-1.5 bg-muted-foreground/15 dark:bg-muted-foreground/20 rounded-full overflow-hidden">
+                        {/* Dynamic Colored Active Fill Line */}
+                        <div
+                          className="h-full rounded-full transition-all duration-700 ease-out bg-gradient-to-r from-primary via-primary to-emerald-500"
+                          style={{ width: `${progressPercent}%` }}
+                        />
+                      </div>
+
+                      {/* 4 Milestones */}
+                      <div className="grid grid-cols-4 gap-2">
+                        {pipelineMilestones.map((milestone, idx) => {
+                          const stepState = getMilestoneState(milestone.key);
+                          const isCompleted = stepState.state === "completed";
+                          const isCurrent = stepState.state === "current";
+                          const isPending = stepState.state === "pending";
+                          const StepIcon = milestone.icon;
+
+                          return (
+                            <div key={milestone.key} className="flex flex-col items-center text-center relative z-10 group">
+                              {/* Node Icon Container */}
+                              <div className="relative">
+                                {/* Glowing Radar Halo for Active Step */}
+                                {isCurrent && (
+                                  <>
+                                    <div className="absolute -inset-1.5 rounded-full bg-primary/20 animate-ping opacity-60" />
+                                    <div className="absolute -inset-2 rounded-full bg-primary/10 blur-xs" />
+                                  </>
+                                )}
+
+                                <div
+                                  className={cn(
+                                    "size-12 rounded-full flex items-center justify-center transition-all duration-300 relative z-10 shadow-sm",
+                                    isCompleted
+                                      ? "bg-primary text-primary-foreground shadow-primary/25 border-2 border-primary"
+                                      : isCurrent
+                                      ? "bg-background text-primary border-2 border-primary ring-4 ring-primary/20 shadow-lg shadow-primary/20"
+                                      : "bg-muted/60 text-muted-foreground border-2 border-dashed border-border"
+                                  )}
+                                >
+                                  {isCompleted ? (
+                                    <Check className="size-5 stroke-[2.5]" />
+                                  ) : (
+                                    <StepIcon
+                                      className={cn(
+                                        "size-5 transition-transform duration-300",
+                                        isCurrent && "text-primary scale-110",
+                                        isPending && "text-muted-foreground/50"
+                                      )}
+                                    />
+                                  )}
+                                </div>
+                              </div>
+
+                              {/* Status Badge */}
+                              <div className="mt-3">
+                                <span
+                                  className={cn(
+                                    "inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-semibold tracking-wide uppercase",
+                                    isCompleted
+                                      ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20"
+                                      : isCurrent
+                                      ? "bg-primary/15 text-primary border border-primary/30 font-bold"
+                                      : "bg-muted/50 text-muted-foreground/70 border border-transparent"
+                                  )}
+                                >
+                                  {isCompleted ? "Completed" : isCurrent ? "In Progress" : `Step ${idx + 1}`}
+                                </span>
+                              </div>
+
+                              {/* Title */}
+                              <span
+                                className={cn(
+                                  "text-xs md:text-sm font-bold mt-1.5 tracking-tight transition-colors",
+                                  isCompleted ? "text-foreground" : isCurrent ? "text-primary font-black" : "text-muted-foreground/70"
+                                )}
+                              >
+                                {milestone.title}
+                              </span>
+
+                              {/* Subtitle / Timestamp */}
+                              <span className="text-[11px] text-muted-foreground line-clamp-1 mt-0.5 max-w-[150px]">
+                                {stepState.date !== "Pending" ? stepState.date : milestone.subTitle}
+                              </span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Mobile Vertical Connected Timeline (block sm:hidden) */}
+                  <div className="block sm:hidden relative">
+                    {/* Background Vertical Line */}
+                    <div className="absolute left-[22px] -translate-x-1/2 top-5 bottom-5 w-1 bg-muted-foreground/15 dark:bg-muted-foreground/25 rounded-full overflow-hidden">
+                      {/* Dynamic Active Vertical Fill Line */}
+                      <div
+                        className="w-full bg-gradient-to-b from-primary via-primary to-emerald-500 rounded-full transition-all duration-700 ease-out"
+                        style={{ height: `${progressPercent}%` }}
+                      />
+                    </div>
+
+                    <div className="space-y-4">
+                      {pipelineMilestones.map((milestone, idx) => {
                         const stepState = getMilestoneState(milestone.key);
                         const isCompleted = stepState.state === "completed";
                         const isCurrent = stepState.state === "current";
                         const StepIcon = milestone.icon;
 
                         return (
-                          <div key={milestone.key} className="flex flex-col items-center text-center relative z-10">
-                            <div
-                              className={cn(
-                                "size-11 sm:size-12 rounded-2xl flex items-center justify-center border-2 transition-all shadow-xs",
-                                isCompleted
-                                  ? "bg-primary border-primary text-primary-foreground"
-                                  : isCurrent
-                                  ? "bg-background border-primary text-primary ring-4 ring-primary/20 font-bold"
-                                  : "bg-background border-border text-muted-foreground"
+                          <div key={milestone.key} className="flex items-start gap-3.5 relative z-10">
+                            {/* Node Icon */}
+                            <div className="relative shrink-0 mt-0.5">
+                              {isCurrent && (
+                                <div className="absolute -inset-1 rounded-full bg-primary/20 animate-ping opacity-75" />
                               )}
-                            >
-                              {isCompleted ? (
-                                <Check className="size-5 stroke-[2.5]" />
-                              ) : isCurrent ? (
-                                <StepIcon className="size-5 text-primary animate-pulse" />
-                              ) : (
-                                <StepIcon className="size-5 text-muted-foreground/60" />
-                              )}
+                              <div
+                                className={cn(
+                                  "size-11 rounded-full flex items-center justify-center transition-all shadow-xs relative z-10",
+                                  isCompleted
+                                    ? "bg-primary text-primary-foreground border-2 border-primary"
+                                    : isCurrent
+                                    ? "bg-background text-primary border-2 border-primary ring-4 ring-primary/20"
+                                    : "bg-muted/70 text-muted-foreground border-2 border-dashed border-border"
+                                )}
+                              >
+                                {isCompleted ? (
+                                  <Check className="size-5 stroke-[2.5]" />
+                                ) : (
+                                  <StepIcon className={cn("size-5", isCurrent ? "text-primary" : "text-muted-foreground/60")} />
+                                )}
+                              </div>
                             </div>
 
-                            <span
+                            {/* Step Info Card */}
+                            <div
                               className={cn(
-                                "text-xs sm:text-sm font-bold mt-2.5",
-                                isCompleted
-                                  ? "text-foreground"
-                                  : isCurrent
-                                  ? "text-primary font-black"
-                                  : "text-muted-foreground"
+                                "flex-1 p-3.5 rounded-xl border transition-all",
+                                isCurrent
+                                  ? "bg-primary/5 border-primary/30 shadow-xs"
+                                  : isCompleted
+                                  ? "bg-muted/20 border-border/80"
+                                  : "bg-background/40 border-border/40 opacity-70"
                               )}
                             >
-                              {milestone.title}
-                            </span>
+                              <div className="flex items-center justify-between gap-2">
+                                <span
+                                  className={cn(
+                                    "text-sm font-bold",
+                                    isCompleted ? "text-foreground" : isCurrent ? "text-primary font-black" : "text-muted-foreground"
+                                  )}
+                                >
+                                  {milestone.title}
+                                </span>
+                                <span
+                                  className={cn(
+                                    "inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-semibold uppercase shrink-0",
+                                    isCompleted
+                                      ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20"
+                                      : isCurrent
+                                      ? "bg-primary/15 text-primary border border-primary/30"
+                                      : "bg-muted/60 text-muted-foreground/70"
+                                  )}
+                                >
+                                  {isCompleted ? "Done" : isCurrent ? "Active" : `Step ${idx + 1}`}
+                                </span>
+                              </div>
 
-                            <span className="text-[11px] text-muted-foreground hidden sm:block mt-0.5">
-                              {stepState.date !== "Pending" ? stepState.date : milestone.subTitle}
-                            </span>
+                              <div className="flex items-center justify-between gap-2 mt-1 text-xs text-muted-foreground">
+                                <span>{milestone.subTitle}</span>
+                                {stepState.date !== "Pending" && (
+                                  <span className="font-medium text-foreground text-[11px] shrink-0">
+                                    {stepState.date}
+                                  </span>
+                                )}
+                              </div>
+
+                              {isCurrent && milestone.note && (
+                                <p className="mt-2 text-xs text-muted-foreground/90 bg-background/80 p-2 rounded-lg border border-border/60">
+                                  {milestone.note}
+                                </p>
+                              )}
+                            </div>
                           </div>
                         );
                       })}
@@ -761,12 +943,16 @@ export default function OrderTracking() {
               <div
                 className={cn(
                   "rounded-2xl border p-5 sm:p-6 flex items-start gap-4 shadow-2xs",
-                  isOrderPaid
+                  isRefunded
+                    ? "border-emerald-500/30 bg-emerald-500/10"
+                    : isRefundPending
                     ? "border-amber-500/30 bg-amber-500/10"
                     : "border-destructive/30 bg-destructive/10"
                 )}
               >
-                {isOrderPaid ? (
+                {isRefunded ? (
+                  <CheckCircle2 className="size-6 text-emerald-500 shrink-0 mt-0.5" />
+                ) : isRefundPending ? (
                   <Clock className="size-6 text-amber-500 shrink-0 mt-0.5" />
                 ) : (
                   <AlertTriangle className="size-6 text-destructive shrink-0 mt-0.5" />
@@ -776,19 +962,29 @@ export default function OrderTracking() {
                     <h3
                       className={cn(
                         "font-bold text-base",
-                        isOrderPaid ? "text-amber-600 dark:text-amber-400" : "text-destructive"
+                        isRefunded
+                          ? "text-emerald-600 dark:text-emerald-400"
+                          : isRefundPending
+                          ? "text-amber-600 dark:text-amber-400"
+                          : "text-destructive"
                       )}
                     >
                       Order Cancelled
                     </h3>
-                    {isOrderPaid && (
+                    {isRefunded ? (
+                      <Badge className="bg-emerald-600 text-white font-bold text-xs gap-1">
+                        <CheckCircle2 className="size-3" /> Refunded
+                      </Badge>
+                    ) : isRefundPending ? (
                       <Badge className="bg-amber-500 text-white font-bold text-xs">
                         Refund Pending
                       </Badge>
-                    )}
+                    ) : null}
                   </div>
                   <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
-                    {isOrderPaid
+                    {isRefunded
+                      ? `This order was cancelled successfully and a full refund of ₹${Number(pricing.total || 0).toLocaleString("en-IN", { minimumFractionDigits: 2 })} has been processed to your original payment method${payment.transaction_id ? ` (Transaction ID: ${payment.transaction_id})` : ""}.`
+                      : isRefundPending
                       ? `This order was cancelled successfully. Your payment refund of ₹${Number(pricing.total || 0).toLocaleString("en-IN", { minimumFractionDigits: 2 })} is currently pending and will be credited to your account / original payment method within 5–7 business days.`
                       : (historyMap.cancelled?.note ||
                         "This order has been cancelled and the items have been restocked.")}
@@ -1116,12 +1312,14 @@ export default function OrderTracking() {
                     <Badge
                       className={cn(
                         "capitalize font-semibold text-[10px]",
-                        isPaymentPaid
+                        isRefunded
+                          ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30"
+                          : isPaymentPaid
                           ? "bg-primary text-primary-foreground"
                           : "bg-muted text-muted-foreground"
                       )}
                     >
-                      {paymentMethodLabel} ({isCancelled && isOrderPaid ? "Refund Pending" : (payment.status || "pending")})
+                      {paymentMethodLabel} ({isRefunded ? "Refunded" : isRefundPending ? "Refund Pending" : (payment.status || "pending")})
                     </Badge>
                   </div>
 
@@ -1312,8 +1510,11 @@ export default function OrderTracking() {
                     </p>
                     <p>
                       <span className="font-semibold text-foreground print:text-black">Payment Status: </span>
-                      <span className="capitalize font-medium">
-                        {isCancelled && isOrderPaid ? "Refund Pending" : (payment.status || "Pending")}
+                      <span className={cn(
+                        "capitalize font-medium",
+                        isRefunded && "text-emerald-600 dark:text-emerald-400 font-bold"
+                      )}>
+                        {isRefunded ? "Refunded" : isRefundPending ? "Refund Pending" : (payment.status || "Pending")}
                       </span>
                     </p>
                     {payment.transaction_id && (
