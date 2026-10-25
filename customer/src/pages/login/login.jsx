@@ -196,7 +196,7 @@ export default function Login() {
           <div>
             <div className="mb-4 inline-flex items-center gap-2 rounded-full bg-white/15 px-3.5 py-1.5 text-xs font-bold backdrop-blur">
               <Dial className="size-4" />
-              <span>Pit lane access</span>
+              <span>Customer Portal</span>
             </div>
             <h1 className="max-w-md text-4xl font-extrabold leading-tight tracking-tight text-white xl:text-5xl">
               Back on the grid, racer.
@@ -244,7 +244,7 @@ export default function Login() {
               <p className="truncate text-lg font-extrabold leading-tight tracking-tight">Torque Toyzz</p>
               <p className="mt-0.5 flex items-center gap-1.5 text-xs font-medium text-white/80">
                 <Dial className="size-3.5 shrink-0" />
-                <span className="truncate">Pit lane access</span>
+                <span className="truncate">Customer Portal</span>
               </p>
             </div>
           </div>

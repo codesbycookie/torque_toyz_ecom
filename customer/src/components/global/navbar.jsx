@@ -76,11 +76,14 @@ export default function Navbar() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [isCommandOpen, setIsCommandOpen] = useState(false);
+  const [isMobileCommandOpen, setIsMobileCommandOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
 
   const searchContainerRef = useRef(null);
   const inputRef = useRef(null);
+  const mobileSearchContainerRef = useRef(null);
+  const mobileInputRef = useRef(null);
 
   // Store lists accessed strictly via useApi()
   const categoriesList = api.categories?.list || [];
@@ -121,9 +124,10 @@ export default function Navbar() {
   useEffect(() => {
     setMobileMenuOpen(false);
     setIsCommandOpen(false);
+    setIsMobileCommandOpen(false);
   }, [location.pathname, location.search]);
 
-  // Click outside listener for command palette
+  // Click outside listener for command palettes (desktop & mobile)
   useEffect(() => {
     const handleClickOutside = (e) => {
       if (
@@ -132,9 +136,19 @@ export default function Navbar() {
       ) {
         setIsCommandOpen(false);
       }
+      if (
+        mobileSearchContainerRef.current &&
+        !mobileSearchContainerRef.current.contains(e.target)
+      ) {
+        setIsMobileCommandOpen(false);
+      }
     };
     document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
+    document.addEventListener("touchstart", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("touchstart", handleClickOutside);
+    };
   }, []);
 
   // Global ⌘K / Ctrl+K keyboard shortcut
@@ -147,7 +161,9 @@ export default function Navbar() {
       }
       if (e.key === "Escape") {
         setIsCommandOpen(false);
+        setIsMobileCommandOpen(false);
         inputRef.current?.blur();
+        mobileInputRef.current?.blur();
       }
     };
     window.addEventListener("keydown", handleKeyDown);
@@ -158,6 +174,7 @@ export default function Navbar() {
   const handleSearchSubmit = (e) => {
     e?.preventDefault?.();
     setIsCommandOpen(false);
+    setIsMobileCommandOpen(false);
     const q = searchQuery.trim();
     const cat = selectedCategory;
 
@@ -172,6 +189,7 @@ export default function Navbar() {
   const handleSelectSearch = (query) => {
     setSearchQuery(query);
     setIsCommandOpen(false);
+    setIsMobileCommandOpen(false);
     const params = new URLSearchParams();
     params.set("search", query);
     if (selectedCategory !== "all") params.set("category", selectedCategory);
@@ -181,6 +199,7 @@ export default function Navbar() {
   const handleSelectCategory = (catId) => {
     setSelectedCategory(catId);
     setIsCommandOpen(false);
+    setIsMobileCommandOpen(false);
     const params = new URLSearchParams();
     if (catId !== "all") params.set("category", catId);
     if (searchQuery.trim()) params.set("search", searchQuery.trim());
@@ -189,6 +208,7 @@ export default function Navbar() {
 
   const handleSelectProduct = (product) => {
     setIsCommandOpen(false);
+    setIsMobileCommandOpen(false);
     if (product?.slug) {
       navigate(`/products/${product.slug}`);
     } else if (product?._id) {
@@ -200,6 +220,7 @@ export default function Navbar() {
 
   const handleNavigate = (path) => {
     setIsCommandOpen(false);
+    setIsMobileCommandOpen(false);
     navigate(path);
   };
 
@@ -219,9 +240,9 @@ export default function Navbar() {
 
   const selectedCategoryName =
     selectedCategory === "all"
-      ? "All Categories"
+      ? "All"
       : categoriesList.find((c) => (c._id || c.id) === selectedCategory)?.name ||
-        "All Categories";
+        "All";
 
   // Initials for avatar
   const userInitials = user?.name
@@ -249,20 +270,19 @@ export default function Navbar() {
         {/* Left: Brand Logo & Title */}
         <Link
           to="/"
-          className="flex items-center gap-2 sm:gap-3 group shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-xl p-0.5 sm:p-1"
+          className="flex items-center gap-2 sm:gap-2.5 group shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-xl py-1"
+          aria-label="Torque Toyzz Home"
         >
-          <div className="relative size-9 sm:size-11 rounded-xl bg-neutral-900/80 p-1 border border-border/80 shadow-xs group-hover:border-primary/50 transition-all flex items-center justify-center overflow-hidden shrink-0">
-            <img
-              src="/logo.png"
-              alt="Torque Toyzz"
-              className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-200"
-            />
-          </div>
+          <img
+            src="/logo.png"
+            alt="Torque Toyzz"
+            className="h-9 sm:h-11 w-auto object-contain group-hover:scale-105 transition-transform duration-200 shrink-0"
+          />
           <div className="flex flex-col text-left">
-            <span className="font-heading font-extrabold text-base sm:text-xl tracking-tight text-foreground select-none leading-none">
+            <span className="font-heading font-extrabold text-base sm:text-lg lg:text-xl tracking-tight text-foreground select-none leading-none">
               Torque <span className="text-primary">Toyzz</span>
             </span>
-            <span className="hidden xs:block text-[9px] sm:text-[10px] tracking-wider uppercase font-semibold text-muted-foreground/80 group-hover:text-primary transition-colors duration-200 mt-0.5 sm:mt-1 select-none">
+            <span className="text-[8.5px] sm:text-[10px] tracking-wider uppercase font-semibold text-muted-foreground group-hover:text-primary transition-colors duration-200 mt-0.5 sm:mt-1 select-none leading-none">
               Engineered for Fun
             </span>
           </div>
@@ -285,16 +305,16 @@ export default function Navbar() {
               >
                 <SelectTrigger
                   aria-label="Select Category"
-                  className="h-full border-0 rounded-none bg-transparent shadow-none px-3 py-0 text-xs font-medium text-foreground/85 focus-visible:ring-0 focus:outline-none max-w-[135px] gap-1 cursor-pointer data-[state=open]:bg-muted"
+                  className="h-full border-0 rounded-none bg-transparent shadow-none px-3 py-0 text-xs font-medium text-foreground/85 focus-visible:ring-0 focus:outline-none max-w-[120px] gap-1 cursor-pointer data-[state=open]:bg-muted"
                 >
-                  <SelectValue placeholder="All Categories" />
+                  <SelectValue placeholder="All" />
                 </SelectTrigger>
                 <SelectContent
                   align="start"
                   className="w-56 rounded-xl border border-border shadow-2xl z-50 bg-popover/95 backdrop-blur-xl p-1"
                 >
                   <SelectItem value="all" className="text-xs font-medium cursor-pointer">
-                    All Categories
+                    All
                   </SelectItem>
                   {categoriesList.map((cat) => (
                     <SelectItem
@@ -322,7 +342,7 @@ export default function Navbar() {
                 }}
                 onFocus={() => setIsCommandOpen(true)}
                 placeholder={
-                  selectedCategoryName === "All Categories"
+                  selectedCategoryName === "All"
                     ? "Search diecast supercars, RC drift, 1:18, brands..."
                     : `Search in ${selectedCategoryName}...`
                 }
@@ -677,7 +697,10 @@ export default function Navbar() {
             variant="ghost"
             size="icon"
             className="md:hidden rounded-xl size-9 text-muted-foreground hover:text-foreground hover:bg-muted/70"
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            onClick={() => {
+              setMobileMenuOpen(!mobileMenuOpen);
+              setIsMobileCommandOpen(false);
+            }}
             aria-label="Toggle Menu"
           >
             {mobileMenuOpen ? <X className="size-5" /> : <Menu className="size-5" />}
@@ -685,20 +708,179 @@ export default function Navbar() {
         </div>
       </div>
 
+      {/* ─── MOBILE SEARCH BAR: ALWAYS VISIBLE OUTSIDE HAMBURGER ─── */}
+      <div className="md:hidden w-full border-t border-border/40 bg-background/95 backdrop-blur-md px-3 sm:px-6 py-2">
+        <div ref={mobileSearchContainerRef} className="relative w-full">
+          <form
+            onSubmit={handleSearchSubmit}
+            className="flex items-stretch w-full h-10 rounded-xl border border-border/80 bg-card/60 hover:border-border focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/25 shadow-xs transition-all overflow-hidden"
+          >
+            {/* Left: Category Selector */}
+            <div className="shrink-0 border-r border-border/80 bg-muted/40 hover:bg-muted/70 transition-colors flex items-center">
+              <Select
+                value={selectedCategory}
+                onValueChange={(val) => setSelectedCategory(val)}
+              >
+                <SelectTrigger
+                  aria-label="Select Category"
+                  className="h-full border-0 rounded-none bg-transparent shadow-none px-2.5 py-0 text-xs font-medium text-foreground/85 focus-visible:ring-0 focus:outline-none max-w-[85px] sm:max-w-[110px] gap-1 cursor-pointer data-[state=open]:bg-muted"
+                >
+                  <SelectValue placeholder="All" />
+                </SelectTrigger>
+                <SelectContent
+                  align="start"
+                  className="w-56 rounded-xl border border-border shadow-2xl z-50 bg-popover/95 backdrop-blur-xl p-1"
+                >
+                  <SelectItem value="all" className="text-xs font-medium cursor-pointer">
+                    All
+                  </SelectItem>
+                  {categoriesList.map((cat) => (
+                    <SelectItem
+                      key={cat._id || cat.id}
+                      value={cat._id || cat.id}
+                      className="text-xs font-medium cursor-pointer"
+                    >
+                      {cat.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Middle: Command Search Input */}
+            <div className="relative flex-1 flex items-center min-w-0 bg-background/90">
+              <Search className="absolute left-3 size-3.5 text-muted-foreground pointer-events-none" />
+              <input
+                ref={mobileInputRef}
+                type="text"
+                value={searchQuery}
+                onChange={(e) => {
+                  setSearchQuery(e.target.value);
+                  setIsMobileCommandOpen(true);
+                }}
+                onFocus={() => {
+                  setIsMobileCommandOpen(true);
+                  setMobileMenuOpen(false);
+                }}
+                placeholder={
+                  selectedCategoryName === "All"
+                    ? "Search diecast, RC cars..."
+                    : `Search in ${selectedCategoryName}...`
+                }
+                className="w-full h-full pl-8.5 pr-8 text-xs bg-transparent text-foreground placeholder:text-muted-foreground/60 outline-none font-normal"
+              />
+              {searchQuery && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSearchQuery("");
+                    mobileInputRef.current?.focus();
+                  }}
+                  className="absolute right-2 text-muted-foreground hover:text-foreground cursor-pointer p-0.5 rounded transition-colors"
+                  aria-label="Clear search"
+                >
+                  <X className="size-3.5" />
+                </button>
+              )}
+            </div>
+
+            {/* Right: Search Action Button */}
+            <button
+              type="submit"
+              className="bg-primary hover:bg-primary/90 text-primary-foreground px-3.5 flex items-center justify-center shrink-0 transition-all cursor-pointer font-heading font-semibold text-xs active:scale-95 shadow-sm"
+              aria-label="Search"
+            >
+              <Search className="size-3.5 stroke-[2.4]" />
+            </button>
+          </form>
+
+          {/* Connected Command Autocomplete Dropdown */}
+          {isMobileCommandOpen && (
+            <div className="absolute top-full left-0 right-0 mt-2 z-50 rounded-2xl border border-border/80 bg-popover/98 backdrop-blur-2xl shadow-2xl overflow-hidden animate-in fade-in-0 zoom-in-98 duration-150">
+              <Command className="bg-transparent">
+                <CommandList className="max-h-[300px] p-2 text-foreground overflow-y-auto">
+                  {/* Matching Products */}
+                  {matchingProducts.length > 0 && (
+                    <CommandGroup heading="Matching Scale Models" className="text-muted-foreground font-semibold">
+                      {matchingProducts.map((item) => (
+                        <CommandItem
+                          key={item._id}
+                          onSelect={() => handleSelectProduct(item)}
+                          className="flex items-center gap-3 p-2 rounded-xl cursor-pointer hover:bg-muted/80 transition-colors"
+                        >
+                          <img
+                            src={
+                              item.images?.[0] ||
+                              item.image ||
+                              "/cars/gt3_rs.jpg"
+                            }
+                            alt={item.name}
+                            className="size-10 rounded-lg object-cover bg-muted border border-border/70 shrink-0"
+                          />
+                          <div className="flex-1 min-w-0 text-left">
+                            <p className="text-xs font-bold text-foreground truncate">
+                              {item.name}
+                            </p>
+                            <p className="text-[11px] text-muted-foreground">
+                              {item.scale || item.brand || "Scale Model"} • {item.category?.name || "General"}
+                            </p>
+                          </div>
+                          <span className="text-xs font-mono font-black text-primary shrink-0 pl-2">
+                            ₹{Number(item.price || 0).toLocaleString()}
+                          </span>
+                        </CommandItem>
+                      ))}
+                      <CommandSeparator className="my-1.5" />
+                    </CommandGroup>
+                  )}
+
+                  {/* Trending Searches */}
+                  <CommandGroup heading="Trending Searches" className="text-muted-foreground font-semibold">
+                    {POPULAR_SEARCHES.map((query) => (
+                      <CommandItem
+                        key={query}
+                        onSelect={() => handleSelectSearch(query)}
+                        className="flex items-center justify-between text-xs py-2 px-2.5 rounded-xl cursor-pointer hover:bg-muted/80"
+                      >
+                        <div className="flex items-center gap-2 text-foreground font-medium">
+                          <Flame className="size-3.5 text-primary" />
+                          <span>{query}</span>
+                        </div>
+                        <ArrowUpRight className="size-3 text-muted-foreground" />
+                      </CommandItem>
+                    ))}
+                  </CommandGroup>
+
+                  <CommandSeparator className="my-1.5" />
+
+                  {/* Browse Categories */}
+                  <CommandGroup heading="Explore Categories" className="text-muted-foreground font-semibold">
+                    {categoriesList.slice(0, 5).map((cat) => (
+                      <CommandItem
+                        key={cat._id || cat.id}
+                        onSelect={() => handleSelectCategory(cat._id || cat.id)}
+                        className="flex items-center justify-between text-xs py-2 px-2.5 rounded-xl cursor-pointer hover:bg-muted/80"
+                      >
+                        <div className="flex items-center gap-2 text-foreground font-medium">
+                          <Car className="size-3.5 text-muted-foreground" />
+                          <span>{cat.name}</span>
+                        </div>
+                        <span className="text-[10px] text-muted-foreground font-mono">
+                          Category
+                        </span>
+                      </CommandItem>
+                    ))}
+                  </CommandGroup>
+                </CommandList>
+              </Command>
+            </div>
+          )}
+        </div>
+      </div>
+
       {/* ─── MOBILE DRAWER MENU ─── */}
       {mobileMenuOpen && (
         <div className="md:hidden border-t border-border bg-background/98 backdrop-blur-2xl px-4 py-4 space-y-4 shadow-2xl animate-in slide-in-from-top-2 duration-200">
-          {/* Mobile Search Bar */}
-          <form onSubmit={handleSearchSubmit} className="relative w-full">
-            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
-            <input
-              type="search"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search diecast, RC cars..."
-              className="h-10 w-full rounded-xl border border-border bg-muted/50 pl-10 pr-4 text-sm font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-            />
-          </form>
 
           {/* Quick Categories Scroll */}
           <div className="space-y-1.5">
@@ -749,6 +931,18 @@ export default function Navbar() {
             </Link>
 
             <Link
+              to="/cart"
+              onClick={() => setMobileMenuOpen(false)}
+              className="flex items-center justify-between px-3.5 py-2.5 rounded-xl text-sm font-semibold text-muted-foreground hover:bg-muted hover:text-foreground"
+            >
+              <div className="flex items-center gap-3">
+                <ShoppingCart className="size-4.5 text-primary" />
+                <span>Shopping Cart ({cartItemCount})</span>
+              </div>
+              <ChevronRight className="size-4 opacity-50" />
+            </Link>
+
+            <Link
               to="/wishlist"
               onClick={() => setMobileMenuOpen(false)}
               className="flex items-center justify-between px-3.5 py-2.5 rounded-xl text-sm font-semibold text-muted-foreground hover:bg-muted hover:text-foreground"
@@ -788,9 +982,11 @@ export default function Navbar() {
           </div>
 
           {/* Mobile Theme Preference */}
-          <div className="pt-2 border-t border-border flex items-center justify-between px-3.5 py-1">
-            <span className="text-xs font-semibold text-muted-foreground">Appearance</span>
-            <ThemeSegmented />
+          <div className="pt-3 pb-1 border-t border-border space-y-2 px-1">
+            <span className="text-[10px] uppercase font-bold tracking-widest text-muted-foreground px-1">
+              Appearance
+            </span>
+            <ThemeSegmented fullWidth />
           </div>
 
           {/* Mobile User Profile Footer */}

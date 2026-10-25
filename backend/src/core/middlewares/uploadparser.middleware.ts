@@ -25,10 +25,12 @@ export const parseProductUpload = (req: Request, res: Response, next: NextFuncti
     req.body.images = req.files.map((file: any) => file.path || 'http://dummy.url/test.jpg');
   }
 
-  // Handle form-data stringified numbers
+  // Handle form-data stringified numbers & booleans
   if (req.body.weight !== undefined) req.body.weight = Number(req.body.weight);
   if (req.body.stock !== undefined) req.body.stock = Number(req.body.stock);
   if (req.body.price !== undefined) req.body.price = Number(req.body.price);
+  if (req.body.active === 'true') req.body.active = true;
+  if (req.body.active === 'false') req.body.active = false;
 
   next();
 };

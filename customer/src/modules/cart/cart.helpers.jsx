@@ -9,12 +9,14 @@ export const resolveProductId = (target) => {
 };
 
 export const getCartHeaders = (getCartIdState, initCartId) => {
-  let cartId = getCartIdState();
+  let cartId = getCartIdState?.();
   if (!cartId) {
-    initCartId();
-    cartId = getCartIdState();
+    try {
+      initCartId?.();
+      cartId = getCartIdState?.();
+    } catch {}
   }
-  return { "x-cart-id": cartId };
+  return { "x-cart-id": cartId || "guest-session" };
 };
 
 export const restoreCartFromBackup = async ({

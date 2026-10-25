@@ -557,10 +557,16 @@ export default function Orders() {
               const isConfirmed = statusLower === "confirmed";
               const canCancel = ["placed", "confirmed"].includes(statusLower);
 
-              const isPaid =
-                order.payment?.status === "paid" ||
-                order.payment?.status === "refund_pending" ||
-                (order.payment?.method === "online" && order.payment?.status !== "failed");
+              const paymentStatus = order.payment?.status?.toLowerCase();
+              const isRefunded = paymentStatus === "refunded";
+              const isRefundPending =
+                isCancelled &&
+                !isRefunded &&
+                (paymentStatus === "refund_pending" ||
+                  paymentStatus === "paid" ||
+                  (order.payment?.method === "online" && paymentStatus !== "failed"));
+
+              const isPaid = isRefunded || isRefundPending || paymentStatus === "paid";
 
               const shippingName =
                 order.shipping_address?.full_name ||
@@ -604,10 +610,16 @@ export default function Orders() {
                               : `Order Placed on ${orderDate}`}
                           </span>
                           {getStatusBadge(order.status)}
-                          {isCancelled && isPaid && (
-                            <Badge className="bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30 text-xs font-semibold gap-1">
-                              <Clock className="size-3" /> Refund Pending
-                            </Badge>
+                          {isCancelled && (
+                            isRefunded ? (
+                              <Badge className="bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 text-xs font-semibold gap-1">
+                                <CheckCircle2 className="size-3" /> Refunded
+                              </Badge>
+                            ) : isRefundPending ? (
+                              <Badge className="bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30 text-xs font-semibold gap-1">
+                                <Clock className="size-3" /> Refund Pending
+                              </Badge>
+                            ) : null
                           )}
                         </div>
                         <p className="text-xs text-muted-foreground mt-0.5">
@@ -616,7 +628,9 @@ export default function Orders() {
                             : isShipped
                             ? `Package on the way with courier${shippingCity ? ` to ${shippingCity}` : ""}`
                             : isCancelled
-                            ? (isPaid
+                            ? (isRefunded
+                                ? "Order cancelled. Full payment refund has been processed."
+                                : isRefundPending
                                 ? "Order cancelled. Refund of payment is currently pending."
                                 : "This order was cancelled and models were restocked")
                             : "Your order is confirmed and being prepared for carrier pickup"}
@@ -649,9 +663,13 @@ export default function Orders() {
                         {isCancelled && (
                           <div className={cn(
                             "text-[10px] font-semibold uppercase tracking-wider",
-                            isPaid ? "text-amber-600 dark:text-amber-400 font-bold" : "text-destructive"
+                            isRefunded
+                              ? "text-emerald-600 dark:text-emerald-400 font-bold"
+                              : isRefundPending
+                              ? "text-amber-600 dark:text-amber-400 font-bold"
+                              : "text-destructive"
                           )}>
-                            {isPaid ? "Refund Pending" : "Void / Cancelled"}
+                            {isRefunded ? "Refunded" : isRefundPending ? "Refund Pending" : "Void / Cancelled"}
                           </div>
                         )}
                       </div>

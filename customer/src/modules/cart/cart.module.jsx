@@ -1,4 +1,5 @@
 import useCartStore from "./cart.store";
+import { useWishlistStore } from "@/modules/wishlist/wishlist.store";
 import { apiRequest } from "@/core/api/api.request";
 import {
   resolveProductId,
@@ -49,6 +50,21 @@ export const useCartModule = (exported) => {
       if (data && data.items) {
         useCartStore.getState().setCart(data);
       }
+
+      // If the product was in the wishlist, remove it
+      const wishlistList = useWishlistStore.getState().list || [];
+      const isInWishlist =
+        exported?.wishlist?.isWishlisted?.(cleanProductId) ||
+        wishlistList.some((p) => String(p._id || p.id || p) === String(cleanProductId));
+
+      if (isInWishlist && exported?.wishlist?.removeProduct) {
+        try {
+          await exported.wishlist.removeProduct(cleanProductId, { silent: true });
+        } catch (wishlistErr) {
+          console.warn("Failed to remove product from wishlist upon adding to cart", wishlistErr);
+        }
+      }
+
       return data;
     } catch (err) {
       console.error("Failed to add to cart", err);

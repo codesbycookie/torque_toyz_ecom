@@ -66,7 +66,7 @@ export default function Footer() {
       return;
     }
     setSubscribed(true);
-    toast.success("Welcome to the Pit Lane VIP Club! Watch your inbox for secret drops.");
+    toast.success("Thank you for subscribing! Watch your inbox for updates.");
     setNewsletterEmail("");
   };
 
@@ -144,14 +144,12 @@ export default function Footer() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-8 lg:gap-12">
           {/* Brand Info & Mission (Col 1-4) */}
           <div className="lg:col-span-4 space-y-4">
-            <Link to="/" className="flex items-center gap-3 group inline-block">
-              <div className="relative size-10 rounded-xl bg-muted dark:bg-neutral-900 p-1 border border-border/80 shadow-xs group-hover:border-primary/50 transition-all flex items-center justify-center overflow-hidden shrink-0">
-                <img
-                  src="/logo.png"
-                  alt="Torque Toyzz"
-                  className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-200"
-                />
-              </div>
+            <Link to="/" className="flex items-center gap-3 group inline-flex" aria-label="Torque Toyzz Home">
+              <img
+                src="/logo.png"
+                alt="Torque Toyzz"
+                className="size-11 sm:size-12 object-contain group-hover:scale-105 transition-transform duration-200 shrink-0"
+              />
               <div className="flex flex-col text-left">
                 <span className="font-heading font-extrabold text-xl tracking-tight text-foreground dark:text-white select-none leading-none">
                   Torque <span className="text-primary">Toyzz</span>
@@ -282,12 +280,12 @@ export default function Footer() {
             </ul>
           </div>
 
-          {/* VIP Newsletter Box (Col 9-12) */}
+          {/* Newsletter Box (Col 9-12) */}
           <div className="lg:col-span-3 space-y-3.5">
             <div className="flex items-center gap-2">
               <Sparkles className="size-4 text-primary" />
               <h4 className="font-heading font-bold text-sm tracking-wide text-foreground dark:text-white uppercase">
-                Pit Lane VIP Club
+                Newsletter
               </h4>
             </div>
 
