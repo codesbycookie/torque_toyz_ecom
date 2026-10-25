@@ -64,7 +64,7 @@ beforeAll(async () => {
   const timestamp = Date.now();
 
   const category = await new Category({
-    name: `Payment Test Category ${timestamp}`,
+    name: `Payment Test Category ${timestamp}-${new mongoose.Types.ObjectId()}`,
   }).save();
   testCategoryId = category._id.toString();
 
@@ -127,6 +127,7 @@ beforeAll(async () => {
 afterAll(async () => {
   if (cleanupAdmin) await cleanupAdmin();
   await Product.findByIdAndDelete(testProductId);
+  await Category.findByIdAndDelete(testCategoryId);
   await Location.findByIdAndDelete(testLocationId);
   await Order.deleteMany({ _id: { $in: [onlineOrderId, codOrderId] } });
   await Payment.deleteMany({ order: { $in: [onlineOrderId, codOrderId] } });

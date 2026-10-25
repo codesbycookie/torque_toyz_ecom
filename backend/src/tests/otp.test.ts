@@ -37,7 +37,7 @@ describe('OTP API Endpoint Suite', () => {
       email: 'no-such-user@example.com',
       purpose: 'login',
     });
-    tester.assertNotFound(res, 'No account found with this email');
+    tester.assertNotFound(res, 'account', 'No account found with this email');
   });
 
   it('should reject sending an OTP with an invalid email format', async () => {

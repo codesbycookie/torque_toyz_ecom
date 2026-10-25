@@ -115,10 +115,12 @@ export const tester = {
     }
   },
 
-  assertNotFound: (res: any, model: string) => {
+  assertNotFound: (res: any, model: string, expectedMessage?: string) => {
     expect(res.status).to.above(400);
     expect(res.body.success).to.be.false;
-    expect(res.body.message).to.equal(`${model.charAt(0).toUpperCase() + model.slice(1)} not found`);
+    expect(res.body.message).to.equal(
+      expectedMessage ?? `${model.charAt(0).toUpperCase() + model.slice(1)} not found`,
+    );
     expect(res.body.timestamp).to.exist;
   },
 

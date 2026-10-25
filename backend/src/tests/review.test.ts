@@ -25,7 +25,9 @@ beforeAll(async () => {
 
   const timestamp = Date.now();
 
-  const category = await new Category({ name: `Payment Test Category ${timestamp}` }).save();
+  const category = await new Category({
+    name: `Review Test Category ${timestamp}-${new mongoose.Types.ObjectId()}`,
+  }).save();
 testCategoryId = category._id.toString();
 
   const product = await new Product({ name: `Review Product ${timestamp}`, weight: 1, category: testCategoryId }).save();
@@ -45,6 +47,7 @@ testCategoryId = category._id.toString();
 afterAll(async () => {
   if (cleanupAdmin) await cleanupAdmin();
   await Product.findByIdAndDelete(testProductId);
+  await Category.findByIdAndDelete(testCategoryId);
   await Order.deleteMany({ 'items.product': testProductId });
   await Review.deleteMany({ product: testProductId });
 });

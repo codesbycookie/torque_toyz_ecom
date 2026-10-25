@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useParams, useNavigate, Link } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { useApi } from "@/core/contexts/api.context";
 import { useEcom } from "@/core/contexts/ecom.context";
 import { Button } from "@/components/ui/button";
@@ -8,13 +8,16 @@ import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useBreadcrumb } from "@/core/contexts/breadcrumb.context";
 import {
+  AmazonProductCard,
+  AmazonProductCardSkeleton,
+} from "@/modules/product/product.components";
+import {
   Heart,
   ShoppingCart,
   Star,
   Truck,
   ShieldCheck,
   RotateCcw,
-  ChevronLeft,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -24,11 +27,7 @@ export default function ProductDetail() {
   const navigate = useNavigate();
   const api = useApi();
   const { products, wishlist, cart } = api;
-  const {
-    recentlyViewed,
-    addRecentlyViewed,
-    getRecommendedFor,
-  } = useEcom();
+  const { addRecentlyViewed } = useEcom();
   const { setCustomBreadcrumbs } = useBreadcrumb();
 
   const [selectedImage, setSelectedImage] = useState(0);
@@ -39,6 +38,7 @@ export default function ProductDetail() {
   const storeLoading = products.loading;
 
   const wishlistItems = wishlist.list || [];
+  const wishlistedIds = wishlistItems.map((item) => item._id);
   const isWishlisted = Boolean(product?.is_in_wishlist) || wishlistItems.some((p) => p._id === product?._id);
 
   // Sync with global breadcrumb strip
@@ -75,6 +75,8 @@ export default function ProductDetail() {
 
       })
       .finally(() => setLoading(false));
+
+    products.getAll({ limit: 8, sortBy: "createdAt", order: "desc", page: 1 });
   }, [slug]);
 
   // Reset selected image when product changes
@@ -111,16 +113,19 @@ export default function ProductDetail() {
       ).toFixed(1)
       : null;
 
-  const handleAddToCart = () => {
-    if (product) {
-      cart.addToCart(product, 1);
-      toast.success(`${product.name} added to cart`);
+  const handleAddToCart = (productToAdd = product) => {
+    if (productToAdd) {
+      cart.addToCart(productToAdd, 1);
+      toast.success(`${productToAdd.name} added to cart`);
     }
   };
 
-  const handleToggleWishlist = () => {
-    if (product) {
-      wishlist.toggle(product, isWishlisted);
+  const handleToggleWishlist = (productToToggle = product) => {
+    if (productToToggle) {
+      const isProductWishlisted =
+        Boolean(productToToggle.is_in_wishlist) ||
+        wishlistedIds.includes(productToToggle._id);
+      wishlist.toggle(productToToggle, isProductWishlisted);
     }
   };
 
@@ -390,6 +395,41 @@ export default function ProductDetail() {
             )}
           </div>
         </div>
+
+        <section className="mt-10 border-t border-border/80 pt-8">
+          <div className="mb-5">
+            <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground">
+              Recently Added Products
+            </h2>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Check out the latest additions to our collection
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 xs:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4 md:gap-5">
+            {storeLoading?.getAll ? (
+              Array.from({ length: 4 }).map((_, index) => (
+                <AmazonProductCardSkeleton key={index} />
+              ))
+            ) : (
+              (products.list || [])
+                .filter((recentProduct) => recentProduct._id !== product._id)
+                .slice(0, 4)
+                .map((recentProduct) => (
+                  <AmazonProductCard
+                    key={recentProduct._id}
+                    product={recentProduct}
+                    onAddToCart={handleAddToCart}
+                    onToggleWishlist={handleToggleWishlist}
+                    isWishlisted={
+                      wishlistedIds.includes(recentProduct._id) ||
+                      Boolean(recentProduct.is_in_wishlist)
+                    }
+                  />
+                ))
+            )}
+          </div>
+        </section>
       </div>
     </div>
   );
