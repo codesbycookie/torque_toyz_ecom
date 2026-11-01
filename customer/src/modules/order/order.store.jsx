@@ -12,4 +12,14 @@ export const useOrderStore = create((set) => ({
   setPagination: (pagination) => set({ pagination }),
   startLoading: (key) => set({ loading: true }),
   stopLoading: (key) => set({ loading: false }),
+  update: (id, data) =>
+    set((state) => ({
+      list: state.list.map((item) =>
+        (item._id === id || item.id === id ? { ...item, ...data } : item)
+      ),
+      current:
+        state.current && (state.current._id === id || state.current.id === id)
+          ? { ...state.current, ...data }
+          : state.current,
+    })),
 }));

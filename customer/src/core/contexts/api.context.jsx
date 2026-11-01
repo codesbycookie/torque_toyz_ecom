@@ -1,4 +1,4 @@
-import { createContext, useContext } from "react";
+import { createContext, useContext, useEffect } from "react";
 import { useProductModule } from "@/modules/product/product.module";
 import { useCategoryModule } from "@/modules/category/category.module";
 import { useCartModule } from "@/modules/cart/cart.module";
@@ -34,6 +34,11 @@ export const ApiProvider = ({ children }) => {
   const locationModule = useLocationModule(exported);
   const settingModule = useSettingModule(exported);
   const homeModule = useHomeModule(exported);
+
+  useEffect(() => {
+    settingModule.fetchPublic();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   Object.assign(exported, {
     // Singular aliases

@@ -34,6 +34,7 @@ export const PAYMENT_STATUS_STYLES = {
   failed: "bg-rose-500/15 text-rose-700 dark:text-rose-300 border-rose-500/30 font-semibold capitalize",
   refunded: "bg-violet-500/15 text-violet-700 dark:text-violet-300 border-violet-500/30 font-semibold capitalize",
   created: "bg-slate-500/15 text-slate-700 dark:text-slate-300 border-slate-500/30 font-semibold capitalize",
+  cancelled: "bg-neutral-500/15 text-neutral-700 dark:text-neutral-300 border-neutral-500/30 font-semibold capitalize",
   refund_pending: "bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-500/30 font-semibold capitalize",
 };
 

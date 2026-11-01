@@ -62,9 +62,9 @@ export const useLocationModule = (exported) => {
     });
   };
 
- const toggleDeliverable = (location) => {
-  crud.setDeliverableStatus(location._id, { active: !location.deliverable }); // 👈 key changed
-};
+  const toggleDeliverable = (location) => {
+    return crud.setDeliverableStatus(location._id, { active: !location.deliverable }); // 👈 key changed
+  };
 
   // --- Slab management ---
   // No dedicated slab modals exist yet in `modals`, so these are exposed as

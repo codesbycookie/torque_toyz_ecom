@@ -30,23 +30,23 @@ export const EcomProvider = ({ children }) => {
   const [recommendations, setRecommendations] = useState([]);
   const [loading, setLoading] = useState(false);
 
-  // ─── Recently Viewed Products (persisted in localStorage) ───
+  // ─── Recently Viewed Products (in-memory only, no localStorage) ───
   const [recentlyViewed, setRecentlyViewed] = useState(() => {
     try {
-      const stored = localStorage.getItem(STORAGE_KEY);
+      const stored = null;
       return stored ? JSON.parse(stored) : [];
     } catch {
       return [];
     }
   });
 
-  // Persist to localStorage whenever it changes
+  // In-memory reference
   const recentlyViewedRef = useRef(recentlyViewed);
   recentlyViewedRef.current = recentlyViewed;
 
   useEffect(() => {
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(recentlyViewed));
+      localStorage.removeItem(STORAGE_KEY);
     } catch {
       // localStorage full or unavailable – silently ignore
     }

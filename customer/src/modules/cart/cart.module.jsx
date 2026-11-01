@@ -133,6 +133,7 @@ export const useCartModule = (exported) => {
       return data;
     } catch (err) {
       console.error("Failed to update shipping address", err);
+      throw err;
     } finally {
       useCartStore.getState().setLoading(false);
     }

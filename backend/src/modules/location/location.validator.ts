@@ -36,7 +36,7 @@ export const updateSlabSchema = z
   });
 
 export const setDeliverableStatusSchema = z.object({
-  deliverable: z.boolean(),
+  deliverable: z.coerce.boolean(),
 });
 
 export const findRateForWeightSchema = z.object({

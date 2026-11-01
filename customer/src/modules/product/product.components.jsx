@@ -375,11 +375,11 @@ export function ProductListCard({
               {/* Price & Slash Price */}
               <div className="pt-1 flex items-baseline gap-2 flex-wrap">
                 <span className="text-xl font-semibold tracking-tight">
-                  ₹{price.toLocaleString("en-IN")}
+                  ₹{Number(price).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </span>
                 {hasDiscount && (
                   <span className="text-xs text-muted-foreground line-through">
-                    ₹{slashPrice.toLocaleString("en-IN")}
+                    ₹{Number(slashPrice).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </span>
                 )}
                 {hasDiscount && discountPercent > 0 && (
@@ -624,11 +624,11 @@ export function AmazonProductCard({
           <div className="pt-0.5 sm:pt-1 space-y-0.5">
             <div className="flex items-baseline gap-1.5 sm:gap-2 flex-wrap">
               <span className="text-sm sm:text-lg font-bold tracking-tight text-foreground">
-                ₹{price.toLocaleString("en-IN")}
+                ₹{Number(price).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </span>
               {hasDiscount && (
                 <span className="text-[11px] sm:text-xs text-muted-foreground line-through">
-                  ₹{slashPrice.toLocaleString("en-IN")}
+                  ₹{Number(slashPrice).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </span>
               )}
               {hasDiscount && discountPercent > 0 && (
@@ -640,7 +640,7 @@ export function AmazonProductCard({
 
             {/* Delivery Promise */}
             <p className="text-[10px] sm:text-[11px] text-muted-foreground">
-              <span className="font-semibold text-primary">FREE delivery</span>{" "}
+              <span className="font-semibold text-primary">Express delivery</span>{" "}
               available
             </p>
           </div>

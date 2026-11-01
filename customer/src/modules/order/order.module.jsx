@@ -50,7 +50,9 @@ export const useOrderModule = () => {
       if (data) {
         useOrderStore.getState().setCurrent(data);
         // Also update item in list if present
-        useOrderStore.getState().update(id, data);
+        if (typeof useOrderStore.getState().update === "function") {
+          useOrderStore.getState().update(id, data);
+        }
       }
       return data;
     } catch (err) {

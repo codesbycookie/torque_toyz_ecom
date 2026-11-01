@@ -3,6 +3,7 @@ import { Types } from "mongoose";
 import Product from "@db/models/product.model.ts";
 import Location from "@db/models/location.model.ts";
 import Setting from "@db/models/setting.model.ts";
+import Payment from "@db/models/payment.model.ts";
 import { dynamicFilter } from "@core/constants/dynamicfilter.constant.ts";
 import { Role } from "@typings/auth.types.js";
 import { ApiError } from "@core/errors/api.error.ts";
@@ -88,6 +89,7 @@ export const createOrder = async (userId: string, data: CreateOrderPayload) => {
     tax,
     total_weight,
     shipping_cost,
+    is_free_delivery: Boolean(isFreeDelivery),
     total: Math.round((subtotal + shipping_cost + tax) * 100) / 100,
   };
 
@@ -151,8 +153,18 @@ export const updateOrderStatus = async (id: string, status: OrderStatus, note?: 
 
   const updateFields: Record<string, any> = { status };
   const isPaid = existingOrder.payment?.status === "paid";
-  if (status === "cancelled" && isPaid) {
-    updateFields["payment.status"] = "refund_pending";
+  if (status === "cancelled") {
+    if (isPaid) {
+      updateFields["payment.status"] = "refund_pending";
+    } else if (existingOrder.payment?.status !== "refunded") {
+      updateFields["payment.status"] = "cancelled";
+    }
+
+    // If order gets cancelled and payment was created/failed, mark Payment document status as 'cancelled'
+    await Payment.updateMany(
+      { order: existingOrder._id, status: { $in: ["created", "failed"] } },
+      { $set: { status: "cancelled", failure_reason: "Order was cancelled before payment completion" } }
+    );
   }
 
   const statusNote =

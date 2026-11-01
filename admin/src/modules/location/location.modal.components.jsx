@@ -132,7 +132,7 @@ export const DeliverableStatus = ({ id, status, submitFn, closeModal, exported }
   const actionLabel = status ? "Mark Non-Deliverable" : "Mark Deliverable";
 
   const submit = async () => {
-    await submitFn(id, { active: !status }); // 👈 was { deliverable: !status }
+    await submitFn(id, { deliverable: !status }); // 👈 was { deliverable: !status }
     closeModal();
   };
 

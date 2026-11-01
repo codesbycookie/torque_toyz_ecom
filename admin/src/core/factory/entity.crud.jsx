@@ -11,6 +11,10 @@ export const createCrud = ({ entity, urls, store, getRole }) => {
       res?.active
         ? `${camelToTitle(entity)} is now active`
         : `${camelToTitle(entity)} has been deactivated`,
+    setDeliverableStatus: (entity, res) =>
+      res.deliverable
+        ? `${camelToTitle(entity)} is now deliverable`
+        : `${camelToTitle(entity)} has made undeliverable`,
     submit: (entity) => `${camelToTitle(entity)} submitted for approval`,
     branchApprove: (entity, res) => `Order successfully ${res?.branchAdminApproval?.status}`,
     superAdminApprove: (entity, res) => `Order successfully ${res?.superAdminApproval?.status}`,
@@ -27,7 +31,7 @@ export const createCrud = ({ entity, urls, store, getRole }) => {
   const DOWNLOAD_KEYS = ['download', 'exportCsv', 'exportXlsx', 'exportPdf', 'exportMarksheetCsv'];
   const SET_KEYS = ['getAll'];
   const ADD_KEYS = ['create'];
-  const UPDATE_KEYS = ['edit', 'setActiveStatus', 'toggleStatus', 'branchApprove', 'branchAdminApprove', 'superAdminApprove', 'submit'];
+  const UPDATE_KEYS = ['edit', 'setActiveStatus', 'setDeliverableStatus', 'toggleStatus', 'branchApprove', 'branchAdminApprove', 'superAdminApprove', 'submit'];
   const DELETE_KEYS = ['delete'];
   const RETRIEVE_KEYS = ['retrieve'];
   const ERASE_KEYS = ['erase'];

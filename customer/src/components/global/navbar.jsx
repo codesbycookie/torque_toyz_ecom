@@ -80,7 +80,20 @@ export default function Navbar() {
   const [isMobileCommandOpen, setIsMobileCommandOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
-  const [bannerDismissed, setBannerDismissed] = useState(false);
+  const [bannerDismissed, setBannerDismissed] = useState(() => {
+    try {
+      const dismissedUntil = localStorage.getItem("torque_announcement_dismissed_until");
+      if (dismissedUntil) {
+        const expiry = Number(dismissedUntil);
+        if (!Number.isNaN(expiry) && Date.now() < expiry) {
+          return true;
+        }
+      }
+      return false;
+    } catch {
+      return false;
+    }
+  });
 
   const searchContainerRef = useRef(null);
   const inputRef = useRef(null);
@@ -122,6 +135,40 @@ export default function Navbar() {
       window.removeEventListener("resize", updateHeight);
     };
   }, [announcementBanner, bannerDismissed]);
+
+  // Synchronize banner dismissal state with 1-day localStorage expiration
+  useEffect(() => {
+    try {
+      const dismissedUntil = localStorage.getItem("torque_announcement_dismissed_until");
+      const dismissedText = localStorage.getItem("torque_announcement_dismissed_text");
+      if (dismissedUntil) {
+        const expiry = Number(dismissedUntil);
+        if (!Number.isNaN(expiry) && Date.now() < expiry) {
+          if (!dismissedText || dismissedText === announcementBanner) {
+            setBannerDismissed(true);
+            return;
+          }
+        }
+      }
+      setBannerDismissed(false);
+    } catch {
+      setBannerDismissed(false);
+    }
+  }, [announcementBanner]);
+
+  const handleDismissBanner = () => {
+    try {
+      const ONE_DAY_MS = 24 * 60 * 60 * 1000;
+      const expiry = Date.now() + ONE_DAY_MS;
+      localStorage.setItem("torque_announcement_dismissed_until", String(expiry));
+      if (announcementBanner) {
+        localStorage.setItem("torque_announcement_dismissed_text", announcementBanner);
+      }
+    } catch {
+      // ignore
+    }
+    setBannerDismissed(true);
+  };
 
   // Initial fetch for store data strictly through unified home API
   useEffect(() => {
@@ -331,7 +378,7 @@ export default function Navbar() {
           <span className="truncate max-w-[90vw]">{announcementBanner}</span>
           <button
             type="button"
-            onClick={() => setBannerDismissed(true)}
+            onClick={handleDismissBanner}
             aria-label="Dismiss banner"
             className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-primary-foreground/80 hover:text-primary-foreground cursor-pointer rounded transition-colors"
           >

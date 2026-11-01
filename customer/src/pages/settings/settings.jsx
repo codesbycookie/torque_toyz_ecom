@@ -5,7 +5,6 @@ import { Link } from "react-router-dom";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { useAuth } from "@/core/contexts/auth.context";
@@ -16,8 +15,6 @@ import {
   User,
   Lock,
   MapPin,
-  Bell,
-  Truck,
   ShieldCheck,
   Eye,
   EyeOff,
@@ -27,7 +24,6 @@ import {
   ExternalLink,
   Phone,
   Mail,
-  CheckCircle2,
 } from "lucide-react";
 import {
   AddressModalDialog,
@@ -42,7 +38,7 @@ export default function Settings() {
   const { loadOnly, loading: isSavingProfile } = useLoader();
   const { loadOnly: loadOnlyPassword, loading: isUpdatingPassword } = useLoader();
 
-  // Active Tab: "profile" | "addresses" | "security" | "notifications"
+  // Active Tab: "profile" | "addresses" | "security"
   const [activeTab, setActiveTab] = useState("profile");
 
   // Profile Form State
@@ -65,7 +61,7 @@ export default function Settings() {
   // Address Book State
   const [storedAddresses, setStoredAddresses] = useState(() => {
     try {
-      const raw = localStorage.getItem("torque_garage_addresses");
+      const raw = null;
       return raw ? JSON.parse(raw) : [];
     } catch {
       return [];
@@ -74,13 +70,6 @@ export default function Settings() {
 
   const [isAddressModalOpen, setIsAddressModalOpen] = useState(false);
   const [editingAddress, setEditingAddress] = useState(null);
-
-  // Notification Switches State
-  const [notifications, setNotifications] = useState({
-    orderUpdates: true,
-    milestoneTracking: true,
-    rareDrops: true,
-  });
 
   // Fetch locations for deliverability check in Address Book
   useEffect(() => {
@@ -254,7 +243,7 @@ export default function Settings() {
 
     setStoredAddresses(updated);
     try {
-      localStorage.setItem("torque_garage_addresses", JSON.stringify(updated));
+      // Saved directly to user profile in backend
     } catch {
       // ignore
     }
@@ -278,7 +267,7 @@ export default function Settings() {
     const filtered = storedAddresses.filter((a) => (a.id || a._id) !== addrId);
     setStoredAddresses(filtered);
     try {
-      localStorage.setItem("torque_garage_addresses", JSON.stringify(filtered));
+      // Saved directly to user profile in backend
     } catch {
       // ignore
     }
@@ -298,7 +287,6 @@ export default function Settings() {
     { id: "profile", label: "Profile & Identity", icon: User },
     { id: "addresses", label: "Saved Addresses", icon: MapPin, count: savedAddresses.length },
     { id: "security", label: "Security & Credentials", icon: Lock },
-    { id: "notifications", label: "Notifications", icon: Bell },
   ];
 
   return (
@@ -312,7 +300,7 @@ export default function Settings() {
               Account Settings
             </h1>
             <p className="text-xs sm:text-sm text-muted-foreground pt-1">
-              Manage your profile, saved addresses and notifications
+              Manage your profile, saved addresses, and security credentials
             </p>
           </div>
 
@@ -726,108 +714,6 @@ export default function Settings() {
                     </Button>
                   </div>
                 </form>
-              </div>
-            )}
-
-            {/* ─── TAB 4: DISPATCH & DROP ALERTS ─── */}
-            {activeTab === "notifications" && (
-              <div className="rounded-2xl border border-border/80 bg-card overflow-hidden shadow-xs">
-                <div className="bg-muted/40 dark:bg-muted/20 border-b border-border/80 px-5 sm:px-6 py-4 flex items-center justify-between">
-                  <div className="flex items-center gap-2.5">
-                    <Bell className="size-4 text-primary" />
-                    <div>
-                      <h2 className="text-sm sm:text-base font-bold text-foreground">
-                        Notification Preferences
-                      </h2>
-                      <p className="text-xs text-muted-foreground">
-                        Customize tracking status alerts and exclusive catalog drops
-                      </p>
-                    </div>
-                  </div>
-
-                  <Badge className="bg-primary/10 text-primary border border-primary/20 text-xs font-semibold">
-                    Instant Relay
-                  </Badge>
-                </div>
-
-                <div className="p-5 sm:p-6 space-y-6">
-                  {/* Toggle 1 */}
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="space-y-1">
-                      <div className="flex items-center gap-2">
-                        <Truck className="size-4 text-primary" />
-                        <h4 className="font-bold text-sm text-foreground">
-                          Order Shipping Updates
-                        </h4>
-                      </div>
-                      <p className="text-xs text-muted-foreground leading-relaxed">
-                        Receive instant SMS and email updates when scale models are inspected, boxed, and handed to courier partners.
-                      </p>
-                    </div>
-                    <Switch
-                      checked={notifications.orderUpdates}
-                      onCheckedChange={(checked) =>
-                        setNotifications((prev) => ({ ...prev, orderUpdates: checked }))
-                      }
-                    />
-                  </div>
-
-                  <Separator className="bg-border/60" />
-
-                  {/* Toggle 2 */}
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="space-y-1">
-                      <div className="flex items-center gap-2">
-                        <CheckCircle2 className="size-4 text-primary" />
-                        <h4 className="font-bold text-sm text-foreground">
-                          Local Distribution Milestone Alerts
-                        </h4>
-                      </div>
-                      <p className="text-xs text-muted-foreground leading-relaxed">
-                        Get live notifications when the package arrives at your local delivery hub and is out for delivery.
-                      </p>
-                    </div>
-                    <Switch
-                      checked={notifications.milestoneTracking}
-                      onCheckedChange={(checked) =>
-                        setNotifications((prev) => ({ ...prev, milestoneTracking: checked }))
-                      }
-                    />
-                  </div>
-
-                  <Separator className="bg-border/60" />
-
-                  {/* Toggle 3 */}
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="space-y-1">
-                      <div className="flex items-center gap-2">
-                        <Bell className="size-4 text-primary" />
-                        <h4 className="font-bold text-sm text-foreground">
-                          Rare Model Drops & Limited Production Runs
-                        </h4>
-                      </div>
-                      <p className="text-xs text-muted-foreground leading-relaxed">
-                        Early access to limited 1:18, 1:43, and 1:64 diecast models before general catalog release.
-                      </p>
-                    </div>
-                    <Switch
-                      checked={notifications.rareDrops}
-                      onCheckedChange={(checked) =>
-                        setNotifications((prev) => ({ ...prev, rareDrops: checked }))
-                      }
-                    />
-                  </div>
-
-                  <div className="pt-2 border-t border-border/70 flex justify-end">
-                    <Button
-                      type="button"
-                      onClick={() => toast.success("Notification preferences saved!")}
-                      className="h-10 px-6 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground font-bold text-xs shadow-xs cursor-pointer"
-                    >
-                      Save Preferences
-                    </Button>
-                  </div>
-                </div>
               </div>
             )}
 

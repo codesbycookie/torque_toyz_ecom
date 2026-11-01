@@ -26,13 +26,15 @@ export interface IPricing {
   tax: number;
   total_weight: number;
   shipping_cost: number;
+  is_free_delivery?: boolean;
   total: number;
 }
 
 export interface IPayment {
   method: "cod" | "online";
-  status: "pending" | "paid" | "failed" | "refunded" | "refund_pending";
+  status: "pending" | "paid" | "failed" | "refunded" | "refund_pending" | "cancelled";
   transaction_id?: string;
+  razorpay_order_id?: string;
 }
 
 export interface IStatusEntry {
@@ -114,6 +116,7 @@ const PricingSchema = new Schema<IPricing>(
     tax: { type: Number, required: true, min: 0, default: 0 },
     total_weight: { type: Number, required: true, min: 0 },
     shipping_cost: { type: Number, required: true, min: 0 },
+    is_free_delivery: { type: Boolean, default: false },
     total: { type: Number, required: true, min: 0 },
   },
   { _id: false }
@@ -128,10 +131,11 @@ const PaymentSchema = new Schema<IPayment>(
     },
     status: {
       type: String,
-      enum: ["pending", "paid", "failed", "refunded", "refund_pending"],
+      enum: ["pending", "paid", "failed", "refunded", "refund_pending", "cancelled"],
       default: "pending",
     },
     transaction_id: { type: String },
+    razorpay_order_id: { type: String },
   },
   { _id: false }
 );

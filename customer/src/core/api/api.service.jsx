@@ -27,6 +27,15 @@ export const setupInterceptors = (onUnauthorized) => {
   api.interceptors.response.use(
     (res) => res,
     (error) => {
+      // If backend network is unreachable and not on health-check
+      if (
+        (error.code === 'ERR_NETWORK' || error.message?.includes('Network Error')) &&
+        typeof window !== 'undefined' &&
+        window.location.pathname !== '/health-check'
+      ) {
+        window.location.href = `/health-check?redirect=${encodeURIComponent(window.location.pathname + window.location.search)}`;
+        return Promise.reject(error);
+      }
       if (error.response?.status === 401) {
         const url = error.config?.url || '';
         const isAuthCheck = url.includes('/auth/me') || url.includes('/auths/me');

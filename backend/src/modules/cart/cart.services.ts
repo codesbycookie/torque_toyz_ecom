@@ -51,6 +51,7 @@ export const recalculateCartPricing = async (cart: any) => {
     tax,
     total_weight,
     shipping_cost,
+    is_free_delivery: Boolean(isFreeDelivery),
     total: Math.round((subtotal + shipping_cost + tax) * 100) / 100,
   };
 
@@ -304,10 +305,15 @@ export const checkoutCart = async (
   if (!userId && !cartRaw.user) throw new ApiError(400, "User is required for checkout");
 
   if (data.shipping_address) {
-    const resolvedState = await resolveLocationObjectId(data.shipping_address.state);
+    const rawState = data.shipping_address.state || cartRaw.shipping_address?.state;
+    let resolvedState: Types.ObjectId | undefined;
+    if (rawState) {
+      resolvedState = await resolveLocationObjectId(rawState);
+    }
     cartRaw.shipping_address = {
+      ...((cartRaw.shipping_address as any)?.toObject ? (cartRaw.shipping_address as any).toObject() : cartRaw.shipping_address),
       ...data.shipping_address,
-      state: resolvedState,
+      ...(resolvedState ? { state: resolvedState } : {}),
     };
   }
 
@@ -335,10 +341,12 @@ export const checkoutCart = async (
       throw new ApiError(400, "No delivery rate available for this location/weight");
     } else {
       cartRaw.pricing.shipping_cost = slab.rate;
+      cartRaw.pricing.is_free_delivery = false;
       cartRaw.pricing.total = Math.round((cartRaw.pricing.subtotal + (cartRaw.pricing.tax || 0) + slab.rate) * 100) / 100;
     }
   } else if (isFreeDelivery) {
     cartRaw.pricing.shipping_cost = 0;
+    cartRaw.pricing.is_free_delivery = true;
     cartRaw.pricing.total = Math.round((cartRaw.pricing.subtotal + (cartRaw.pricing.tax || 0)) * 100) / 100;
   }
 

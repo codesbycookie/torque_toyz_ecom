@@ -253,7 +253,7 @@ export function CartOrderSummary({
   itemCount,
   onProceedToCheckout,
 }) {
-  const { subtotal = 0, tax = 0, total_weight = 0, shipping_cost = 0, total = 0 } = pricing || {};
+  const { subtotal = 0, tax = 0, total_weight = 0, shipping_cost = 0, total = 0, is_free_delivery } = pricing || {};
   const grandTotal = total > 0 ? total : subtotal + shipping_cost + tax;
 
   return (
@@ -297,10 +297,14 @@ export function CartOrderSummary({
               <span className="font-medium text-foreground">
                 ₹{Number(shipping_cost).toLocaleString("en-IN", { minimumFractionDigits: 2 })}
               </span>
-            ) : (
+            ) : is_free_delivery ? (
               <Badge className="bg-primary/10 text-primary border border-primary/20 text-[10px] font-bold">
                 FREE Delivery
               </Badge>
+            ) : (
+              <span className="text-muted-foreground text-xs">
+                Calculated at checkout
+              </span>
             )}
           </div>
 

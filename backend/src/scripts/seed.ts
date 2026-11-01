@@ -137,7 +137,7 @@ const seedLocations = async () => {
     locations.push({
       state: label,
       code,
-      deliverable: Math.random() > 0.05,
+      deliverable: true,
       slabs: [
         { min: 0, max: 0.5, rate: base },
         { min: 0.5, max: 1, rate: base + 15 },
@@ -226,9 +226,10 @@ const seedProducts = async (categories: any[]) => {
       const img3 = CAR_IMAGES[(imgIndex + 2) % CAR_IMAGES.length];
       imgIndex++;
 
-      const price = randInt(20, 500) * 10;
+      const PAISA_PRICES = [0.10, 0.20, 0.25, 0.35, 0.50, 0.65, 0.75, 0.80, 0.90, 0.99, 1.00];
+      const price = pick(PAISA_PRICES);
       const hasDiscount = Math.random() > 0.3;
-      const slash_price = hasDiscount ? Math.round(price * (1 + randFloat(0.15, 0.4))) : price;
+      const slash_price = hasDiscount ? Number((price + pick([0.25, 0.50, 0.75, 1.00])).toFixed(2)) : price;
       const is_trending = Math.random() < 0.25;
       const badges = pick(BADGES_LIST);
 

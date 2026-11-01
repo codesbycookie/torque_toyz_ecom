@@ -62,13 +62,13 @@ export default function OrderTracking() {
   const [searchParams, setSearchParams] = useSearchParams();
   const activeView = searchParams.get("view") || "tracking"; // "tracking" | "invoice"
 
-  const { orders, cart } = useApi();
+  const { orders, payments } = useApi();
   const { loadOnly, loading } = useLoader();
 
   const [showAllUpdates, setShowAllUpdates] = useState(true);
   const [cancelReason, setCancelReason] = useState("Changed my mind");
   const [isCancelling, setIsCancelling] = useState(false);
-  const [isReorderingAll, setIsReorderingAll] = useState(false);
+  const [isPayingOrder, setIsPayingOrder] = useState(false);
 
   useEffect(() => {
     if (id) {
@@ -89,8 +89,7 @@ export default function OrderTracking() {
     const orderId = orderDetails._id || orderDetails.id;
     const wasPaid =
       orderDetails.payment?.status === "paid" ||
-      orderDetails.payment?.status === "refund_pending" ||
-      (orderDetails.payment?.method === "online" && orderDetails.payment?.status !== "failed");
+      orderDetails.payment?.status === "refund_pending";
 
     try {
       setIsCancelling(true);
@@ -112,51 +111,76 @@ export default function OrderTracking() {
     }
   };
 
-  const handleBuyAgain = async (item) => {
-    const product = item.product || item;
+  // Complete pending online payment
+  const handleCompleteOrder = async () => {
+    if (!orderDetails) return;
+    const orderId = orderDetails._id || orderDetails.id;
     try {
-      await cart.addToCart(product, 1);
-      toast.success(`"${item.name || product.name}" added back to your cart!`);
-    } catch {
-      toast.error("Failed to re-add item to cart");
-    }
-  };
-
-  const handleBuyAgainAll = async () => {
-    const items = Array.isArray(orderDetails?.items) ? orderDetails.items : [];
-    if (items.length === 0) {
-      toast.error("No models found in this order to re-add to cart");
-      return;
-    }
-
-    try {
-      setIsReorderingAll(true);
-      let successCount = 0;
-      let totalUnits = 0;
-
-      for (const item of items) {
-        const product = item.product || item;
-        const qty = Number(item.quantity) || 1;
-        try {
-          await cart.addToCart(product, qty);
-          successCount++;
-          totalUnits += qty;
-        } catch (err) {
-          console.error("Failed to re-add item to cart:", item, err);
-        }
+      setIsPayingOrder(true);
+      const isScriptLoaded = await payments.loadScript();
+      if (!isScriptLoaded) {
+        toast.error("Razorpay Payment Gateway failed to load. Please check your connection.");
+        return;
       }
 
-      if (successCount > 0) {
-        toast.success(
-          `Added all ${items.length} ${items.length === 1 ? "model" : "models"} (${totalUnits} ${totalUnits === 1 ? "unit" : "units"}) to your cart!`
-        );
-      } else {
-        toast.error("Could not add models to cart. They may be out of stock.");
-      }
-    } catch {
-      toast.error("Failed to re-add models to cart");
+      const rzpOrder = await payments.createPaymentOrder(orderId);
+
+      const options = {
+        key: rzpOrder.key_id,
+        amount: rzpOrder.amount,
+        currency: rzpOrder.currency,
+        name: "Torque Toyz",
+        description: `Order #${rzpOrder.order_code || orderId.slice(-6)}`,
+        order_id: rzpOrder.razorpay_order_id,
+        handler: async function (response) {
+          try {
+            await payments.verifyPayment({
+              razorpay_order_id: response.razorpay_order_id,
+              razorpay_payment_id: response.razorpay_payment_id,
+              razorpay_signature: response.razorpay_signature,
+            });
+            toast.success("Payment successful! Your order is confirmed.");
+            try {
+              await orders.getOne(orderId);
+            } catch {
+              // ignore
+            }
+          } catch (err) {
+            console.error(err);
+            toast.error("Payment verification pending. Please refresh in a moment.");
+            try {
+              await orders.getOne(orderId);
+            } catch {
+              // ignore
+            }
+          }
+        },
+        modal: {
+          ondismiss: function () {
+            toast.info("Payment pending. You can complete this order anytime.");
+          },
+        },
+        prefill: {
+          name: orderDetails.shipping_address?.name || "Customer",
+          email: orderDetails.shipping_address?.email || "customer@torquetoyz.com",
+          contact: orderDetails.shipping_address?.phone || "9999999999",
+        },
+        theme: {
+          color: "#e11d48",
+        },
+      };
+
+      const rzp = new window.Razorpay(options);
+      rzp.on("payment.failed", function (response) {
+        const msg = response.error?.description || "Payment rejected";
+        toast.error(`${msg}. You can try again whenever ready.`);
+      });
+      rzp.open();
+    } catch (err) {
+      console.error("Payment initialization error:", err);
+      toast.error(err?.response?.data?.message || err?.message || "Failed to initiate payment.");
     } finally {
-      setIsReorderingAll(false);
+      setIsPayingOrder(false);
     }
   };
 
@@ -322,11 +346,13 @@ export default function OrderTracking() {
   const isRefundPending =
     isCancelled &&
     !isRefunded &&
-    (paymentStatus === "refund_pending" ||
-      paymentStatus === "paid" ||
-      (payment.method === "online" && paymentStatus !== "failed"));
-  const isPaymentPaid = paymentStatus === "paid" || isRefunded || isRefundPending;
+    (paymentStatus === "refund_pending" || paymentStatus === "paid");
+  const isPaymentPaid = paymentStatus === "paid" || isRefunded;
   const isOrderPaid = isPaymentPaid;
+  const isPaymentPending =
+    payment.method === "online" &&
+    paymentStatus !== "paid" &&
+    !isCancelled;
 
   // Delivery Partner URL from model: string
   const deliveryPartnerUrl = orderDetails.delivery_partner_url || "";
@@ -588,20 +614,26 @@ export default function OrderTracking() {
               </Button>
             )}
 
-            <Button
-              variant="outline"
-              size="sm"
-              disabled={isReorderingAll}
-              onClick={handleBuyAgainAll}
-              className="h-8.5 rounded-xl text-xs gap-1.5 font-medium hover:border-primary hover:text-primary cursor-pointer"
-            >
-              {isReorderingAll ? (
-                <Loader2 className="size-3.5 animate-spin text-primary" />
-              ) : (
-                <RotateCcw className="size-3.5 text-primary" />
-              )}
-              <span>Buy Order Again</span>
-            </Button>
+            {isPaymentPending && (
+              <Button
+                size="sm"
+                disabled={isPayingOrder}
+                onClick={handleCompleteOrder}
+                className="h-8.5 rounded-xl bg-amber-600 hover:bg-amber-500 text-white font-semibold text-xs shadow-2xs gap-1.5 cursor-pointer"
+              >
+                {isPayingOrder ? (
+                  <>
+                    <Loader2 className="size-3.5 animate-spin" />
+                    <span>Processing...</span>
+                  </>
+                ) : (
+                  <>
+                    <CreditCard className="size-3.5" />
+                    <span>Complete Order (Pay Now)</span>
+                  </>
+                )}
+              </Button>
+            )}
 
             <Button
               variant="outline"
@@ -625,6 +657,43 @@ export default function OrderTracking() {
           </div>
         </div>
 
+        {/* ─── Pending Payment Alert Banner ─── */}
+        {isPaymentPending && (
+          <div className="rounded-2xl border border-amber-500/30 bg-amber-500/10 p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="flex items-start sm:items-center gap-3">
+              <div className="size-10 rounded-xl bg-amber-500/20 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0">
+                <CreditCard className="size-5" />
+              </div>
+              <div>
+                <h4 className="font-bold text-sm text-foreground">
+                  Payment Incomplete
+                </h4>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  Your order is placed, but online payment of ₹{Number(pricing.total || 0).toLocaleString("en-IN", { minimumFractionDigits: 2 })} has not been completed yet.
+                </p>
+              </div>
+            </div>
+            <Button
+              size="sm"
+              disabled={isPayingOrder}
+              onClick={handleCompleteOrder}
+              className="h-9 px-4 rounded-xl bg-amber-600 hover:bg-amber-500 text-white font-bold text-xs gap-1.5 shadow-xs shrink-0 cursor-pointer"
+            >
+              {isPayingOrder ? (
+                <>
+                  <Loader2 className="size-3.5 animate-spin" />
+                  <span>Processing Payment...</span>
+                </>
+              ) : (
+                <>
+                  <CreditCard className="size-3.5" />
+                  <span>Complete Payment Now</span>
+                </>
+              )}
+            </Button>
+          </div>
+        )}
+
         {/* ════════════════════════════════════════════════════════════════════
             VIEW 1: TRACKING DASHBOARD (Only rendered in tracking view)
             ════════════════════════════════════════════════════════════════════ */}
@@ -643,6 +712,11 @@ export default function OrderTracking() {
                       #{orderCode}
                     </span>
                     {getStatusBadge(orderDetails.status)}
+                    {isPaymentPending && (
+                      <Badge className="bg-amber-500/15 text-amber-700 dark:text-amber-400 border border-amber-500/30 text-xs font-semibold gap-1">
+                        <CreditCard className="size-3" /> Payment Pending
+                      </Badge>
+                    )}
                   </div>
 
                   <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black tracking-tight text-foreground">
@@ -1154,24 +1228,16 @@ export default function OrderTracking() {
                         </div>
 
                         {/* Item Quick Actions */}
-                        <div className="flex sm:flex-col items-center gap-2 shrink-0 sm:w-40 pt-1 sm:pt-0">
-                          <Button
-                            size="sm"
-                            onClick={() => handleBuyAgain(item)}
-                            className="w-full h-8.5 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground text-xs font-semibold gap-1.5 shadow-2xs cursor-pointer"
-                          >
-                            <RotateCcw className="size-3" />
-                            <span>Buy Again</span>
-                          </Button>
-
+                        <div className="flex sm:flex-col items-center gap-2 shrink-0 sm:w-36 pt-1 sm:pt-0">
                           <Button
                             asChild
                             variant="outline"
                             size="sm"
-                            className="w-full h-8 rounded-xl text-xs font-medium cursor-pointer"
+                            className="w-full h-8.5 rounded-xl text-xs font-medium hover:border-primary hover:text-primary cursor-pointer gap-1.5"
                           >
                             <Link to={prodId ? `/products/${prodId}` : "#"}>
-                              View Model
+                              <ExternalLink className="size-3" />
+                              <span>View Model</span>
                             </Link>
                           </Button>
                         </div>
@@ -1282,10 +1348,12 @@ export default function OrderTracking() {
                       <span className="font-medium text-foreground">
                         ₹{Number(pricing.shipping_cost).toLocaleString("en-IN", { minimumFractionDigits: 2 })}
                       </span>
-                    ) : (
+                    ) : pricing?.is_free_delivery ? (
                       <Badge className="bg-primary/10 text-primary border border-primary/20 text-[10px] font-bold">
                         FREE Delivery
                       </Badge>
+                    ) : (
+                      <span className="font-medium text-foreground">₹0.00</span>
                     )}
                   </div>
 

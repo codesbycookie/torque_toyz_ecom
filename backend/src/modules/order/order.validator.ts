@@ -23,7 +23,7 @@ export const updateStatusSchema = z.object({
 });
 
 export const updatePaymentStatusSchema = z.object({
-    status: z.enum(['pending', 'paid', 'failed', 'refunded', 'refund_pending']),
+    status: z.enum(['pending', 'paid', 'failed', 'refunded', 'refund_pending', 'cancelled']),
     transaction_id: z.string().trim().optional(),
 });
 

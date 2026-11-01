@@ -179,7 +179,7 @@ describe("Payment API Endpoint Suite", () => {
     expect(paymentDoc!.status).to.equal("created");
   });
 
-  it("should reject creating a second payment order for an already-created order", async () => {
+  it("should return the existing razorpay order id when payment order is re-requested", async () => {
     // still "pending", not "paid" yet, so this is really testing repeat-create behavior
     const res = await tester.post(
       `${baseRoute}/create-order`,
@@ -188,7 +188,8 @@ describe("Payment API Endpoint Suite", () => {
     );
     // depending on your business rule this might succeed (new attempt) or you may want
     // to guard against duplicate razorpay orders per Order — flagging as worth deciding
-    expect([200, 400, 409]).to.include(res.status);
+    tester.assertSuccess(res, "Payment order created");
+    expect(res.body.data.razorpay_order_id).to.equal(razorpayOrderId);
   });
 
   it("should reject verification with an invalid signature", async () => {
@@ -232,6 +233,7 @@ describe("Payment API Endpoint Suite", () => {
       token,
     );
     const freshRazorpayOrderId = createRes.body.data.razorpay_order_id;
+    expect(freshRazorpayOrderId).to.equal(razorpayOrderId);
 
     const fakePaymentId = `pay_test_${Date.now()}`;
     const validSignature = generateSignature(

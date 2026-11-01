@@ -1,6 +1,6 @@
 import mongoose, { Schema, Document, Model, Types } from "mongoose";
 
-export type PaymentStatus = "created" | "paid" | "failed" | "refunded";
+export type PaymentStatus = "created" | "paid" | "failed" | "refunded" | "cancelled";
 
 export interface IPayment extends Document {
   order: Types.ObjectId;
@@ -29,7 +29,7 @@ const PaymentSchema = new Schema<IPayment, IPaymentModel>(
     currency: { type: String, default: "INR" },
     status: {
       type: String,
-      enum: ["created", "paid", "failed", "refunded"],
+      enum: ["created", "paid", "failed", "refunded", "cancelled"],
       default: "created",
     },
     failure_reason: { type: String },

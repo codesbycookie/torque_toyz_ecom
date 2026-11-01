@@ -449,13 +449,13 @@ export default function Profile() {
     }
 
     try {
-      const raw = localStorage.getItem("torque_garage_addresses");
+      const raw = null;
       const current = raw ? JSON.parse(raw) : [];
       const updated = [
         cleanedAddr,
         ...current.filter((c) => String(c._id || c.id) !== String(cleanedAddr._id || cleanedAddr.id)),
       ];
-      localStorage.setItem("torque_garage_addresses", JSON.stringify(updated));
+      // Saved directly to user profile in backend
     } catch {
       // ignore
     }
@@ -466,7 +466,7 @@ export default function Profile() {
   // Local storage stored addresses (same cache used in checkout & settings)
   const storedAddresses = useMemo(() => {
     try {
-      const raw = localStorage.getItem('torque_garage_addresses');
+      const raw = null;
       return raw ? JSON.parse(raw) : [];
     } catch {
       return [];

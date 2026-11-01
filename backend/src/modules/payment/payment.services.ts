@@ -16,12 +16,72 @@ export const createPaymentOrder = async (orderId: string) => {
   if (order.payment.status === 'paid') {
     throw new ApiError(409, 'This order has already been paid');
   }
+  if (order.status === 'cancelled') {
+    throw new ApiError(400, 'This order has been cancelled');
+  }
 
-  const razorpayOrder = await razorpayInstance.orders.create({
-    amount: toPaise(order.pricing.total),
-    currency: 'INR',
-    receipt: order.code,
-    notes: { orderId: order._id.toString() },
+  // Razorpay requires a minimum amount of 100 paise (₹1.00 INR)
+  const calculatedPaise = toPaise(order.pricing.total);
+  const amountInPaise = Math.max(calculatedPaise, 100);
+
+  // Check if a Razorpay order was already created for this order (reuse existing ID on retries or after failure)
+  const existingPayment = await Payment.findOne({
+    order: order._id,
+    status: { $in: ['created', 'failed'] },
+  }).sort({ createdAt: -1 });
+
+  const existingRazorpayOrderId =
+    order.payment?.razorpay_order_id || existingPayment?.razorpay_order_id;
+
+  if (existingRazorpayOrderId) {
+    if (existingPayment) {
+      if (existingPayment.status === 'failed') {
+        existingPayment.status = 'created';
+        existingPayment.failure_reason = undefined;
+        await existingPayment.save();
+      }
+    } else {
+      await Payment.create({
+        order: order._id,
+        razorpay_order_id: existingRazorpayOrderId,
+        amount: order.pricing.total,
+        currency: 'INR',
+        status: 'created',
+      });
+    }
+
+    if (order.payment?.status === 'failed') {
+      await Order.findByIdAndUpdate(order._id, {
+        $set: { 'payment.status': 'pending' },
+      });
+    }
+
+    return {
+      key_id: process.env.RAZORPAY_KEY_ID,
+      razorpay_order_id: existingRazorpayOrderId,
+      amount: amountInPaise,
+      currency: existingPayment?.currency || 'INR',
+      order_code: order.code,
+    };
+  }
+
+  let razorpayOrder;
+  try {
+    razorpayOrder = await razorpayInstance.orders.create({
+      amount: amountInPaise,
+      currency: 'INR',
+      receipt: order.code,
+      notes: { orderId: order._id.toString() },
+    });
+  } catch (err: any) {
+    const errorDesc = err?.error?.description || err?.message || 'Failed to create payment order with gateway';
+    throw new ApiError(400, `Payment gateway error: ${errorDesc}`);
+  }
+
+  await Order.findByIdAndUpdate(order._id, {
+    $set: {
+      'payment.razorpay_order_id': razorpayOrder.id,
+    },
   });
 
   await Payment.create({
@@ -66,6 +126,11 @@ export const verifyPayment = async (
     payment.status = 'failed';
     payment.failure_reason = 'Signature verification failed';
     await payment.save();
+    await Order.findByIdAndUpdate(payment.order, {
+      $set: {
+        'payment.status': 'failed',
+      },
+    });
     throw new ApiError(400, 'Payment verification failed');
   }
 
@@ -79,6 +144,7 @@ export const verifyPayment = async (
     $set: {
       'payment.status': 'paid',
       'payment.transaction_id': razorpay_payment_id,
+      'payment.razorpay_order_id': razorpay_order_id,
     },
   });
 

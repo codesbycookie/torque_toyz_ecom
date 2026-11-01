@@ -289,11 +289,10 @@ export function WishlistControlsBar({
                 aria-selected={active}
                 aria-label={`${label} view`}
                 onClick={() => onViewModeChange(m)}
-                className={`flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-semibold transition-all ${
-                  active
+                className={`flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-semibold transition-all ${active
                     ? 'bg-white text-[#b81d24] shadow-sm'
                     : 'text-[#6b7280] hover:text-[#111827]'
-                }`}
+                  }`}
               >
                 <Icon className="size-4" />
                 <span>{label}</span>
@@ -456,6 +455,7 @@ export function WishlistGridCard({
   const firstImage = getImage(product);
   const ui = product.ui || {};
   const price = Number(ui.actual_price || product.price || 0);
+  const mrp = Number(ui.slash_price || 0);
   const slashPrice = Number(ui.slash_price || 0);
   const hasDiscount = slashPrice > price;
   const discountPercent = hasDiscount ? Math.round(((slashPrice - price) / slashPrice) * 100) : 0;
@@ -467,8 +467,8 @@ export function WishlistGridCard({
   const avgRating =
     reviews.length > 0
       ? (
-          reviews.reduce((sum, r) => sum + (r.rating || 0), 0) / reviews.length
-        ).toFixed(1)
+        reviews.reduce((sum, r) => sum + (r.rating || 0), 0) / reviews.length
+      ).toFixed(1)
       : null;
   const isChoice = (Number(avgRating) >= 4.2 && reviews.length >= 2) || product.featured;
 
@@ -619,7 +619,7 @@ export function WishlistGridCard({
 
             {/* Delivery Promise */}
             <p className="text-[11px] text-muted-foreground">
-              <span className="font-semibold text-primary">FREE delivery</span> available
+              <span className="font-semibold text-primary">Fast express</span> delivery
             </p>
           </div>
         </div>
@@ -677,8 +677,8 @@ export function WishlistListCard({
   const avgRating =
     reviews.length > 0
       ? (
-          reviews.reduce((sum, r) => sum + (r.rating || 0), 0) / reviews.length
-        ).toFixed(1)
+        reviews.reduce((sum, r) => sum + (r.rating || 0), 0) / reviews.length
+      ).toFixed(1)
       : null;
 
   return (
@@ -832,8 +832,8 @@ export function WishlistTableRow({
   const avgRating =
     reviews.length > 0
       ? (
-          reviews.reduce((sum, r) => sum + (r.rating || 0), 0) / reviews.length
-        ).toFixed(1)
+        reviews.reduce((sum, r) => sum + (r.rating || 0), 0) / reviews.length
+      ).toFixed(1)
       : null;
 
   return (

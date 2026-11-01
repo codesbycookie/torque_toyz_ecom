@@ -31,7 +31,7 @@ export default function Checkout() {
   const api = useApi();
   const { user } = useAuth();
   const { loadOnly, loading: isProcessing } = useLoader();
-  const { items = [], pricing, updateShippingAddress, checkoutDraft, restoreCart } = api.cart;
+  const { items = [], pricing, shippingAddress, updateShippingAddress, checkoutDraft, restoreCart } = api.cart;
   const locations = useMemo(() => api.locations.list || [], [api.locations.list]);
 
   // Checkout Step state: 2 = Shipping Details, 3 = Payment & Order
@@ -39,21 +39,19 @@ export default function Checkout() {
   const [paymentMethod, setPaymentMethod] = useState("online"); // 'online' | 'cod'
   const [isUpdatingAddress, setIsUpdatingAddress] = useState(false);
 
-  // Stored Addresses (Local Storage)
-  const [storedAddresses, setStoredAddresses] = useState(() => {
-    try {
-      const raw = localStorage.getItem("torque_garage_addresses");
-      return raw ? JSON.parse(raw) : [];
-    } catch {
-      return [];
-    }
-  });
+  // In-memory addresses for current checkout session (no localStorage)
+  const [storedAddresses, setStoredAddresses] = useState([]);
 
   const [selectedAddressId, setSelectedAddressId] = useState(null);
 
   // Load Locations / Deliverable States via location module
   useEffect(() => {
     api.locations.fetchLocations();
+    try {
+      localStorage.removeItem("torque_garage_addresses");
+    } catch {
+      // ignore
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -122,13 +120,18 @@ export default function Checkout() {
 
   const selectedLoc = useMemo(() => {
     if (!selectedAddress) return null;
+    const targetState = selectedAddress.stateName || selectedAddress.state;
     return (
       locations.find((l) => String(l._id) === String(selectedAddress.state)) ||
-      locations.find(
-        (l) =>
-          l.state?.trim().toLowerCase() ===
-          (selectedAddress.stateName || selectedAddress.state || "").trim().toLowerCase()
-      ) ||
+      (targetState
+        ? locations.find((l) => l.state?.trim().toLowerCase() === String(targetState).trim().toLowerCase())
+        : null) ||
+      (targetState
+        ? locations.find((l) => l.state?.trim().toLowerCase().startsWith(String(targetState).trim().toLowerCase()))
+        : null) ||
+      (selectedAddress.city
+        ? locations.find((l) => l.state?.trim().toLowerCase().includes(String(selectedAddress.city).trim().toLowerCase()))
+        : null) ||
       null
     );
   }, [locations, selectedAddress]);
@@ -164,6 +167,26 @@ export default function Checkout() {
       }
     }
   };
+
+  // Automatically sync initial address to cart on mount / address discovery so shipping is calculated
+  useEffect(() => {
+    if (selectedAddress && locations.length > 0 && isStateDeliverable) {
+      const currentState = shippingAddress?.state;
+      const currentStateId = typeof currentState === "object" ? String(currentState?._id || "") : String(currentState || "");
+      const loc =
+        locations.find((l) => String(l._id) === String(selectedAddress.state)) ||
+        locations.find(
+          (l) =>
+            l.state?.trim().toLowerCase() ===
+            (selectedAddress.stateName || selectedAddress.state || "").trim().toLowerCase()
+        );
+      const targetStateId = String(loc?._id || selectedAddress.state || "");
+      if (!currentStateId || (targetStateId && currentStateId !== targetStateId)) {
+        handleSelectAddress(selectedAddress);
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedAddress, locations.length, isStateDeliverable, shippingAddress?.state]);
 
   // Save new or edited address from modal popup
   const handleSaveAddress = async (newAddr) => {
@@ -203,12 +226,6 @@ export default function Checkout() {
     }
 
     setStoredAddresses(updated);
-    try {
-      localStorage.setItem("torque_garage_addresses", JSON.stringify(updated));
-    } catch {
-      // ignore
-    }
-
     handleSelectAddress(cleanedAddr);
     toast.success("Shipping address saved!");
   };
@@ -228,11 +245,6 @@ export default function Checkout() {
 
     const filtered = storedAddresses.filter((a) => (a.id || a._id) !== addrId);
     setStoredAddresses(filtered);
-    try {
-      localStorage.setItem("torque_garage_addresses", JSON.stringify(filtered));
-    } catch {
-      // ignore
-    }
     toast.success("Address removed from your address book");
 
     if ((selectedAddress?.id || selectedAddress?._id) === addrId) {
@@ -252,6 +264,16 @@ export default function Checkout() {
       return;
     }
 
+    const stateToUse =
+      selectedLoc?._id ||
+      selectedAddress.state ||
+      (typeof shippingAddress?.state === "object" ? shippingAddress?.state?._id : shippingAddress?.state);
+
+    if (!stateToUse) {
+      toast.error("Please select or edit your shipping address to specify a State.");
+      return;
+    }
+
     if (!isStateDeliverable) {
       toast.error(`Cannot proceed: Delivery is restricted in ${selectedLoc?.state || "the selected state"}. Please choose a deliverable address.`);
       return;
@@ -263,7 +285,7 @@ export default function Checkout() {
         door: selectedAddress.door ? selectedAddress.door.trim() : undefined,
         street: selectedAddress.street ? selectedAddress.street.trim() : undefined,
         city: selectedAddress.city ? selectedAddress.city.trim() : undefined,
-        state: selectedLoc?._id || selectedAddress.state,
+        state: String(stateToUse),
         pincode: Number(selectedAddress.zip || selectedAddress.pincode),
       };
       await updateShippingAddress(address);
@@ -279,34 +301,22 @@ export default function Checkout() {
   const { subtotal = 0, tax = 0, shipping_cost: shipping = 0, total = 0 } = pricing || {};
   const grandTotal = total > 0 ? total : subtotal + shipping + tax;
 
-  const cancelOrderAndRestoreCart = async (orderId, cartBackup, errorMessage) => {
-    const currentAddress = selectedAddress
-      ? {
-          door: selectedAddress.door ? selectedAddress.door.trim() : undefined,
-          street: selectedAddress.street ? selectedAddress.street.trim() : undefined,
-          city: selectedAddress.city ? selectedAddress.city.trim() : undefined,
-          state: selectedLoc?._id || selectedAddress.state,
-          pincode: Number(selectedAddress.zip || selectedAddress.pincode) || 0,
-        }
-      : null;
-
-    await restoreCart({
-      orderId,
-      cartBackup,
-      errorMessage,
-      shippingAddress: currentAddress,
-    });
-
-    if (errorMessage) {
-      toast.error(errorMessage);
-    }
-  };
-
   // Step 3 Submission -> Place Order / Trigger Payment
   const handleFinalCheckout = async (e) => {
     e.preventDefault();
     if (items.length === 0) {
       toast.error("Your cart is empty.");
+      return;
+    }
+
+    const stateToUse =
+      selectedLoc?._id ||
+      selectedAddress?.state ||
+      (typeof shippingAddress?.state === "object" ? shippingAddress?.state?._id : shippingAddress?.state);
+
+    if (!stateToUse) {
+      toast.error("Delivery state is missing. Please select your address again.");
+      setCheckoutStep(2);
       return;
     }
 
@@ -317,19 +327,13 @@ export default function Checkout() {
       return;
     }
 
-    const cartBackup = items.map((i) => ({
-      product: typeof i.product === "object" ? i.product?._id || i.product?.id : i.product || i.id || i._id,
-      quantity: i.quantity || 1,
-    }));
-
     const currentAddress = {
-      door: selectedAddress.door ? selectedAddress.door.trim() : undefined,
-      street: selectedAddress.street ? selectedAddress.street.trim() : undefined,
-      city: selectedAddress.city ? selectedAddress.city.trim() : undefined,
-      state: selectedLoc?._id || selectedAddress.state,
-      pincode: Number(selectedAddress.zip || selectedAddress.pincode),
+      door: selectedAddress?.door ? selectedAddress.door.trim() : undefined,
+      street: selectedAddress?.street ? selectedAddress.street.trim() : undefined,
+      city: selectedAddress?.city ? selectedAddress.city.trim() : undefined,
+      state: String(stateToUse),
+      pincode: Number(selectedAddress?.zip || selectedAddress?.pincode),
     };
-
     try {
       // Step 1: Create order draft in backend
       const res = await loadOnly(() => checkoutDraft(paymentMethod, currentAddress));
@@ -347,11 +351,8 @@ export default function Checkout() {
         // Online Payment Flow (Razorpay)
         const isScriptLoaded = await api.payments.loadScript();
         if (!isScriptLoaded) {
-          await cancelOrderAndRestoreCart(
-            orderId,
-            cartBackup,
-            "Razorpay Payment Gateway failed to load. Please check your internet connection."
-          );
+          toast.error("Razorpay Payment Gateway failed to load. You can complete this order anytime from your Orders page.");
+          navigate(`/orders/${orderId}`);
           return;
         }
 
@@ -381,28 +382,22 @@ export default function Checkout() {
                 navigate(`/orders/${orderId}`);
               } catch (err) {
                 console.error(err);
-                await cancelOrderAndRestoreCart(
-                  orderId,
-                  cartBackup,
-                  "Payment verification failed. Please try again."
-                );
+                toast.error("Payment verification pending. You can complete or check your order status here.");
+                navigate(`/orders/${orderId}`);
               }
             },
             modal: {
-              ondismiss: async function () {
+              ondismiss: function () {
                 if (!paymentHandled) {
-                  await cancelOrderAndRestoreCart(
-                    orderId,
-                    cartBackup,
-                    "Payment was cancelled. You can try again or select Cash on Delivery."
-                  );
+                  toast.info("Payment pending. You can complete this order anytime from your Orders page.");
+                  navigate(`/orders/${orderId}`);
                 }
               },
             },
             prefill: {
-              name: selectedAddress.name || `${selectedAddress.firstName || ""} ${selectedAddress.lastName || ""}`.trim() || user?.name || "Customer",
-              email: selectedAddress.email || user?.email || "customer@torquetoyz.com",
-              contact: selectedAddress.phone || user?.phone || "9999999999",
+              name: selectedAddress?.name || `${selectedAddress?.firstName || ""} ${selectedAddress?.lastName || ""}`.trim() || user?.name || "Customer",
+              email: selectedAddress?.email || user?.email || "customer@torquetoyz.com",
+              contact: selectedAddress?.phone || user?.phone || "9999999999",
             },
             theme: {
               color: "#e11d48", // Primary brand accent color
@@ -410,19 +405,18 @@ export default function Checkout() {
           };
 
           const rzp = new window.Razorpay(options);
-          rzp.on("payment.failed", async function (response) {
+          rzp.on("payment.failed", function (response) {
             paymentHandled = true;
-            const msg = response.error?.description || "Payment failed";
-            await cancelOrderAndRestoreCart(orderId, cartBackup, msg);
+            const msg = response.error?.description || "Payment rejected";
+            toast.error(`${msg}. You can complete this order from your Orders page.`);
+            navigate(`/orders/${orderId}`);
           });
           rzp.open();
         } catch (err) {
           console.error("Payment initialization error:", err);
-          await cancelOrderAndRestoreCart(
-            orderId,
-            cartBackup,
-            "Could not initiate online payment. Please try again."
-          );
+          const errorMsg = err?.response?.data?.message || err?.message || "Could not initiate online payment.";
+          toast.error(`${errorMsg} You can complete your order here.`);
+          navigate(`/orders/${orderId}`);
         }
       }
     } catch (err) {
@@ -611,8 +605,8 @@ export default function Checkout() {
                   {isProcessing
                     ? "Placing Order..."
                     : paymentMethod === "cod"
-                    ? `Confirm Order (COD) - ₹${grandTotal.toLocaleString("en-IN", { maximumFractionDigits: 2 })}`
-                    : `Pay ₹${grandTotal.toLocaleString("en-IN", { maximumFractionDigits: 2 })} via Razorpay`}
+                      ? `Confirm Order (COD) - ₹${grandTotal.toLocaleString("en-IN", { maximumFractionDigits: 2 })}`
+                      : `Pay ₹${grandTotal.toLocaleString("en-IN", { maximumFractionDigits: 2 })} via Razorpay`}
                   <ArrowRight className="size-4" />
                 </Button>
               </form>
@@ -690,7 +684,13 @@ export default function Checkout() {
                   <div className="flex justify-between text-muted-foreground">
                     <span>Shipping Charges</span>
                     <span className="font-mono font-medium text-foreground">
-                      {shipping > 0 ? `₹${shipping.toLocaleString("en-IN")}` : "Free"}
+                      {shipping > 0
+                        ? `₹${Number(shipping).toLocaleString("en-IN", { minimumFractionDigits: 2 })}`
+                        : pricing?.is_free_delivery
+                          ? "FREE"
+                          : selectedAddress
+                            ? "₹0.00"
+                            : "Calculated with address"}
                     </span>
                   </div>
                 </div>

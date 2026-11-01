@@ -45,6 +45,7 @@ import {
   Calendar,
   FileText,
   Loader2,
+  CreditCard,
 } from "lucide-react";
 import { useApi } from "@/core/contexts/api.context";
 import { toast } from "sonner";
@@ -78,7 +79,7 @@ const TIME_OPTIONS = [
 
 export default function Orders() {
   const navigate = useNavigate();
-  const { orders, cart } = useApi();
+  const { orders, payments } = useApi();
 
   const orderList = orders.list || [];
   const isLoading = Boolean(orders.loading);
@@ -97,7 +98,7 @@ export default function Orders() {
   const [selectedTime, setSelectedTime] = useState("all");
   const [cancellingOrderId, setCancellingOrderId] = useState(null);
   const [cancelReason, setCancelReason] = useState("Changed my mind");
-  const [reorderingOrderId, setReorderingOrderId] = useState(null);
+  const [payingOrderId, setPayingOrderId] = useState(null);
 
   const ordersTopRef = useRef(null);
 
@@ -190,8 +191,7 @@ export default function Orders() {
       const targetOrder = orderList.find((o) => (o._id || o.id) === orderId);
       const wasPaid =
         targetOrder?.payment?.status === "paid" ||
-        targetOrder?.payment?.status === "refund_pending" ||
-        (targetOrder?.payment?.method === "online" && targetOrder?.payment?.status !== "failed");
+        targetOrder?.payment?.status === "refund_pending";
 
       await orders.cancelOrder(orderId, cancelReason);
       if (wasPaid) {
@@ -207,44 +207,67 @@ export default function Orders() {
     }
   };
 
-  // Buy Again: Adds EVERY product in the order into the cart
-  const handleBuyAgain = async (order) => {
-    const items = Array.isArray(order?.items) ? order.items : [];
-    if (items.length === 0) {
-      toast.error("No models found in this order to re-add to cart");
-      return;
-    }
-
+  // Complete pending online payment
+  const handleCompleteOrder = async (order) => {
     const orderId = order._id || order.id;
     try {
-      setReorderingOrderId(orderId);
-      let successCount = 0;
-      let totalUnits = 0;
-
-      for (const item of items) {
-        const product = item.product || item;
-        const qty = Number(item.quantity) || 1;
-        try {
-          await cart.addToCart(product, qty);
-          successCount++;
-          totalUnits += qty;
-        } catch (err) {
-          console.error("Failed to re-add item to cart:", item, err);
-        }
+      setPayingOrderId(orderId);
+      const isScriptLoaded = await payments.loadScript();
+      if (!isScriptLoaded) {
+        toast.error("Razorpay Payment Gateway failed to load. Please check your connection.");
+        return;
       }
 
-      if (successCount > 0) {
-        const orderRef = order.code || (orderId ? `#${String(orderId).slice(-6)}` : "");
-        toast.success(
-          `Added all ${items.length} ${items.length === 1 ? "model" : "models"} (${totalUnits} ${totalUnits === 1 ? "unit" : "units"}) from order ${orderRef} to your cart!`
-        );
-      } else {
-        toast.error("Could not add models to cart. They may be out of stock.");
-      }
-    } catch {
-      toast.error("Failed to re-add models to cart");
+      const rzpOrder = await payments.createPaymentOrder(orderId);
+
+      const options = {
+        key: rzpOrder.key_id,
+        amount: rzpOrder.amount,
+        currency: rzpOrder.currency,
+        name: "Torque Toyz",
+        description: `Order #${rzpOrder.order_code || orderId.slice(-6)}`,
+        order_id: rzpOrder.razorpay_order_id,
+        handler: async function (response) {
+          try {
+            await payments.verifyPayment({
+              razorpay_order_id: response.razorpay_order_id,
+              razorpay_payment_id: response.razorpay_payment_id,
+              razorpay_signature: response.razorpay_signature,
+            });
+            toast.success("Payment successful! Your order is confirmed.");
+            fetchBackendOrders(currentPage);
+          } catch (err) {
+            console.error(err);
+            toast.error("Payment verification pending. Please refresh in a moment.");
+            fetchBackendOrders(currentPage);
+          }
+        },
+        modal: {
+          ondismiss: function () {
+            toast.info("Payment pending. You can complete this order anytime.");
+          },
+        },
+        prefill: {
+          name: order.shipping_address?.name || "Customer",
+          email: order.shipping_address?.email || "customer@torquetoyz.com",
+          contact: order.shipping_address?.phone || "9999999999",
+        },
+        theme: {
+          color: "#e11d48",
+        },
+      };
+
+      const rzp = new window.Razorpay(options);
+      rzp.on("payment.failed", function (response) {
+        const msg = response.error?.description || "Payment rejected";
+        toast.error(`${msg}. You can try again whenever ready.`);
+      });
+      rzp.open();
+    } catch (err) {
+      console.error("Payment initialization error:", err);
+      toast.error(err?.response?.data?.message || err?.message || "Failed to initiate payment.");
     } finally {
-      setReorderingOrderId(null);
+      setPayingOrderId(null);
     }
   };
 
@@ -348,11 +371,10 @@ export default function Orders() {
           </form>
         </div>
 
-        {/* Amazon Navigation Tabs */}
+        {/* Navigation Tabs */}
         <div className="flex items-center gap-1 sm:gap-6 border-b border-border/80 overflow-x-auto no-scrollbar text-sm">
           {[
             { id: "all", label: "Orders" },
-            { id: "buy-again", label: "Buy Again" },
             { id: "not-yet-shipped", label: "Not Yet Shipped" },
             { id: "cancelled", label: "Cancelled Orders" },
           ].map((tab) => {
@@ -373,10 +395,6 @@ export default function Orders() {
                   if (tab.id === "all") handleStatusChange("all");
                   else if (tab.id === "not-yet-shipped") handleStatusChange("placed");
                   else if (tab.id === "cancelled") handleStatusChange("cancelled");
-                  else if (tab.id === "buy-again") {
-                    handleStatusChange("all");
-                    toast.info("Showing your past ordered models to buy again");
-                  }
                 }}
                 className={cn(
                   "pb-2.5 px-1 border-b-2 font-medium transition-all cursor-pointer whitespace-nowrap",
@@ -562,11 +580,13 @@ export default function Orders() {
               const isRefundPending =
                 isCancelled &&
                 !isRefunded &&
-                (paymentStatus === "refund_pending" ||
-                  paymentStatus === "paid" ||
-                  (order.payment?.method === "online" && paymentStatus !== "failed"));
+                (paymentStatus === "refund_pending" || paymentStatus === "paid");
 
-              const isPaid = isRefunded || isRefundPending || paymentStatus === "paid";
+              const isPaid = isRefunded || paymentStatus === "paid";
+              const isPaymentPending =
+                order.payment?.method === "online" &&
+                paymentStatus !== "paid" &&
+                !isCancelled;
 
               const shippingName =
                 order.shipping_address?.full_name ||
@@ -610,6 +630,11 @@ export default function Orders() {
                               : `Order Placed on ${orderDate}`}
                           </span>
                           {getStatusBadge(order.status)}
+                          {isPaymentPending && (
+                            <Badge className="bg-amber-500/15 text-amber-700 dark:text-amber-400 border border-amber-500/30 text-xs font-semibold gap-1">
+                              <CreditCard className="size-3" /> Payment Pending
+                            </Badge>
+                          )}
                           {isCancelled && (
                             isRefunded ? (
                               <Badge className="bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 text-xs font-semibold gap-1">
@@ -761,29 +786,30 @@ export default function Orders() {
                     </div>
 
                     <div className="flex items-center gap-2 flex-wrap justify-end">
-                      {/* Secondary: Buy Again (Re-adds all models in the order) */}
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        disabled={reorderingOrderId === orderId}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleBuyAgain(order);
-                        }}
-                        className="h-8.5 rounded-xl text-xs gap-1.5 hover:border-primary hover:text-primary cursor-pointer"
-                      >
-                        {reorderingOrderId === orderId ? (
-                          <>
-                            <Loader2 className="size-3 animate-spin text-primary" />
-                            <span>Adding Models...</span>
-                          </>
-                        ) : (
-                          <>
-                            <RotateCcw className="size-3 text-primary" />
-                            <span>Buy Again {items.length > 1 ? `(${items.length})` : ""}</span>
-                          </>
-                        )}
-                      </Button>
+                      {/* Complete Order (Pay Now) for pending payments */}
+                      {isPaymentPending && (
+                        <Button
+                          size="sm"
+                          disabled={payingOrderId === orderId}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleCompleteOrder(order);
+                          }}
+                          className="h-8.5 rounded-xl bg-amber-600 hover:bg-amber-500 text-white font-semibold text-xs shadow-2xs gap-1.5 cursor-pointer"
+                        >
+                          {payingOrderId === orderId ? (
+                            <>
+                              <Loader2 className="size-3 animate-spin" />
+                              <span>Processing...</span>
+                            </>
+                          ) : (
+                            <>
+                              <CreditCard className="size-3.5" />
+                              <span>Complete Order</span>
+                            </>
+                          )}
+                        </Button>
+                      )}
 
                       {/* Secondary: Invoice */}
                       <Button

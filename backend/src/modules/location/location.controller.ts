@@ -43,7 +43,12 @@ const controllers = {
     return sendResponse.updated(res, 'location', location);
   },
 
-  setDeliverableStatus: locationStatus.setActiveStatus,
+  setDeliverableStatus: async (req: Request<{ id: string }>, res: Response) => {
+    const { deliverable } = req.body;
+    const location = await service.setDeliverableStatus(req.params.id, deliverable);
+    if (!location) return sendResponse.notFound(res, 'location');
+    return sendResponse.updated(res, 'location', location);
+  },
 
   eraseLocation: async (req: Request<{ id: string }>, res: Response) => {
     const { id } = req.params;

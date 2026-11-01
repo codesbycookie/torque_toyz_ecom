@@ -27,8 +27,8 @@ export const checkoutCartSchema = z.object({
       door: z.string().optional(),
       street: z.string().optional(),
       city: z.string().optional(),
-      state: z.string().min(1, "State is required"),
-      pincode: z.number().min(100000, "Pincode must be 6 digits").max(999999, "Pincode must be 6 digits"),
+      state: z.string().min(1, "State is required").optional(),
+      pincode: z.number().min(100000, "Pincode must be 6 digits").max(999999, "Pincode must be 6 digits").optional(),
     })
     .optional(),
 });

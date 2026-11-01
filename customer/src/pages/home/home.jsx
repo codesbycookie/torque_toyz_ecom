@@ -68,7 +68,7 @@ const HERO_SLIDES = [
 ];
 
 export default function Home() {
-  const { home, wishlist, cart } = useApi();
+  const { home, wishlist, cart, settings } = useApi();
   const { user } = useAuth();
   const { recentlyViewed } = useEcom();
   const navigate = useNavigate();
@@ -343,7 +343,7 @@ export default function Home() {
                         ₹{Number(featuredPicks[0].price || 0).toLocaleString()}
                       </span>
                       <span className="text-[10px] text-primary font-bold">
-                        Free Delivery
+                        {settings?.values?.free_delivery ? "Free Delivery" : "Express Delivery"}
                       </span>
                     </div>
                   </div>

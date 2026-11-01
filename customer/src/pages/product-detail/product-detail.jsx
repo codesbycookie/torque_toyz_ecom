@@ -24,7 +24,7 @@ export default function ProductDetail() {
   const { slug } = useParams();
   const navigate = useNavigate();
   const api = useApi();
-  const { products, wishlist, cart } = api;
+  const { products, wishlist, cart, settings } = api;
   const {
     recentlyViewed,
     addRecentlyViewed,
@@ -246,12 +246,12 @@ export default function ProductDetail() {
             <div className="space-y-1">
               <div className="flex items-baseline gap-3 flex-wrap">
                 <span className="text-3xl font-bold tracking-tight text-foreground">
-                  ₹{price.toLocaleString("en-IN")}
+                  ₹{Number(price).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </span>
                 {hasDiscount && (
                   <>
                     <span className="text-lg text-muted-foreground line-through decoration-muted-foreground/60">
-                      ₹{slashPrice.toLocaleString("en-IN")}
+                      ₹{Number(slashPrice).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </span>
                     <span className="text-sm font-semibold text-emerald-600 dark:text-emerald-400">
                       {discountPercent}% off
@@ -348,9 +348,11 @@ export default function ProductDetail() {
                     <Truck className="size-5 text-primary" />
                   </div>
                   <div>
-                    <p className="text-sm font-medium">Free Delivery</p>
+                    <p className="text-sm font-medium">
+                      {settings?.values?.free_delivery ? "Free Delivery" : "Express Delivery"}
+                    </p>
                     <p className="text-xs text-muted-foreground">
-                      On orders above ₹999
+                      {settings?.values?.free_delivery ? "On all orders nationwide" : "Doorstep courier logistics"}
                     </p>
                   </div>
                 </div>

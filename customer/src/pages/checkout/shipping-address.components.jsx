@@ -21,6 +21,11 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import {
   MapPin,
   Truck,
   Phone,
@@ -35,6 +40,10 @@ import {
   Trash2,
   Check,
   Ban,
+  Search,
+  ChevronsUpDown,
+  Loader2,
+  X,
 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -42,46 +51,242 @@ import { useApi } from "@/core/contexts/api.context";
 import { useAuth } from "@/core/contexts/auth.context";
 
 /**
- * Standard list of all 36 Indian States & Union Territories
+ * Searchable Location Select Combobox
+ * Uses live backend Location API search with debouncing
  */
-export const INDIAN_STATES = [
-  "Andaman and Nicobar Islands",
-  "Andhra Pradesh",
-  "Arunachal Pradesh",
-  "Assam",
-  "Bihar",
-  "Chandigarh",
-  "Chhattisgarh",
-  "Dadra and Nagar Haveli and Daman and Diu",
-  "Delhi",
-  "Goa",
-  "Gujarat",
-  "Haryana",
-  "Himachal Pradesh",
-  "Jammu and Kashmir",
-  "Jharkhand",
-  "Karnataka",
-  "Kerala",
-  "Ladakh",
-  "Lakshadweep",
-  "Madhya Pradesh",
-  "Maharashtra",
-  "Manipur",
-  "Meghalaya",
-  "Mizoram",
-  "Nagaland",
-  "Odisha",
-  "Puducherry",
-  "Punjab",
-  "Rajasthan",
-  "Sikkim",
-  "Tamil Nadu",
-  "Telangana",
-  "Tripura",
-  "Uttar Pradesh",
-  "Uttarakhand",
-  "West Bengal",
-];
+export function SearchableLocationSelect({
+  value,
+  onChange,
+  locations: propLocations = [],
+  id = "location-select",
+  placeholder = "Search or select state / region...",
+  className,
+}) {
+  const { locations: locationsApi } = useApi();
+  const [open, setOpen] = useState(false);
+  const [search, setSearch] = useState("");
+  const [isSearching, setIsSearching] = useState(false);
+  const [apiLocations, setApiLocations] = useState(null);
+
+  // Initial load if empty
+  useEffect(() => {
+    if (open && (!propLocations || propLocations.length === 0)) {
+      locationsApi.fetchLocations?.({ limit: 100, sortBy: "state", order: "asc" });
+    }
+  }, [open, propLocations, locationsApi]);
+
+  // Live Debounced Backend Search using proper API
+  useEffect(() => {
+    if (!open) return;
+    const trimmed = search.trim();
+    if (!trimmed) {
+      setApiLocations(null);
+      setIsSearching(false);
+      return;
+    }
+
+    const timer = setTimeout(async () => {
+      try {
+        setIsSearching(true);
+        const res = await locationsApi.fetchLocations?.({
+          search: trimmed,
+          limit: 50,
+          sortBy: "state",
+          order: "asc",
+        });
+        if (Array.isArray(res?.data?.items)) {
+          setApiLocations(res.data.items);
+        } else if (Array.isArray(res)) {
+          setApiLocations(res);
+        }
+      } catch (err) {
+        console.error("Location search failed:", err);
+      } finally {
+        setIsSearching(false);
+      }
+    }, 250);
+
+    return () => clearTimeout(timer);
+  }, [search, open, locationsApi]);
+
+  // Combined source list
+  const sourceList = apiLocations || (propLocations && propLocations.length > 0 ? propLocations : locationsApi.list || []);
+
+  // Filtered list (backend result or client-side filter fallback)
+  const filteredList = useMemo(() => {
+    if (!search.trim()) return sourceList;
+    const q = search.trim().toLowerCase();
+    return sourceList.filter(
+      (loc) =>
+        loc.state?.toLowerCase().includes(q) ||
+        loc.code?.toLowerCase().includes(q)
+    );
+  }, [sourceList, search]);
+
+  // Find currently selected location object
+  const selectedLocation = useMemo(() => {
+    if (!value) return null;
+    const valStr = String(value);
+    return (
+      sourceList.find((l) => String(l._id || l.locationId) === valStr) ||
+      (locationsApi.list || []).find((l) => String(l._id || l.locationId) === valStr) ||
+      sourceList.find((l) => l.state?.toLowerCase() === valStr.toLowerCase()) ||
+      null
+    );
+  }, [value, sourceList, locationsApi.list]);
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <button
+          type="button"
+          id={id}
+          role="combobox"
+          aria-expanded={open}
+          className={cn(
+            "h-9.5 w-full rounded-xl border border-input bg-background px-3 py-1.5 text-xs text-foreground flex items-center justify-between gap-2 shadow-2xs hover:border-primary/50 transition-all cursor-pointer text-left focus:outline-none focus:ring-1 focus:ring-ring",
+            className
+          )}
+        >
+          {selectedLocation ? (
+            <div className="flex items-center gap-2 min-w-0 truncate">
+              <MapPin className="size-3.5 text-primary shrink-0" />
+              <span className="font-semibold text-foreground truncate">
+                {selectedLocation.state}
+              </span>
+              {selectedLocation.code && (
+                <Badge variant="outline" className="text-[10px] font-mono font-bold px-1.5 py-0">
+                  {selectedLocation.code}
+                </Badge>
+              )}
+              {selectedLocation.deliverable ? (
+                <Badge className="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 text-[10px] font-semibold py-0 px-1.5 hidden sm:inline-flex">
+                  Deliverable
+                </Badge>
+              ) : (
+                <Badge className="bg-destructive/10 text-destructive border border-destructive/20 text-[10px] font-bold py-0 px-1.5 hidden sm:inline-flex">
+                  Restricted
+                </Badge>
+              )}
+            </div>
+          ) : (
+            <span className="text-muted-foreground flex items-center gap-1.5">
+              <MapPin className="size-3.5 text-muted-foreground/70" />
+              <span>{placeholder}</span>
+            </span>
+          )}
+          <ChevronsUpDown className="size-3.5 text-muted-foreground shrink-0" />
+        </button>
+      </PopoverTrigger>
+
+      <PopoverContent
+        align="start"
+        className="w-[300px] sm:w-[340px] p-2 rounded-2xl border-border bg-popover shadow-xl space-y-2 z-50"
+      >
+        {/* Search Input Box */}
+        <div className="relative">
+          <Search className="size-3.5 text-muted-foreground absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+          <Input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search state name or code (e.g. TN, Maharashtra)..."
+            className="h-8.5 text-xs rounded-xl pl-8 pr-7 bg-muted/30 focus-visible:ring-1"
+            autoFocus
+          />
+          {search && (
+            <button
+              type="button"
+              onClick={() => setSearch("")}
+              className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground cursor-pointer"
+            >
+              <X className="size-3.5" />
+            </button>
+          )}
+        </div>
+
+        {/* Searching Status or Count */}
+        <div className="flex items-center justify-between text-[11px] text-muted-foreground px-1">
+          <span>Available Delivery States</span>
+          {isSearching ? (
+            <span className="flex items-center gap-1 text-primary">
+              <Loader2 className="size-3 animate-spin" />
+              <span>Searching API...</span>
+            </span>
+          ) : (
+            <span>{filteredList.length} locations</span>
+          )}
+        </div>
+
+        {/* Scrollable Locations List */}
+        <div className="max-h-56 overflow-y-auto space-y-1 pr-1 custom-scrollbar">
+          {filteredList.length > 0 ? (
+            filteredList.map((loc) => {
+              const locId = String(loc._id || loc.locationId);
+              const isSelected = String(value) === locId || String(value) === loc.state;
+              const isDeliverable = Boolean(loc.deliverable);
+
+              return (
+                <div
+                  key={locId}
+                  onClick={() => {
+                    onChange(locId, loc);
+                    setOpen(false);
+                    setSearch("");
+                  }}
+                  className={cn(
+                    "flex items-center justify-between gap-2 px-2.5 py-2 rounded-xl text-xs cursor-pointer transition-colors",
+                    isSelected
+                      ? "bg-primary/10 text-primary font-bold"
+                      : "hover:bg-muted text-foreground"
+                  )}
+                >
+                  <div className="flex items-center gap-2 min-w-0">
+                    <div
+                      className={cn(
+                        "size-4 rounded-full border flex items-center justify-center shrink-0",
+                        isSelected
+                          ? "border-primary bg-primary text-primary-foreground"
+                          : "border-muted-foreground/40"
+                      )}
+                    >
+                      {isSelected && <Check className="size-2.5 stroke-[3]" />}
+                    </div>
+                    <span className="truncate">{loc.state}</span>
+                    {loc.code && (
+                      <Badge variant="outline" className="text-[10px] font-mono px-1 py-0">
+                        {loc.code}
+                      </Badge>
+                    )}
+                  </div>
+
+                  <div className="shrink-0">
+                    {isDeliverable ? (
+                      <Badge className="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 text-[10px] font-semibold py-0 px-1.5">
+                        Deliverable
+                      </Badge>
+                    ) : (
+                      <Badge className="bg-destructive/10 text-destructive border border-destructive/20 text-[10px] font-bold py-0 px-1.5">
+                        Restricted
+                      </Badge>
+                    )}
+                  </div>
+                </div>
+              );
+            })
+          ) : (
+            <div className="py-6 text-center space-y-1 text-muted-foreground">
+              <Ban className="size-5 mx-auto text-muted-foreground/60" />
+              <p className="text-xs font-medium">No locations found</p>
+              <p className="text-[11px] text-muted-foreground/70">
+                Try searching for another state or city name
+              </p>
+            </div>
+          )}
+        </div>
+      </PopoverContent>
+    </Popover>
+  );
+}
 
 /**
  * Dialog Popup for Adding or Editing an Address
@@ -93,24 +298,24 @@ export function AddressModalDialog({
   locations = [],
   initialData = null,
 }) {
-  // Resolve all 36 Indian states cleanly mapped to backend locations where available
-  const availableStates = useMemo(() => {
-    return INDIAN_STATES.map((stateName) => {
-      const locMatch =
-        locations.find(
-          (l) => l.state?.trim().toLowerCase() === stateName.toLowerCase()
-        ) ||
-        locations.find((l) =>
-          l.state?.trim().toLowerCase().startsWith(stateName.toLowerCase())
-        );
+  const api = useApi();
+  const backendLocations = locations && locations.length > 0 ? locations : (api.locations?.list || []);
 
-      return {
-        name: stateName,
-        locationId: locMatch ? String(locMatch._id) : stateName,
-        deliverable: locMatch ? locMatch.deliverable : true,
-      };
-    });
-  }, [locations]);
+  useEffect(() => {
+    if (isOpen && backendLocations.length === 0 && api.locations?.fetchLocations) {
+      api.locations.fetchLocations({ full: true });
+    }
+  }, [isOpen, backendLocations.length, api.locations]);
+
+  // Use backend locations exclusively
+  const availableStates = useMemo(() => {
+    return backendLocations.map((loc) => ({
+      name: loc.state,
+      locationId: String(loc._id),
+      code: loc.code,
+      deliverable: Boolean(loc.deliverable),
+    }));
+  }, [backendLocations]);
 
   const getInitialForm = (data) => {
     const rawName = data?.name || data?.full_name || "";
@@ -193,16 +398,12 @@ export function AddressModalDialog({
     const assignedId = existingId || `addr_${Date.now()}`;
     const fullName = `${modalForm.firstName.trim()} ${modalForm.lastName.trim()}`.trim();
 
-    const matchedState = availableStates.find(
-      (s) => String(s.locationId) === String(modalForm.state) || s.name.toLowerCase() === modalForm.state.toLowerCase()
+    const locMatch = backendLocations.find(
+      (l) => String(l._id) === String(modalForm.state) || l.state?.trim().toLowerCase() === String(modalForm.state).trim().toLowerCase()
     );
-    const locMatch =
-      locations.find((l) => String(l._id) === String(modalForm.state)) ||
-      locations.find((l) => l.state?.trim().toLowerCase() === (matchedState?.name || modalForm.state).toLowerCase()) ||
-      locations.find((l) => l.state?.trim().toLowerCase().startsWith((matchedState?.name || modalForm.state).toLowerCase()));
 
-    const resolvedStateId = locMatch ? String(locMatch._id) : (matchedState?.locationId || modalForm.state);
-    const resolvedStateName = matchedState?.name || locMatch?.state || "";
+    const resolvedStateId = locMatch ? String(locMatch._id) : modalForm.state;
+    const resolvedStateName = locMatch?.state || "";
 
     const payload = {
       id: assignedId,
@@ -403,18 +604,12 @@ export function AddressModalDialog({
               <Label htmlFor="modal-state" className="text-xs font-medium">
                 State / Region <span className="text-primary font-bold">*</span>
               </Label>
-              <Select value={modalForm.state} onValueChange={handleStateChange}>
-                <SelectTrigger id="modal-state" className="h-9.5 text-xs rounded-xl">
-                  <SelectValue placeholder="Select State / UT" />
-                </SelectTrigger>
-                <SelectContent className="rounded-xl border-border bg-popover shadow-lg max-h-56">
-                  {availableStates.map((st) => (
-                    <SelectItem key={st.name} value={st.locationId} className="text-xs py-1.5 cursor-pointer">
-                      {st.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <SearchableLocationSelect
+                id="modal-state"
+                value={modalForm.state}
+                onChange={(val) => handleStateChange(val)}
+                locations={backendLocations}
+              />
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="zip" className="text-xs font-medium">
@@ -660,6 +855,24 @@ export function ShippingAddressManager({
   const { user, setUser } = useAuth();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingAddress, setEditingAddress] = useState(null);
+  const [addressSearch, setAddressSearch] = useState("");
+
+  const filteredSavedAddresses = useMemo(() => {
+    if (!addressSearch.trim()) return savedAddresses;
+    const q = addressSearch.trim().toLowerCase();
+    return savedAddresses.filter((a) => {
+      const loc =
+        locations.find((l) => String(l._id) === String(a.state)) ||
+        locations.find(
+          (l) => l.state?.trim().toLowerCase() === (a.stateName || a.state || "").trim().toLowerCase()
+        );
+      const stateName = loc?.state || a.stateName || a.state || "";
+      const stateCode = loc?.code || "";
+      const name = a.name || `${a.firstName || ""} ${a.lastName || ""}`.trim();
+      const fullText = `${name} ${a.door || ""} ${a.street || ""} ${a.city || ""} ${stateName} ${stateCode} ${a.zip || a.pincode || ""}`.toLowerCase();
+      return fullText.includes(q);
+    });
+  }, [savedAddresses, addressSearch, locations]);
 
   const handleSave = async (payload) => {
     if (onSaveNewAddress) {
@@ -729,27 +942,58 @@ export function ShippingAddressManager({
           </Button>
         </div>
 
-        <div className="p-5 sm:p-6 space-y-6">
+        <div className="p-5 sm:p-6 space-y-5">
+          {/* Quick Search across saved addresses */}
+          {savedAddresses.length > 1 && (
+            <div className="relative">
+              <Search className="size-3.5 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+              <Input
+                value={addressSearch}
+                onChange={(e) => setAddressSearch(e.target.value)}
+                placeholder="Search saved addresses by state, city, street, or recipient..."
+                className="h-9 text-xs rounded-xl pl-9 pr-8 bg-muted/20 border-border/80 focus-visible:ring-1"
+              />
+              {addressSearch && (
+                <button
+                  type="button"
+                  onClick={() => setAddressSearch("")}
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground cursor-pointer"
+                >
+                  <X className="size-3.5" />
+                </button>
+              )}
+            </div>
+          )}
+
           {/* Address Cards Grid */}
           {savedAddresses.length > 0 ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {savedAddresses.map((addr) => {
-                const addrId = addr.id || addr._id;
-                const isSelected = (selectedAddress?.id || selectedAddress?._id) === addrId;
-                return (
-                  <SavedAddressCard
-                    key={addrId}
-                    address={addr}
-                    isSelected={isSelected}
-                    onSelect={onSelectAddress}
-                    onEdit={handleOpenEditModal}
-                    onDelete={onDeleteAddress}
-                    locations={locations}
-                    showDeliverability={true}
-                  />
-                );
-              })}
-            </div>
+            filteredSavedAddresses.length > 0 ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {filteredSavedAddresses.map((addr) => {
+                  const addrId = addr.id || addr._id;
+                  const isSelected = (selectedAddress?.id || selectedAddress?._id) === addrId;
+                  return (
+                    <SavedAddressCard
+                      key={addrId}
+                      address={addr}
+                      isSelected={isSelected}
+                      onSelect={onSelectAddress}
+                      onEdit={handleOpenEditModal}
+                      onDelete={onDeleteAddress}
+                      locations={locations}
+                      showDeliverability={true}
+                    />
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="text-center py-8 px-4 border border-dashed border-border/70 rounded-xl bg-muted/10 space-y-1">
+                <p className="text-xs font-semibold text-foreground">No matching addresses found</p>
+                <p className="text-[11px] text-muted-foreground">
+                  Try another keyword or clear the search to view all saved destinations
+                </p>
+              </div>
+            )
           ) : (
             <div className="text-center py-10 px-4 border border-dashed border-border/80 rounded-2xl bg-muted/20 space-y-3">
               <div className="size-12 rounded-full bg-muted flex items-center justify-center mx-auto text-muted-foreground">
@@ -820,10 +1064,10 @@ export function ShippingAddressManager({
         {isUpdating
           ? "Securing Shipping Destination..."
           : !selectedAddress
-          ? "Please Select an Address to Continue"
-          : !isSelectedDeliverable
-          ? "Cannot Proceed - Destination Not Deliverable"
-          : "Continue to Payment & Order Review"}
+            ? "Please Select an Address to Continue"
+            : !isSelectedDeliverable
+              ? "Cannot Proceed - Destination Not Deliverable"
+              : "Continue to Payment & Order Review"}
         <ArrowRight className="size-4" />
       </Button>
 
