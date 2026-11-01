@@ -2,6 +2,7 @@ import { useEffect, useState, useRef, useMemo } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import {
+  Home,
   ShoppingCart,
   Menu,
   Search,
@@ -79,24 +80,59 @@ export default function Navbar() {
   const [isMobileCommandOpen, setIsMobileCommandOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
+  const [bannerDismissed, setBannerDismissed] = useState(false);
 
   const searchContainerRef = useRef(null);
   const inputRef = useRef(null);
   const mobileSearchContainerRef = useRef(null);
   const mobileInputRef = useRef(null);
+  const navbarRef = useRef(null);
+  const [headerHeight, setHeaderHeight] = useState(0);
 
   // Store lists accessed strictly via useApi()
-  const categoriesList = api.categories?.list || [];
-  const productsList = api.products?.list || [];
-  const cartItemCount = api.cart?.items?.length || 0;
-  const wishlistItemCount = api.wishlist?.list?.length || 0;
+  const categoriesList = api.categories?.list?.length
+    ? api.categories.list
+    : api.home?.data?.categories || [];
+  const productsList = api.products?.list?.length
+    ? api.products.list
+    : api.home?.data?.products || [];
+  const cartItemCount = user ? (api.cart?.items?.length || 0) : 0;
+  const wishlistItemCount = user ? (api.wishlist?.list?.length || 0) : 0;
+  const announcementBanner = api.home?.data?.announcementBanner;
 
-  // Initial fetch for store data
+  // Dynamically compute exact pixel height of fixed navbar (excluding open drawer)
   useEffect(() => {
-    api.cart?.fetchCart?.();
-    api.wishlist?.fetchAll?.();
-    api.categories?.getAll?.({ limit: 50, active: true });
-  }, []);
+    const updateHeight = () => {
+      if (navbarRef.current) {
+        const headerEl = navbarRef.current;
+        const bannerH = headerEl.querySelector(".navbar-banner")?.offsetHeight || 0;
+        const mainH = headerEl.querySelector(".navbar-main")?.offsetHeight || 0;
+        const mobileSearchH = headerEl.querySelector(".navbar-mobile-search")?.offsetHeight || 0;
+        const total = bannerH + mainH + mobileSearchH;
+        if (total > 0) setHeaderHeight(total);
+      }
+    };
+
+    updateHeight();
+    const ro = new ResizeObserver(updateHeight);
+    if (navbarRef.current) ro.observe(navbarRef.current);
+    window.addEventListener("resize", updateHeight);
+    return () => {
+      ro.disconnect();
+      window.removeEventListener("resize", updateHeight);
+    };
+  }, [announcementBanner, bannerDismissed]);
+
+  // Initial fetch for store data strictly through unified home API
+  useEffect(() => {
+    if (location.pathname !== "/" && !api.home?.data?.categories?.length) {
+      api.home?.fetchHomeData?.();
+    }
+    if (user?._id) {
+      api.cart?.fetchCart?.();
+      api.wishlist?.fetchAll?.();
+    }
+  }, [user?._id, location.pathname]);
 
   // Track scroll for subtle dynamic elevation
   useEffect(() => {
@@ -127,29 +163,51 @@ export default function Navbar() {
     setIsMobileCommandOpen(false);
   }, [location.pathname, location.search]);
 
-  // Click outside listener for command palettes (desktop & mobile)
+  // Auto-close dropdowns & mobile menu on touch/click anywhere outside or on scroll
   useEffect(() => {
-    const handleClickOutside = (e) => {
-      if (
-        searchContainerRef.current &&
-        !searchContainerRef.current.contains(e.target)
-      ) {
+    const handleOutsideInteraction = (e) => {
+      // If touch/click is outside the entire navbar
+      if (navbarRef.current && !navbarRef.current.contains(e.target)) {
+        setMobileMenuOpen(false);
         setIsCommandOpen(false);
+        setIsMobileCommandOpen(false);
+      } else {
+        // If inside navbar, still close command palettes when clicking outside their containers
+        if (
+          searchContainerRef.current &&
+          !searchContainerRef.current.contains(e.target)
+        ) {
+          setIsCommandOpen(false);
+        }
+        if (
+          mobileSearchContainerRef.current &&
+          !mobileSearchContainerRef.current.contains(e.target)
+        ) {
+          setIsMobileCommandOpen(false);
+        }
       }
-      if (
-        mobileSearchContainerRef.current &&
-        !mobileSearchContainerRef.current.contains(e.target)
-      ) {
+    };
+
+    const handleScrollClose = () => {
+      if (mobileMenuOpen || isCommandOpen || isMobileCommandOpen) {
+        setMobileMenuOpen(false);
+        setIsCommandOpen(false);
         setIsMobileCommandOpen(false);
       }
     };
-    document.addEventListener("mousedown", handleClickOutside);
-    document.addEventListener("touchstart", handleClickOutside);
+
+    document.addEventListener("pointerdown", handleOutsideInteraction);
+    document.addEventListener("touchstart", handleOutsideInteraction, { passive: true });
+    document.addEventListener("mousedown", handleOutsideInteraction);
+    window.addEventListener("scroll", handleScrollClose, { passive: true });
+
     return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-      document.removeEventListener("touchstart", handleClickOutside);
+      document.removeEventListener("pointerdown", handleOutsideInteraction);
+      document.removeEventListener("touchstart", handleOutsideInteraction);
+      document.removeEventListener("mousedown", handleOutsideInteraction);
+      window.removeEventListener("scroll", handleScrollClose);
     };
-  }, []);
+  }, [mobileMenuOpen, isCommandOpen, isMobileCommandOpen]);
 
   // Global ⌘K / Ctrl+K keyboard shortcut
   useEffect(() => {
@@ -257,16 +315,33 @@ export default function Navbar() {
     : "TT";
 
   return (
-    <header
-      className={cn(
-        "sticky top-0 z-50 w-full transition-all duration-200 border-b",
+    <>
+      <header
+        ref={navbarRef}
+        className={cn(
+          "fixed top-0 left-0 right-0 z-50 w-full transition-all duration-200 border-b",
         isScrolled
           ? "bg-background/95 backdrop-blur-xl border-border/80 shadow-[0_10px_30px_-15px_rgba(0,0,0,0.5)]"
           : "bg-background/90 backdrop-blur-md border-border/60 shadow-xs"
       )}
     >
+      {/* ─── TOP ANNOUNCEMENT TICKER BANNER ─── */}
+      {announcementBanner && !bannerDismissed && (
+        <div className="navbar-banner bg-primary text-primary-foreground text-xs py-2 px-4 font-semibold tracking-wide text-center flex items-center justify-center gap-2 border-b border-primary-foreground/15 shadow-2xs select-none relative">
+          <span className="truncate max-w-[90vw]">{announcementBanner}</span>
+          <button
+            type="button"
+            onClick={() => setBannerDismissed(true)}
+            aria-label="Dismiss banner"
+            className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-primary-foreground/80 hover:text-primary-foreground cursor-pointer rounded transition-colors"
+          >
+            <X className="size-3.5" />
+          </button>
+        </div>
+      )}
+
       {/* ─── MAIN NAVBAR: HORIZONTAL LAYOUT ─── */}
-      <div className="container mx-auto flex h-16 sm:h-17 items-center justify-between px-3 sm:px-6 lg:px-8 gap-2 sm:gap-4 lg:gap-6">
+      <div className="navbar-main container mx-auto flex h-16 sm:h-17 items-center justify-between px-3 sm:px-6 lg:px-8 gap-2 sm:gap-4 lg:gap-6">
         {/* Left: Brand Logo & Title */}
         <Link
           to="/"
@@ -463,6 +538,16 @@ export default function Navbar() {
                   {/* 4. Quick Navigation */}
                   <CommandGroup heading="Quick Navigation" className="text-muted-foreground font-semibold">
                     <CommandItem
+                      onSelect={() => handleNavigate("/")}
+                      className="flex items-center justify-between text-xs py-1.5 px-2.5 rounded-xl cursor-pointer hover:bg-muted/80"
+                    >
+                      <div className="flex items-center gap-2 text-foreground">
+                        <Home className="size-3.5 text-muted-foreground" />
+                        <span>Home</span>
+                      </div>
+                      <CommandShortcut>Home</CommandShortcut>
+                    </CommandItem>
+                    <CommandItem
                       onSelect={() => handleNavigate("/products")}
                       className="flex items-center justify-between text-xs py-1.5 px-2.5 rounded-xl cursor-pointer hover:bg-muted/80"
                     >
@@ -511,6 +596,20 @@ export default function Navbar() {
 
         {/* ─── RIGHT SECTION: MODERN MODULAR ACTIONS ─── */}
         <div className="flex items-center gap-1.5 sm:gap-2 lg:gap-3 shrink-0">
+          {/* Home Link */}
+          <Link
+            to="/"
+            className={cn(
+              "hidden md:flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold transition-colors group",
+              location.pathname === "/"
+                ? "text-primary bg-primary/10 font-bold"
+                : "text-muted-foreground hover:text-foreground hover:bg-muted/60"
+            )}
+          >
+            <Home className="size-4 group-hover:text-primary transition-colors" />
+            <span>Home</span>
+          </Link>
+
           {/* Orders */}
           <Link
             to="/orders"
@@ -709,7 +808,7 @@ export default function Navbar() {
       </div>
 
       {/* ─── MOBILE SEARCH BAR: ALWAYS VISIBLE OUTSIDE HAMBURGER ─── */}
-      <div className="md:hidden w-full border-t border-border/40 bg-background/95 backdrop-blur-md px-3 sm:px-6 py-2">
+      <div className="navbar-mobile-search md:hidden w-full border-t border-border/40 bg-background/95 backdrop-blur-md px-3 sm:px-6 py-2">
         <div ref={mobileSearchContainerRef} className="relative w-full">
           <form
             onSubmit={handleSearchSubmit}
@@ -878,9 +977,26 @@ export default function Navbar() {
         </div>
       </div>
 
+      {/* ─── MOBILE BACKDROP OVERLAY (TOUCH OUTSIDE TO CLOSE) ─── */}
+      {mobileMenuOpen && (
+        <div
+          style={{ top: `${headerHeight}px` }}
+          className="fixed inset-0 bg-black/60 backdrop-blur-xs z-40 md:hidden animate-in fade-in-0 duration-150"
+          onClick={() => setMobileMenuOpen(false)}
+          onTouchStart={() => setMobileMenuOpen(false)}
+          aria-hidden="true"
+        />
+      )}
+
       {/* ─── MOBILE DRAWER MENU ─── */}
       {mobileMenuOpen && (
-        <div className="md:hidden border-t border-border bg-background/98 backdrop-blur-2xl px-4 py-4 space-y-4 shadow-2xl animate-in slide-in-from-top-2 duration-200">
+        <div
+          style={{
+            top: `${headerHeight}px`,
+            maxHeight: `calc(100vh - ${headerHeight}px)`
+          }}
+          className="fixed left-0 right-0 z-50 md:hidden border-t border-border bg-background/98 backdrop-blur-2xl px-4 py-4 space-y-4 shadow-2xl animate-in slide-in-from-top-2 duration-200 overflow-y-auto"
+        >
 
           {/* Quick Categories Scroll */}
           <div className="space-y-1.5">
@@ -918,6 +1034,23 @@ export default function Navbar() {
 
           {/* Mobile Navigation Links */}
           <div className="space-y-1 pt-1">
+            <Link
+              to="/"
+              onClick={() => setMobileMenuOpen(false)}
+              className={cn(
+                "flex items-center justify-between px-3.5 py-2.5 rounded-xl text-sm font-semibold transition-colors",
+                location.pathname === "/"
+                  ? "text-primary bg-primary/10 font-bold"
+                  : "text-muted-foreground hover:bg-muted hover:text-foreground"
+              )}
+            >
+              <div className="flex items-center gap-3">
+                <Home className="size-4.5 text-primary" />
+                <span>Home</span>
+              </div>
+              <ChevronRight className="size-4 opacity-50" />
+            </Link>
+
             <Link
               to="/products"
               onClick={() => setMobileMenuOpen(false)}
@@ -1030,6 +1163,17 @@ export default function Navbar() {
           </div>
         </div>
       )}
-    </header>
+      </header>
+
+      {/* Dynamic spacer matching fixed navbar height to prevent page content overlap */}
+      <div
+        style={{ height: headerHeight > 0 ? `${headerHeight}px` : undefined }}
+        className={cn(
+          "w-full shrink-0",
+          !headerHeight && (announcementBanner && !bannerDismissed ? "h-28 sm:h-26" : "h-26 sm:h-17")
+        )}
+        aria-hidden="true"
+      />
+    </>
   );
 }

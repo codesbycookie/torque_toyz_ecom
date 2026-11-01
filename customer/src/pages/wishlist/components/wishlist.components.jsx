@@ -454,7 +454,13 @@ export function WishlistGridCard({
   const [leaving, remove] = useLeave(onRemove, product._id);
 
   const firstImage = getImage(product);
-  const price = Number(product.price || 0);
+  const ui = product.ui || {};
+  const price = Number(ui.actual_price || product.price || 0);
+  const slashPrice = Number(ui.slash_price || 0);
+  const hasDiscount = slashPrice > price;
+  const discountPercent = hasDiscount ? Math.round(((slashPrice - price) / slashPrice) * 100) : 0;
+  const isTrending = Boolean(ui.is_trending);
+  const customBadges = Array.isArray(ui.badges) ? ui.badges.filter(Boolean) : [];
   const isOutOfStock = product.stock <= 0;
 
   const reviews = product.reviews || [];
@@ -464,10 +470,6 @@ export function WishlistGridCard({
           reviews.reduce((sum, r) => sum + (r.rating || 0), 0) / reviews.length
         ).toFixed(1)
       : null;
-
-  // Derived MRP for Amazon-style discount display (approx 25% higher)
-  const mrp = Math.round(price * 1.25);
-  const discountPercent = price > 0 ? Math.round(((mrp - price) / mrp) * 100) : 0;
   const isChoice = (Number(avgRating) >= 4.2 && reviews.length >= 2) || product.featured;
 
   const handleCardClick = () => {
@@ -516,12 +518,7 @@ export function WishlistGridCard({
         </div>
 
         {/* Badges on Bottom Left of Image */}
-        <div className="absolute bottom-2 left-2 flex flex-col gap-1 items-start z-1">
-          {isChoice && (
-            <span className="bg-primary text-primary-foreground text-[10px] font-bold px-2 py-0.5 rounded-sm tracking-wide shadow-xs uppercase">
-              Featured Pick
-            </span>
-          )}
+        <div className="absolute bottom-2 left-2 flex flex-col gap-1 items-start z-1 max-w-[80%]">
           {isOutOfStock ? (
             <Badge variant="destructive" className="text-[10px] font-medium px-1.5 py-0">
               Out of stock
@@ -533,14 +530,22 @@ export function WishlistGridCard({
             >
               Only {product.stock} left
             </Badge>
-          ) : discountPercent > 15 ? (
-            <Badge
-              variant="secondary"
-              className="bg-primary/10 text-primary border border-primary/20 text-[10px] font-medium px-1.5 py-0"
-            >
-              {discountPercent}% OFF
-            </Badge>
           ) : null}
+          {isTrending && (
+            <span className="bg-amber-500 text-white text-[9px] sm:text-[10px] font-bold px-1.5 sm:px-2 py-0.5 rounded-sm tracking-wide shadow-xs uppercase">
+              Trending
+            </span>
+          )}
+          {customBadges.slice(0, 2).map((b, idx) => (
+            <span key={idx} className="bg-primary text-primary-foreground text-[9px] sm:text-[10px] font-bold px-1.5 sm:px-2 py-0.5 rounded-sm tracking-wide shadow-xs uppercase truncate max-w-full">
+              {b}
+            </span>
+          ))}
+          {!isTrending && customBadges.length === 0 && isChoice && (
+            <span className="bg-primary text-primary-foreground text-[10px] font-bold px-2 py-0.5 rounded-sm tracking-wide shadow-xs uppercase">
+              Featured Pick
+            </span>
+          )}
         </div>
 
         {/* Wishlist Heart Button on Top Right (clicking removes from wishlist) */}
@@ -664,7 +669,8 @@ export function WishlistListCard({
   const [leaving, remove] = useLeave(onRemove, product._id);
 
   const firstImage = getImage(product);
-  const price = Number(product.price || 0);
+  const ui = product.ui || {};
+  const price = Number(ui.actual_price || product.price || 0);
   const isOutOfStock = product.stock <= 0;
 
   const reviews = product.reviews || [];
@@ -818,7 +824,8 @@ export function WishlistTableRow({
 }) {
   const [leaving, remove] = useLeave(onRemove, product._id);
   const firstImage = getImage(product);
-  const price = Number(product.price || 0);
+  const ui = product.ui || {};
+  const price = Number(ui.actual_price || product.price || 0);
   const isOutOfStock = product.stock <= 0;
 
   const reviews = product.reviews || [];

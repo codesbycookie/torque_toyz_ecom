@@ -7,8 +7,8 @@ const SECTIONS: Record<string, string[]> = {
     business: ['support_phone', 'business_address'],
     orders: ['free_delivery', 'low_stock_threshold', 'allow_cod', 'allow_online_payment', 'min_order_amount', 'gst_percentage'],
     catalog: ['default_product_images'],
-    site: ['maintenance_mode', 'new_signups_enabled'],
-    ecom: ['ecom_announcement_banner', 'ecom_sales_notifications_enabled'],
+    site: ['new_signups_enabled'],
+    ecom: ['ecom_announcement_banner'],
 };
 
 export const getAllSettings = async () => {

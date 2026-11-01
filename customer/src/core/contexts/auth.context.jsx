@@ -65,7 +65,9 @@ export const AuthProvider = ({ children }) => {
         currentPath === "/forgot-password";
 
       if (!isPublicAuthPage) {
-        navigateRef.current("/login");
+        navigateRef.current("/login", {
+          state: { from: locationRef.current },
+        });
         toast.error(message);
       }
     });
@@ -103,6 +105,18 @@ export const AuthProvider = ({ children }) => {
     };
   }, []);
 
+  const getPostAuthRedirect = () => {
+    const targetPath = locationRef.current?.state?.from?.pathname;
+    const isAuthTarget =
+      targetPath &&
+      ["/login", "/register", "/forgot-password"].includes(targetPath);
+    if (!isAuthTarget && locationRef.current?.state?.from) {
+      const fromObj = locationRef.current.state.from;
+      return `${fromObj.pathname || ""}${fromObj.search || ""}` || "/";
+    }
+    return "/";
+  };
+
   const login = async (data) => {
     try {
       setLoggingIn(true);
@@ -122,7 +136,8 @@ export const AuthProvider = ({ children }) => {
 
       resetLogoutState();
       toast.success("Login successful");
-      navigate("/");
+      const destination = getPostAuthRedirect();
+      navigate(destination, { replace: true });
     } catch (err) {
       return err;
     } finally {
@@ -148,7 +163,8 @@ export const AuthProvider = ({ children }) => {
       });
 
       toast.success("Registration successful");
-      navigate("/");
+      const destination = getPostAuthRedirect();
+      navigate(destination, { replace: true });
     } catch (err) {
       return err;
     } finally {

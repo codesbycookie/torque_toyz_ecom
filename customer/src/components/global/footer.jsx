@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import {
   Car,
@@ -12,15 +11,8 @@ import {
   Heart,
   ShoppingCart,
   Package,
-  Sparkles,
-  Send,
-  CheckCircle2,
-  Lock,
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { useApi } from "@/core/contexts/api.context";
-import { toast } from "sonner";
 
 // Clean Automotive & Brand Social Icons
 const InstagramIcon = ({ className = "size-4" }) => (
@@ -55,20 +47,6 @@ export default function Footer() {
   const navigate = useNavigate();
   const api = useApi();
   const categoriesList = api.categories?.list || [];
-
-  const [newsletterEmail, setNewsletterEmail] = useState("");
-  const [subscribed, setSubscribed] = useState(false);
-
-  const handleSubscribe = (e) => {
-    e.preventDefault();
-    if (!newsletterEmail.trim() || !/^\S+@\S+\.\S+$/.test(newsletterEmail.trim())) {
-      toast.error("Please enter a valid email address");
-      return;
-    }
-    setSubscribed(true);
-    toast.success("Thank you for subscribing! Watch your inbox for updates.");
-    setNewsletterEmail("");
-  };
 
   const scrollToTop = () => {
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -142,8 +120,8 @@ export default function Footer() {
       {/* ─── 2. MAIN FOOTER CONTENT ─── */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 lg:py-16">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-8 lg:gap-12">
-          {/* Brand Info & Mission (Col 1-4) */}
-          <div className="lg:col-span-4 space-y-4">
+          {/* Brand Info & Mission (Col 1-5) */}
+          <div className="lg:col-span-5 space-y-4">
             <Link to="/" className="flex items-center gap-3 group inline-flex" aria-label="Torque Toyzz Home">
               <img
                 src="/logo.png"
@@ -208,13 +186,13 @@ export default function Footer() {
             </div>
           </div>
 
-          {/* Quick Categories & Scale (Col 5-6) */}
-          <div className="lg:col-span-2 space-y-3">
+          {/* Quick Categories & Scale (Col 6-8) */}
+          <div className="lg:col-span-3 space-y-3">
             <h4 className="font-heading font-bold text-sm tracking-wide text-foreground dark:text-white uppercase">
               Collections
             </h4>
             <ul className="space-y-2 text-xs text-muted-foreground dark:text-neutral-400">
-              {categoriesList.slice(0, 5).map((cat) => (
+              {categoriesList.slice(0, 6).map((cat) => (
                 <li key={cat._id || cat.id}>
                   <Link
                     to={`/products?category=${cat._id || cat.id}`}
@@ -243,12 +221,12 @@ export default function Footer() {
             </ul>
           </div>
 
-          {/* Customer Care & Orders (Col 7-8) */}
-          <div className="lg:col-span-3 space-y-3">
+          {/* Customer Care & Orders (Col 9-12) */}
+          <div className="lg:col-span-4 space-y-3">
             <h4 className="font-heading font-bold text-sm tracking-wide text-foreground dark:text-white uppercase">
               Customer Concierge
             </h4>
-            <ul className="space-y-2 text-xs text-muted-foreground dark:text-neutral-400">
+            <ul className="space-y-2.5 text-xs text-muted-foreground dark:text-neutral-400">
               <li>
                 <Link to="/orders" className="hover:text-primary transition-colors flex items-center gap-1.5">
                   <Package className="size-3.5 text-primary/80" />
@@ -278,51 +256,6 @@ export default function Footer() {
                 </Link>
               </li>
             </ul>
-          </div>
-
-          {/* Newsletter Box (Col 9-12) */}
-          <div className="lg:col-span-3 space-y-3.5">
-            <div className="flex items-center gap-2">
-              <Sparkles className="size-4 text-primary" />
-              <h4 className="font-heading font-bold text-sm tracking-wide text-foreground dark:text-white uppercase">
-                Newsletter
-              </h4>
-            </div>
-
-            <p className="text-xs text-muted-foreground dark:text-neutral-400 leading-relaxed">
-              Get secret drops, low-stock alerts, and 10% off your next rare scale replica.
-            </p>
-
-            <form onSubmit={handleSubscribe} className="space-y-2">
-              <div className="relative flex items-center">
-                <Input
-                  type="email"
-                  placeholder="Enter your email"
-                  value={newsletterEmail}
-                  onChange={(e) => setNewsletterEmail(e.target.value)}
-                  className="bg-muted/50 dark:bg-neutral-900 border-border/80 text-xs h-10 pr-10 text-foreground dark:text-white placeholder:text-muted-foreground dark:placeholder:text-neutral-500 rounded-xl focus-visible:ring-primary"
-                />
-                <button
-                  type="submit"
-                  aria-label="Subscribe to newsletter"
-                  className="absolute right-1 size-8 rounded-lg bg-primary hover:bg-primary/90 text-primary-foreground flex items-center justify-center transition-colors cursor-pointer"
-                >
-                  <Send className="size-3.5" />
-                </button>
-              </div>
-
-              {subscribed && (
-                <div className="flex items-center gap-1.5 text-emerald-500 text-[11px] font-medium pt-1">
-                  <CheckCircle2 className="size-3.5" />
-                  <span>You're on the priority allocation list!</span>
-                </div>
-              )}
-            </form>
-
-            <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground/80 dark:text-neutral-500">
-              <Lock className="size-3" />
-              <span>Zero spam. Unsubscribe anytime in one click.</span>
-            </div>
           </div>
         </div>
       </div>

@@ -4,20 +4,6 @@ This plan outlines how we will integrate the dynamic settings (which are current
 
 ## Proposed Changes
 
-### 1. Maintenance Mode Integration
-We will update the `maintenanceMode` middleware to use the dynamic `maintenance_mode` setting instead of checking the static environment variable (`ENV.MAINTENANCE_MODE`).
-
-- Since this middleware runs on *every single request*, fetching from the database every time would create a significant bottleneck. 
-- We will implement a lightweight in-memory cache with a Time-To-Live (TTL) of 1 minute inside the middleware to keep it fast while still being responsive to changes from the admin dashboard.
-
-#### [MODIFY] `backend/src/core/middlewares/maintenance.middleware.ts`
-- Import the `Setting` model.
-- Add an in-memory cache mechanism (e.g., `let cachedMaintenanceMode`, `lastCacheTime`).
-- If the cache expires, query `Setting.get('maintenance_mode')` and update the cache.
-- Block requests if the setting is truthy, maintaining the existing bypass routes.
-
----
-
 ### 2. User Signups Control
 We will restrict the ability to create new user accounts based on the `new_signups_enabled` setting.
 
@@ -47,9 +33,7 @@ We will enforce order-related settings (`min_order_amount`, `allow_cod`, `allow_
 
 ### Automated Tests
 We will verify that the endpoints correctly block access when settings are flipped:
-- Send requests to a non-bypassed route when `maintenance_mode` is enabled (should receive 503).
 - Attempt user creation when `new_signups_enabled` is disabled (should receive 403).
 - Attempt order creation with COD when `allow_cod` is disabled, or below the `min_order_amount` (should receive 400).
 
 ### Manual Verification
-- We can seed/update the DB settings directly or via the API and observe the application behavior changing in real-time (after the 1-minute TTL for maintenance mode).

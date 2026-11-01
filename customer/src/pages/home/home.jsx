@@ -1,5 +1,6 @@
 import { useEffect, useState, useMemo } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
+import { useAuth } from "@/core/contexts/auth.context";
 import { useApi } from "@/core/contexts/api.context";
 import { useEcom } from "@/core/contexts/ecom.context";
 import {
@@ -22,6 +23,7 @@ import {
   Layers,
   Car,
   Package,
+  Compass,
 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -66,25 +68,45 @@ const HERO_SLIDES = [
 ];
 
 export default function Home() {
-  const { products, categories, wishlist, cart } = useApi();
+  const { home, wishlist, cart } = useApi();
+  const { user } = useAuth();
   const { recentlyViewed } = useEcom();
   const navigate = useNavigate();
+  const location = useLocation();
 
   const [activeSlide, setActiveSlide] = useState(0);
 
-  // Store data directly from modules
-  const productsList = products.list || [];
-  const categoriesList = categories.list || [];
-  const loading = products.loading || {};
-  const wishlistItems = wishlist.list || [];
-  const wishlistedIds = wishlistItems.map((p) => p._id);
+  const { data: homeData, loading, fetchHomeData } = home;
 
-  // Fetch real data on mount strictly using registered module actions
+  // Single unified API fetch on mount or user transition
   useEffect(() => {
-    products.getAll({ limit: 16, sortBy: "createdAt", order: "desc" });
-    categories.getAll({ limit: 50, active: true });
-    wishlist.fetchAll?.();
-  }, []);
+    fetchHomeData();
+  }, [user?._id]);
+
+  // Clean data slices strictly populated from single home endpoint
+  const productsList = homeData?.products || [];
+  const categoriesList = homeData?.categories || [];
+  const featuredPicks = homeData?.featuredPicks?.length
+    ? homeData.featuredPicks
+    : productsList.slice(0, 4);
+  const underPricePicks = homeData?.budgetPicks?.length
+    ? homeData.budgetPicks
+    : productsList.filter((p) => Number(p.price || 0) <= 2500).slice(0, 4);
+  const trendingProducts = homeData?.trendingProducts?.length
+    ? homeData.trendingProducts
+    : productsList.slice(0, 12);
+  const bestSellers = homeData?.bestSellers?.length
+    ? homeData.bestSellers
+    : productsList.slice(4, 12);
+  const recommendations = homeData?.recommendations?.length
+    ? homeData.recommendations
+    : productsList.slice(0, 8);
+
+  const wishlistedIds = user
+    ? (wishlist.list?.length
+        ? wishlist.list.map((p) => p._id)
+        : homeData?.wishlistIds || [])
+    : [];
 
   // Auto-advance hero carousel
   useEffect(() => {
@@ -95,29 +117,26 @@ export default function Home() {
   }, []);
 
   const handleAddToCart = async (product) => {
+    if (!user) {
+      toast.error("Please login to add items to your cart");
+      navigate("/login", { state: { from: location } });
+      return;
+    }
     return cart.addToCart(product, 1);
   };
 
   const handleToggleWishlist = (product) => {
+    if (!user) {
+      toast.error("Please login to manage your wishlist");
+      navigate("/login", { state: { from: location } });
+      return;
+    }
     const isWish =
       wishlistedIds.includes(product._id) || Boolean(product?.is_in_wishlist);
     wishlist.toggle(product, isWish);
   };
 
-  // Derive specialized sections from real backend products
-  const featuredPicks = useMemo(() => {
-    return productsList.slice(0, 4);
-  }, [productsList]);
 
-  const underPricePicks = useMemo(() => {
-    // Under ₹2,500 deals or cheapest 4
-    const affordable = productsList.filter((p) => Number(p.price || 0) <= 2500);
-    return (affordable.length >= 4 ? affordable : productsList).slice(0, 4);
-  }, [productsList]);
-
-  const trendingProducts = useMemo(() => {
-    return productsList.slice(4, 12);
-  }, [productsList]);
 
   const currentSlide = HERO_SLIDES[activeSlide];
 
@@ -459,7 +478,7 @@ export default function Home() {
           </Button>
         </div>
 
-        {loading.getAll ? (
+        {loading ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4 md:gap-5">
             {Array.from({ length: 8 }).map((_, i) => (
               <AmazonProductCardSkeleton key={i} />
@@ -544,7 +563,7 @@ export default function Home() {
         </section>
       )}
       {/* ─── 6. BEST SELLERS / PERFORMANCE COLLECTION ──────────────── */}
-      {productsList.length > 8 && (
+      {(bestSellers.length > 0 || productsList.length > 4) && (
         <section className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-12">
           <div className="flex items-center justify-between mb-6 border-b border-border/80 pb-3">
             <div className="flex items-center gap-2.5">
@@ -572,7 +591,7 @@ export default function Home() {
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4 md:gap-5">
-            {productsList.slice(0, 4).map((product) => (
+            {(bestSellers.length > 0 ? bestSellers.slice(0, 4) : productsList.slice(0, 4)).map((product) => (
               <AmazonProductCard
                 key={product._id}
                 product={product}
@@ -587,7 +606,60 @@ export default function Home() {
           </div>
         </section>
       )}
-      {/* ─── 7. RECENTLY VIEWED ROW (AMAZON STYLE) ─────────────────── */}
+      {/* ─── 7. ALGORITHMIC / PERSONALIZED RECOMMENDATIONS ─────────── */}
+      {(loading || recommendations.length > 0) && (
+        <section className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-10 border-t border-border/80">
+          <div className="flex items-center justify-between mb-6 border-b border-border/80 pb-3">
+            <div className="flex items-center gap-2.5">
+              <div className="size-8 rounded-lg bg-primary/10 flex items-center justify-center">
+                <Compass className="size-4.5 text-primary" />
+              </div>
+              <div>
+                <h2 className="text-xl sm:text-2xl font-black tracking-tight text-foreground">
+                  Recommended For You
+                </h2>
+                <p className="text-xs text-muted-foreground">
+                  Personalized picks tailored to your collector profile and interests
+                </p>
+              </div>
+            </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => navigate("/products?sort=latest")}
+              className="text-xs font-semibold text-primary hover:text-primary hover:bg-primary/10"
+            >
+              Explore all
+              <ArrowRight className="ml-1 size-3.5" />
+            </Button>
+          </div>
+
+          {loading ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4 md:gap-5">
+              {Array.from({ length: 4 }).map((_, i) => (
+                <AmazonProductCardSkeleton key={i} />
+              ))}
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4 md:gap-5">
+              {recommendations.slice(0, 8).map((product) => (
+                <AmazonProductCard
+                  key={product._id}
+                  product={product}
+                  onAddToCart={handleAddToCart}
+                  onToggleWishlist={handleToggleWishlist}
+                  isWishlisted={
+                    wishlistedIds.includes(product._id) ||
+                    Boolean(product?.is_in_wishlist)
+                  }
+                />
+              ))}
+            </div>
+          )}
+        </section>
+      )}
+
+      {/* ─── 8. RECENTLY VIEWED ROW (AMAZON STYLE) ─────────────────── */}
       {recentlyViewed && recentlyViewed.length > 0 && (
         <section className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-8 border-t border-border/80">
           <div className="flex items-center justify-between mb-5">

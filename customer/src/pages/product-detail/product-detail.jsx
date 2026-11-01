@@ -102,7 +102,13 @@ export default function ProductDetail() {
   }
 
   const images = product.images?.length > 0 ? product.images : [];
-  const price = Number(product.price || 0);
+  const ui = product.ui || {};
+  const price = Number(ui.actual_price || product.price || 0);
+  const slashPrice = Number(ui.slash_price || 0);
+  const hasDiscount = slashPrice > price;
+  const discountPercent = hasDiscount ? Math.round(((slashPrice - price) / slashPrice) * 100) : 0;
+  const isTrending = Boolean(ui.is_trending);
+  const customBadges = Array.isArray(ui.badges) ? ui.badges.filter(Boolean) : [];
   const isOutOfStock = product.stock <= 0;
   const reviews = product.reviews || [];
   const avgRating =
@@ -196,17 +202,29 @@ export default function ProductDetail() {
 
           {/* ─── RIGHT: Product Info (Scrollable) ─────────────── */}
           <div className="lg:col-span-7 xl:col-span-7 space-y-6">
-            {/* Title */}
-            <div>
+            {/* Title & Promotional Badges */}
+            <div className="space-y-2">
+              <div className="flex items-center gap-1.5 flex-wrap">
+                {product.category?.name && (
+                  <Badge variant="secondary" className="text-xs font-normal">
+                    {product.category.name}
+                  </Badge>
+                )}
+                {isTrending && (
+                  <Badge variant="default" className="text-xs bg-amber-500 hover:bg-amber-600 text-white font-bold py-0">
+                    Trending
+                  </Badge>
+                )}
+                {customBadges.map((badge, idx) => (
+                  <Badge key={idx} variant="default" className="text-xs bg-primary text-primary-foreground font-bold py-0">
+                    {badge}
+                  </Badge>
+                ))}
+              </div>
+
               <h1 className="text-xl sm:text-2xl font-semibold leading-snug">
                 {product.name}
               </h1>
-
-              {product.category?.name && (
-                <p className="text-sm text-muted-foreground mt-1">
-                  {product.category.name}
-                </p>
-              )}
             </div>
 
             {/* Rating */}
@@ -226,12 +244,22 @@ export default function ProductDetail() {
 
             {/* Price */}
             <div className="space-y-1">
-              <div className="flex items-baseline gap-3">
-                <span className="text-3xl font-bold tracking-tight">
+              <div className="flex items-baseline gap-3 flex-wrap">
+                <span className="text-3xl font-bold tracking-tight text-foreground">
                   ₹{price.toLocaleString("en-IN")}
                 </span>
+                {hasDiscount && (
+                  <>
+                    <span className="text-lg text-muted-foreground line-through decoration-muted-foreground/60">
+                      ₹{slashPrice.toLocaleString("en-IN")}
+                    </span>
+                    <span className="text-sm font-semibold text-emerald-600 dark:text-emerald-400">
+                      {discountPercent}% off
+                    </span>
+                  </>
+                )}
               </div>
-              <p className="text-sm text-muted-foreground">
+              <p className="text-xs text-muted-foreground">
                 Inclusive of all taxes
               </p>
             </div>

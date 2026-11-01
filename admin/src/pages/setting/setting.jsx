@@ -8,6 +8,7 @@ import {
   FormItem,
   FormLabel,
   FormDescription,
+  FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
@@ -17,7 +18,6 @@ import { useApi } from "@/core/contexts/api.context";
 import { useAuth } from "@/core/contexts/auth.context";
 import { useAsync } from "@/core/hooks/useAsync";
 import { useClearError } from "@/core/hooks/useClearError";
-import { useSubmit } from "@/core/hooks/useSubmit";
 import { settingSchema } from "@/modules/setting/setting.schema";
 import { useEffect } from "react";
 import { useTheme } from "next-themes";
@@ -37,27 +37,44 @@ export default function Setting() {
       free_delivery: false,
       low_stock_threshold: 10,
       gst_percentage: 18,
-      maintenance_mode: false,
       ecom_announcement_banner: "",
-      ecom_sales_notifications_enabled: true,
     },
   });
 
-  // Settings no longer auto-seed — fetch once on mount.
+  // Settings fetch once on mount
   useEffect(() => {
     settings.fetch();
   }, []);
 
-  // Only reset once real data has actually arrived.
+  // Populate form with real data from backend, converting nulls safely
   useEffect(() => {
     if (settings.values) {
-      form.reset(settings.values);
+      form.reset({
+        free_delivery: Boolean(settings.values.free_delivery),
+        low_stock_threshold: Number(settings.values.low_stock_threshold ?? 10),
+        gst_percentage: Number(settings.values.gst_percentage ?? 18),
+        ecom_announcement_banner: settings.values.ecom_announcement_banner || "",
+      });
     }
   }, [settings.values]);
 
   const { run, loading, ErrorAlert, clearError } = useAsync(settings.save);
   useClearError(form, clearError);
-  const onSubmit = useSubmit({ run, form });
+
+  const onSubmit = async (values) => {
+    try {
+      await run(values);
+      form.reset(values);
+    } catch {
+      // Error is handled by useAsync and ErrorAlert
+    }
+  };
+
+  const onInvalid = (errors) => {
+    console.error("[settings] Validation errors:", errors);
+    const firstMsg = Object.values(errors)[0]?.message;
+    if (firstMsg) toast.error(firstMsg);
+  };
 
   const handleThemeChange = async (newTheme) => {
     setTheme(newTheme);
@@ -116,7 +133,7 @@ export default function Setting() {
           <Separator />
 
           <Form {...form}>
-            <form id="settings-form" onSubmit={form.handleSubmit(onSubmit)}>
+            <form id="settings-form" onSubmit={form.handleSubmit(onSubmit, onInvalid)}>
               {/* Orders & Fulfillment Controls */}
               <div className="py-2">
                 <h2 className="text-lg font-semibold tracking-tight text-primary">Orders & Delivery Settings</h2>
@@ -134,10 +151,11 @@ export default function Setting() {
                         When enabled, shipping charges are free of cost across all orders.
                       </FormDescription>
                     </div>
-                    <div className="md:col-span-2">
+                    <div className="md:col-span-2 space-y-1">
                       <FormControl>
                         <Switch checked={field.value} onCheckedChange={field.onChange} />
                       </FormControl>
+                      <FormMessage />
                     </div>
                   </FormItem>
                 )}
@@ -156,10 +174,11 @@ export default function Setting() {
                         Products at or below this stock count are flagged as low stock.
                       </FormDescription>
                     </div>
-                    <div className="md:col-span-2">
+                    <div className="md:col-span-2 space-y-1">
                       <FormControl>
                         <Input type="number" placeholder="10" {...field} />
                       </FormControl>
+                      <FormMessage />
                     </div>
                   </FormItem>
                 )}
@@ -178,32 +197,11 @@ export default function Setting() {
                         Tax rate applied to customer orders at checkout.
                       </FormDescription>
                     </div>
-                    <div className="md:col-span-2">
+                    <div className="md:col-span-2 space-y-1">
                       <FormControl>
                         <Input type="number" step="0.01" placeholder="18" {...field} />
                       </FormControl>
-                    </div>
-                  </FormItem>
-                )}
-              />
-
-              <Separator />
-
-              <FormField
-                control={form.control}
-                name="maintenance_mode"
-                render={({ field }) => (
-                  <FormItem className="grid grid-cols-1 md:grid-cols-3 gap-4 py-6 items-start">
-                    <div className="md:col-span-1">
-                      <FormLabel className="text-base">Maintenance Mode</FormLabel>
-                      <FormDescription>
-                        Temporarily disable the storefront for customers.
-                      </FormDescription>
-                    </div>
-                    <div className="md:col-span-2">
-                      <FormControl>
-                        <Switch checked={field.value} onCheckedChange={field.onChange} />
-                      </FormControl>
+                      <FormMessage />
                     </div>
                   </FormItem>
                 )}
@@ -214,7 +212,7 @@ export default function Setting() {
               {/* E-Commerce Features Control */}
               <div className="py-2">
                 <h2 className="text-lg font-semibold tracking-tight text-primary">Storefront & E-Commerce Controls</h2>
-                <p className="text-sm text-muted-foreground">Manage storefront announcement banners and live social proof popups.</p>
+                <p className="text-sm text-muted-foreground">Manage storefront announcement banner.</p>
               </div>
 
               <FormField
@@ -228,32 +226,11 @@ export default function Setting() {
                         Top ticker banner text visible to all visitors across the storefront.
                       </FormDescription>
                     </div>
-                    <div className="md:col-span-2">
+                    <div className="md:col-span-2 space-y-1">
                       <FormControl>
                         <Input placeholder="⚡ SPECIAL OFFER: Get 10% off + Free Shipping..." {...field} />
                       </FormControl>
-                    </div>
-                  </FormItem>
-                )}
-              />
-
-              <Separator />
-
-              <FormField
-                control={form.control}
-                name="ecom_sales_notifications_enabled"
-                render={({ field }) => (
-                  <FormItem className="grid grid-cols-1 md:grid-cols-3 gap-4 py-6 items-start">
-                    <div className="md:col-span-1">
-                      <FormLabel className="text-base">Live Sales Proof Popups</FormLabel>
-                      <FormDescription>
-                        Enable real-time purchase notification toasts on customer storefront.
-                      </FormDescription>
-                    </div>
-                    <div className="md:col-span-2">
-                      <FormControl>
-                        <Switch checked={field.value} onCheckedChange={field.onChange} />
-                      </FormControl>
+                      <FormMessage />
                     </div>
                   </FormItem>
                 )}

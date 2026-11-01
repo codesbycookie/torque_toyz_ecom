@@ -231,6 +231,13 @@ const apiurls = {
       url: () => `${base_url}/analytics/peak-times`,
     },
   },
+
+  home: {
+    get: {
+      method: "get",
+      url: () => `${base_url}/home`,
+    },
+  },
 };
 
 export { apiurls };

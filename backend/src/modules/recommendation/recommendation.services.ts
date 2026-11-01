@@ -55,10 +55,15 @@ export const getRecommendations = async (params: RecommendationQuery) => {
   // Helper to append unique items up to target limit
   const appendProducts = (items: any[]) => {
     for (const item of items) {
-      const idStr = item._id.toString();
+      const raw = item?._doc
+        ? { ...item._doc, ...item }
+        : item?.toObject
+        ? item.toObject()
+        : item;
+      const idStr = String(raw._id);
       if (!seenIds.has(idStr)) {
         seenIds.add(idStr);
-        recommendations.push(item);
+        recommendations.push(raw);
         if (recommendations.length >= limit) break;
       }
     }
@@ -71,21 +76,26 @@ export const getRecommendations = async (params: RecommendationQuery) => {
       category: targetCategoryId,
       _id: { $nin: Array.from(seenIds) },
     })
-      .populate('category')
+      .populate('category', 'name slug')
+      .populate({
+        path: 'reviews',
+        match: { deleted: false, active: true },
+      })
       .sort({ stock: -1, createdAt: -1 })
-      .limit(limit);
+      .limit(limit)
+      .lean();
 
     appendProducts(categoryProducts);
   }
 
   // 3. User History / Preference Matching (Personalized)
   if (userId && mongoose.isValidObjectId(userId) && recommendations.length < limit) {
-    const userWishlist = await Wishlist.findOne({ user: userId });
-    const userOrders = await Order.find({ user: userId }).limit(10);
+    const userWishlist = await Wishlist.findOne({ user: userId }).lean();
+    const userOrders = await Order.find({ user: userId }).limit(10).lean();
 
     const userCatIds = new Set<string>();
     if (userWishlist?.products?.length) {
-      const wishedProducts = await Product.find({ _id: { $in: userWishlist.products } });
+      const wishedProducts = await Product.find({ _id: { $in: userWishlist.products } }).lean();
       wishedProducts.forEach((p) => p.category && userCatIds.add(p.category.toString()));
     }
     userOrders.forEach((o) => {
@@ -100,23 +110,33 @@ export const getRecommendations = async (params: RecommendationQuery) => {
         category: { $in: Array.from(userCatIds) },
         _id: { $nin: Array.from(seenIds) },
       })
-        .populate('category')
+        .populate('category', 'name slug')
+        .populate({
+          path: 'reviews',
+          match: { deleted: false, active: true },
+        })
         .sort({ createdAt: -1 })
-        .limit(limit - recommendations.length);
+        .limit(limit - recommendations.length)
+        .lean();
 
       appendProducts(personalizedProducts);
     }
   }
 
-  // 4. Popular & Featured Fallback Top-Up (ensures exactly 20 items returned)
+  // 4. Popular & Featured Fallback Top-Up (ensures exactly limit items returned)
   if (recommendations.length < limit) {
     const fallbackProducts = await Product.find({
       ...filter,
       _id: { $nin: Array.from(seenIds) },
     })
-      .populate('category')
+      .populate('category', 'name slug')
+      .populate({
+        path: 'reviews',
+        match: { deleted: false, active: true },
+      })
       .sort({ stock: -1, createdAt: -1 })
-      .limit(limit - recommendations.length);
+      .limit(limit - recommendations.length)
+      .lean();
 
     appendProducts(fallbackProducts);
   }

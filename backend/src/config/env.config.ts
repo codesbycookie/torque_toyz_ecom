@@ -8,8 +8,6 @@ type ENVTYPE = {
   PORT: number | string;
   MONGO_URI: string | undefined;
   CLIENT_URL: string;
-  MAINTENANCE_MODE: string | undefined;
-  MAINTENANCE_BYPASS_KEY: string | undefined;
   CLOUDINARY_CLOUD_NAME: string | undefined;
   CLOUDINARY_API_KEY: string | undefined;
   CLOUDINARY_API_SECRET: string | undefined;
@@ -25,8 +23,6 @@ export const ENV: ENVTYPE = {
   PORT: process.env.PORT || 3000,
   MONGO_URI: process.env.MONGO_URI,
   CLIENT_URL: process.env.CLIENT_URL || 'http://localhost:3000',
-  MAINTENANCE_MODE: process.env.MAINTENANCE_MODE || 'false',
-  MAINTENANCE_BYPASS_KEY: process.env.MAINTENANCE_BYPASS_KEY || '',
   CLOUDINARY_CLOUD_NAME: process.env.CLOUDINARY_CLOUD_NAME,
   CLOUDINARY_API_KEY: process.env.CLOUDINARY_API_KEY,
   CLOUDINARY_API_SECRET: process.env.CLOUDINARY_API_SECRET,

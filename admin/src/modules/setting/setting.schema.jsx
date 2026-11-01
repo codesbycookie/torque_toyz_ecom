@@ -1,10 +1,8 @@
 import { z } from "zod";
 
 export const settingSchema = z.object({
-  free_delivery: z.boolean().default(false),
-  low_stock_threshold: z.coerce.number().min(0, { error: "Cannot be negative" }),
-  gst_percentage: z.coerce.number().min(0, { error: "Cannot be negative" }).max(100, { error: "Cannot exceed 100%" }),
-  maintenance_mode: z.boolean().default(false),
-  ecom_announcement_banner: z.string().optional(),
-  ecom_sales_notifications_enabled: z.boolean().default(true),
+  free_delivery: z.preprocess((val) => Boolean(val), z.boolean()),
+  low_stock_threshold: z.coerce.number().min(0, { message: "Cannot be negative" }).default(10),
+  gst_percentage: z.coerce.number().min(0, { message: "Cannot be negative" }).max(100, { message: "Cannot exceed 100%" }).default(18),
+  ecom_announcement_banner: z.preprocess((val) => (typeof val === "string" ? val : ""), z.string()),
 });

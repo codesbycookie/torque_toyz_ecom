@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
+import { useAuth } from "@/core/contexts/auth.context";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -70,6 +71,9 @@ export function CartQuantityControl({
   className = "",
 }) {
   const { cart } = useApi();
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  const location = useLocation();
   const [isUpdating, setIsUpdating] = useState(false);
 
   const productId = String(product?._id || product?.id || "");
@@ -85,6 +89,11 @@ export function CartQuantityControl({
   const handleAdd = async (e) => {
     e?.preventDefault?.();
     e?.stopPropagation?.();
+    if (!user) {
+      toast.error("Please login to add items to your cart");
+      navigate("/login", { state: { from: location } });
+      return;
+    }
     if (isOutOfStock || !product?.active || isUpdating) return;
     try {
       setIsUpdating(true);
@@ -252,14 +261,23 @@ export function CartQuantityControl({
 
 // ─── Vertical Product List Card (shadcn style) ──────────────
 export function ProductListCard({
-  product,
+  product: rawProduct,
   onAddToCart,
   onToggleWishlist,
   isWishlisted = false,
 }) {
+  const product = rawProduct?._doc ? { ...rawProduct._doc, ...rawProduct } : (rawProduct || {});
   const navigate = useNavigate();
+  const location = useLocation();
+  const { user } = useAuth();
   const firstImage = resolveProductImage(product.images?.[0], product._id || product.slug);
-  const price = Number(product.price || 0);
+  const ui = product.ui || {};
+  const price = Number(ui.actual_price || product.price || 0);
+  const slashPrice = Number(ui.slash_price || 0);
+  const hasDiscount = slashPrice > price;
+  const discountPercent = hasDiscount ? Math.round(((slashPrice - price) / slashPrice) * 100) : 0;
+  const isTrending = Boolean(ui.is_trending);
+  const customBadges = Array.isArray(ui.badges) ? ui.badges.filter(Boolean) : [];
   const isOutOfStock = product.stock <= 0;
 
   const reviews = product.reviews || [];
@@ -305,12 +323,24 @@ export function ProductListCard({
           {/* Right - Details */}
           <div className="flex-1 min-w-0 flex flex-col justify-between gap-3">
             <div className="space-y-1.5">
-              {/* Category */}
-              {product.category?.name && (
-                <Badge variant="secondary" className="text-xs font-normal">
-                  {product.category.name}
-                </Badge>
-              )}
+              {/* Category & Promotional Badges */}
+              <div className="flex items-center gap-1.5 flex-wrap">
+                {product.category?.name && (
+                  <Badge variant="secondary" className="text-xs font-normal">
+                    {product.category.name}
+                  </Badge>
+                )}
+                {isTrending && (
+                  <Badge variant="default" className="text-[10px] bg-amber-500 hover:bg-amber-600 text-white font-bold py-0">
+                    Trending
+                  </Badge>
+                )}
+                {customBadges.map((badge, idx) => (
+                  <Badge key={idx} variant="default" className="text-[10px] bg-primary text-primary-foreground font-bold py-0">
+                    {badge}
+                  </Badge>
+                ))}
+              </div>
 
               {/* Title */}
               <h3 className="font-semibold text-[15px] sm:text-base leading-snug line-clamp-2 hover:text-primary transition-colors">
@@ -342,11 +372,21 @@ export function ProductListCard({
                 </div>
               )}
 
-              {/* Price */}
-              <div className="pt-1">
+              {/* Price & Slash Price */}
+              <div className="pt-1 flex items-baseline gap-2 flex-wrap">
                 <span className="text-xl font-semibold tracking-tight">
                   ₹{price.toLocaleString("en-IN")}
                 </span>
+                {hasDiscount && (
+                  <span className="text-xs text-muted-foreground line-through">
+                    ₹{slashPrice.toLocaleString("en-IN")}
+                  </span>
+                )}
+                {hasDiscount && discountPercent > 0 && (
+                  <span className="text-xs font-semibold text-primary">
+                    ({discountPercent}% off)
+                  </span>
+                )}
               </div>
 
               {/* Stock status */}
@@ -390,6 +430,11 @@ export function ProductListCard({
                       className="size-8"
                       onClick={(e) => {
                         e.stopPropagation();
+                        if (!user) {
+                          toast.error("Please login to manage your wishlist");
+                          navigate("/login", { state: { from: location } });
+                          return;
+                        }
                         onToggleWishlist?.(product);
                       }}
                     >
@@ -415,14 +460,23 @@ export function ProductListCard({
 }
 // ─── Amazon-Style Product Grid Card ─────────────────────────
 export function AmazonProductCard({
-  product,
+  product: rawProduct,
   onAddToCart,
   onToggleWishlist,
   isWishlisted = false,
 }) {
+  const product = rawProduct?._doc ? { ...rawProduct._doc, ...rawProduct } : (rawProduct || {});
   const navigate = useNavigate();
+  const location = useLocation();
+  const { user } = useAuth();
   const firstImage = resolveProductImage(product.images?.[0], product._id || product.slug);
-  const price = Number(product.price || 0);
+  const ui = product.ui || {};
+  const price = Number(ui.actual_price || product.price || 0);
+  const slashPrice = Number(ui.slash_price || 0);
+  const hasDiscount = slashPrice > price;
+  const discountPercent = hasDiscount ? Math.round(((slashPrice - price) / slashPrice) * 100) : 0;
+  const isTrending = Boolean(ui.is_trending);
+  const customBadges = Array.isArray(ui.badges) ? ui.badges.filter(Boolean) : [];
   const isOutOfStock = product.stock <= 0;
   const isWish = isWishlisted || Boolean(product?.is_in_wishlist);
 
@@ -434,9 +488,6 @@ export function AmazonProductCard({
         ).toFixed(1)
       : null;
 
-  // Derived MRP for Amazon-style discount display (approx 20% higher)
-  const mrp = Math.round(price * 1.25);
-  const discountPercent = price > 0 ? Math.round(((mrp - price) / mrp) * 100) : 0;
   const isChoice = (Number(avgRating) >= 4.2 && reviews.length >= 2) || product.featured;
 
   const handleCardClick = (e) => {
@@ -467,12 +518,7 @@ export function AmazonProductCard({
         )}
 
         {/* Badges on Top Left */}
-        <div className="absolute top-1.5 left-1.5 sm:top-2 sm:left-2 flex flex-col gap-1 items-start z-1">
-          {isChoice && (
-            <span className="bg-primary text-primary-foreground text-[9px] sm:text-[10px] font-bold px-1.5 sm:px-2 py-0.5 rounded-sm tracking-wide shadow-xs uppercase">
-              Featured Pick
-            </span>
-          )}
+        <div className="absolute top-1.5 left-1.5 sm:top-2 sm:left-2 flex flex-col gap-1 items-start z-1 max-w-[80%]">
           {isOutOfStock ? (
             <Badge variant="destructive" className="text-[9px] sm:text-[10px] font-medium px-1 sm:px-1.5 py-0">
               Out of stock
@@ -481,11 +527,34 @@ export function AmazonProductCard({
             <Badge variant="secondary" className="bg-primary/10 text-primary border border-primary/20 text-[9px] sm:text-[10px] font-medium px-1 sm:px-1.5 py-0">
               Only {product.stock} left
             </Badge>
-          ) : discountPercent > 15 ? (
+          ) : null}
+
+          {isTrending && (
+            <span className="bg-amber-500 text-white text-[9px] sm:text-[10px] font-bold px-1.5 sm:px-2 py-0.5 rounded-sm tracking-wide shadow-xs uppercase">
+              Trending
+            </span>
+          )}
+
+          {customBadges.slice(0, 2).map((badge, idx) => (
+            <span
+              key={idx}
+              className="bg-primary text-primary-foreground text-[9px] sm:text-[10px] font-bold px-1.5 sm:px-2 py-0.5 rounded-sm tracking-wide shadow-xs uppercase truncate max-w-full"
+            >
+              {badge}
+            </span>
+          ))}
+
+          {!isTrending && customBadges.length === 0 && isChoice && (
+            <span className="bg-primary text-primary-foreground text-[9px] sm:text-[10px] font-bold px-1.5 sm:px-2 py-0.5 rounded-sm tracking-wide shadow-xs uppercase">
+              Featured Pick
+            </span>
+          )}
+
+          {hasDiscount && discountPercent > 0 && (
             <Badge variant="secondary" className="bg-primary/10 text-primary border border-primary/20 text-[9px] sm:text-[10px] font-medium px-1 sm:px-1.5 py-0">
               {discountPercent}% OFF
             </Badge>
-          ) : null}
+          )}
         </div>
 
         {/* Wishlist Button on Top Right */}
@@ -495,6 +564,11 @@ export function AmazonProductCard({
           className="absolute top-1.5 right-1.5 sm:top-2 sm:right-2 size-7 sm:size-8 rounded-full bg-background/90 hover:bg-background backdrop-blur-sm shadow-xs border border-border/80 flex items-center justify-center text-muted-foreground hover:text-primary transition-transform hover:scale-110 active:scale-95 z-2"
           onClick={(e) => {
             e.stopPropagation();
+            if (!user) {
+              toast.error("Please login to manage your wishlist");
+              navigate("/login", { state: { from: location } });
+              return;
+            }
             onToggleWishlist?.(product);
           }}
         >
@@ -546,18 +620,18 @@ export function AmazonProductCard({
             )}
           </div>
 
-          {/* Price & MRP Block */}
+          {/* Price & Slash Price Block */}
           <div className="pt-0.5 sm:pt-1 space-y-0.5">
             <div className="flex items-baseline gap-1.5 sm:gap-2 flex-wrap">
               <span className="text-sm sm:text-lg font-bold tracking-tight text-foreground">
                 ₹{price.toLocaleString("en-IN")}
               </span>
-              {mrp > price && (
+              {hasDiscount && (
                 <span className="text-[11px] sm:text-xs text-muted-foreground line-through">
-                  ₹{mrp.toLocaleString("en-IN")}
+                  ₹{slashPrice.toLocaleString("en-IN")}
                 </span>
               )}
-              {discountPercent > 0 && (
+              {hasDiscount && discountPercent > 0 && (
                 <span className="text-[11px] sm:text-xs font-semibold text-primary">
                   ({discountPercent}% off)
                 </span>

@@ -80,7 +80,6 @@ export default function Settings() {
     orderUpdates: true,
     milestoneTracking: true,
     rareDrops: true,
-    newsletter: false,
   });
 
   // Fetch locations for deliverability check in Address Book

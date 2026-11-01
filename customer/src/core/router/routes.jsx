@@ -11,15 +11,17 @@ import Cart from "@/pages/cart/cart";
 import Orders from "@/pages/orders/orders";
 import OrderTracking from "@/pages/order-tracking/order-tracking";
 import Checkout from "@/pages/checkout/checkout";
+import NotFound from "@/components/global/notfound";
 
 export const appRoutes = [
   {
     path: "/",
     element: <Home />,
     withLayout: true,
+    isPublic: true,
   },
   {
-    path: "/products/:slug",          // ← correct: static pattern with param
+    path: "/products/:slug",
     element: <ProductDetail />,
     withLayout: true,
   },
@@ -27,16 +29,19 @@ export const appRoutes = [
     path: "/login",
     element: <Login />,
     withLayout: false,
+    guestOnly: true,
   },
   {
     path: "/register",
     element: <Register />,
     withLayout: false,
+    guestOnly: true,
   },
   {
     path: "/forgot-password",
     element: <ForgotPassword />,
     withLayout: false,
+    guestOnly: true,
   },
   {
     path: "/products",
@@ -77,5 +82,11 @@ export const appRoutes = [
     path: "/checkout",
     element: <Checkout />,
     withLayout: true,
+  },
+  {
+    path: "/404",
+    element: <NotFound />,
+    withLayout: true,
+    isPublic: true,
   },
 ];

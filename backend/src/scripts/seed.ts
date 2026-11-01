@@ -280,10 +280,8 @@ const REAL_SETTINGS = [
     ],
     description: 'Fallback images used when a product has none',
   },
-  { key: 'maintenance_mode', value: false, description: 'When true, storefront shows a maintenance page to non-admins' },
   { key: 'new_signups_enabled', value: true, description: 'Whether new customer registration is open' },
   { key: 'ecom_announcement_banner', value: '⚡ SPECIAL OFFER: Get 10% off + Free Shipping on orders over ₹999!', description: 'Announcement banner text displayed at top of storefront' },
-  { key: 'ecom_sales_notifications_enabled', value: true, description: 'Enable/disable live sales proof toast notifications' },
 
 
 ];
