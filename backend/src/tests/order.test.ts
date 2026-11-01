@@ -4,6 +4,7 @@ import { bootstrap } from '../app.ts';
 import Product from '@db/models/product.model.ts';
 import Location from '@db/models/location.model.ts';
 import Order from '@db/models/order.model.ts';
+import Setting from '@db/models/setting.model.ts';
 import { tester } from '@core/constants/tester.constant.ts';
 import Category from '@db/models/category.model.ts';
 
@@ -18,6 +19,7 @@ let testCategoryId: string;
 
 beforeAll(async () => {
   await bootstrap();
+  await Setting.set('free_delivery', false);
   const setup = await tester.setupAdmin();
   token = setup.token;
   cleanupAdmin = setup.cleanup;

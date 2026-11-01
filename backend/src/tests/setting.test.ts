@@ -1,7 +1,8 @@
-import { describe, it, beforeAll, expect } from "vitest";
+import { describe, it, beforeAll, afterAll, expect } from "vitest";
 import { bootstrap } from "../app.ts";
 import { tester } from "@core/constants/tester.constant.ts";
 import User from "@db/models/user.model.ts";
+import Setting from "@db/models/setting.model.ts";
 import { generateToken } from "@lib/jwt.ts";
 
 let token: string;
@@ -32,5 +33,9 @@ describe("Settings API Suite", () => {
 
     console.log("STATUS:", res.status, "BODY:", JSON.stringify(res.body));
     expect(res.status).toBe(200);
+  });
+
+  afterAll(async () => {
+    await Setting.set("free_delivery", false);
   });
 });
