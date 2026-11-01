@@ -7,9 +7,13 @@ import Category from '@db/models/category.model.ts';
 import Product from '@db/models/product.model.ts';
 import Setting from '@db/models/setting.model.ts';
 import Order from '@db/models/order.model.ts';
+import Payment from '@db/models/payment.model.ts';
+import Cart from '@db/models/cart.model.ts';
 import Review from '@db/models/review.model.ts';
 import Wishlist from '@db/models/wishlist.model.ts';
 import Otp from '@db/models/otp.model.ts';
+import { Counter } from '@db/models/counter.model.ts';
+import { ErrorLog } from '@db/models/errorlog.model.ts';
 
 dotenv.config();
 
@@ -22,12 +26,77 @@ const randFloat = (min: number, max: number, decimals = 1) => {
   return Math.round((min + Math.random() * (max - min)) * factor) / factor;
 };
 const pick = <T>(arr: T[]): T => arr[randInt(0, arr.length - 1)];
+const randHex = (len: number) => {
+  let str = '';
+  while (str.length < len) str += Math.random().toString(36).substring(2);
+  return str.substring(0, len);
+};
 
-// ── Users (1 admin + 100 regular) ───────────────────────────────────────
-// NOTE: one-by-one .save() — password hashing + username generation
-// (pre('validate')) and login_id generation (pre('save')) all need
-// real hooks to run.
+// ── Counters & ErrorLogs ────────────────────────────────────────────────
+const eraseCounters = async () => {
+  const result = await Counter.deleteMany({});
+  console.log(`  erased   ${result.deletedCount} counter(s)`);
+};
 
+const eraseErrorLogs = async () => {
+  const result = await ErrorLog.deleteMany({});
+  console.log(`  erased   ${result.deletedCount} error log(s)`);
+};
+
+// ── Locations (100) ─────────────────────────────────────────────────────
+const INDIAN_STATES = [
+  'Tamil Nadu', 'Karnataka', 'Maharashtra', 'Kerala', 'Delhi',
+  'Telangana', 'Gujarat', 'West Bengal', 'Rajasthan', 'Uttar Pradesh',
+  'Andhra Pradesh', 'Punjab', 'Haryana', 'Madhya Pradesh', 'Goa',
+  'Odisha', 'Bihar', 'Assam', 'Chandigarh', 'Uttarakhand',
+  'Himachal Pradesh', 'Jharkhand', 'Chhattisgarh', 'Puducherry',
+  'Jammu and Kashmir', 'Tripura', 'Manipur', 'Meghalaya', 'Nagaland',
+  'Goa', 'Sikkim', 'Arunachal Pradesh', 'Mizoram', 'Ladakh',
+  'Andaman and Nicobar Islands', 'Lakshadweep'
+];
+
+const eraseLocations = async () => {
+  const result = await Location.deleteMany({});
+  console.log(`  erased   ${result.deletedCount} location(s)`);
+};
+
+const seedLocations = async () => {
+  const locations: any[] = [];
+  const usedCodes = new Set<string>();
+
+  for (let i = 0; i < COUNT; i++) {
+    const state = INDIAN_STATES[i % INDIAN_STATES.length];
+    const zone = ['North', 'South', 'East', 'West', 'Central'][Math.floor(i / INDIAN_STATES.length) % 5];
+    const label = i < INDIAN_STATES.length ? state : `${state} - ${zone} Hub`;
+
+    let code = `${state.slice(0, 2).toUpperCase()}${i}`.slice(0, 6);
+    while (usedCodes.has(code)) code = `${code}X`;
+    usedCodes.add(code);
+
+    // Keep Lakshadweep and remote zones occasionally non-deliverable for restriction testing
+    const isRestricted = state === 'Lakshadweep' || state === 'Andaman and Nicobar Islands' && i >= INDIAN_STATES.length;
+    const base = 25 + randInt(0, 30);
+
+    locations.push({
+      state: label,
+      code,
+      deliverable: !isRestricted,
+      slabs: [
+        { min: 0, max: 0.5, rate: base },
+        { min: 0.5, max: 1, rate: base + 15 },
+        { min: 1, max: 1.5, rate: base + 30 },
+        { min: 1.5, max: 2, rate: base + 45 },
+        { min: 2, max: 5, rate: base + 80 },
+      ],
+    });
+  }
+
+  const created = await Location.insertMany(locations);
+  console.log(`  created  ${created.length} locations`);
+  return created;
+};
+
+// ── Users (1 admin + 1 primary test user + 100 regular) ─────────────────
 const FIRST_NAMES = [
   'Arjun', 'Vikram', 'Rahul', 'Sanjay', 'Karthik', 'Suresh', 'Ganesh', 'Naveen',
   'Praveen', 'Arun', 'Deepak', 'Manoj', 'Ravi', 'Ajay', 'Vijay', 'Sathish',
@@ -45,6 +114,9 @@ const eraseUsers = async () => {
 };
 
 const seedUsers = async (locations: any[]) => {
+  const deliverable = locations.find((l) => l.deliverable) || locations[0];
+
+  // 1. Super Admin
   await new User({
     name: 'Super Admin',
     email: 'admin@torquetoyz.com',
@@ -55,13 +127,27 @@ const seedUsers = async (locations: any[]) => {
       door: '1A',
       street: 'HQ Tech Park',
       city: 'Admin City',
-      state: locations[0]._id,
-      pincode: 110001
-    }
+      state: deliverable._id,
+      pincode: 110001,
+    },
+    addresses: [
+      {
+        label: 'HQ Office',
+        name: 'Super Admin',
+        phone: '9999999999',
+        door: '1A',
+        street: 'HQ Tech Park',
+        city: 'Admin City',
+        state: deliverable._id,
+        pincode: 110001,
+        is_default: true,
+      },
+    ],
   }).save();
-  console.log('  created  1 admin user');
+  console.log('  created  1 admin user (admin@torquetoyz.com / Password@123)');
 
-  await new User({
+  // 2. Primary Customer User
+  const primaryUser = await new User({
     name: 'Torquetoyzz',
     email: 'torquetoyzz@gmail.com',
     phone: '9840402938',
@@ -71,30 +157,75 @@ const seedUsers = async (locations: any[]) => {
       door: '42B',
       street: 'Pit Lane Circuit',
       city: 'Chennai',
-      state: locations[0]._id,
-      pincode: 600028
-    }
+      state: deliverable._id,
+      pincode: 600028,
+    },
+    addresses: [
+      {
+        label: 'Home',
+        name: 'Torquetoyzz Collector',
+        phone: '9840402938',
+        door: '42B',
+        street: 'Pit Lane Circuit',
+        city: 'Chennai',
+        state: deliverable._id,
+        pincode: 600028,
+        is_default: true,
+      },
+      {
+        label: 'Track Garage',
+        name: 'Torquetoyzz Racing Pit',
+        phone: '9840402938',
+        door: 'Bay 7',
+        street: 'Grand Prix Boulevard',
+        city: 'Chennai',
+        state: deliverable._id,
+        pincode: 602105,
+        is_default: false,
+      },
+    ],
   }).save();
-  console.log('  created  1 primary user (torquetoyzz@gmail.com)');
+  console.log('  created  1 primary user (torquetoyzz@gmail.com / @Harisha260206)');
 
-  const created: any[] = [];
+  // 3. Regular Users
+  const created: any[] = [primaryUser];
   for (let i = 0; i < COUNT; i++) {
     const first = pick(FIRST_NAMES);
     const last = pick(LAST_NAMES);
     const loc = pick(locations);
+    const fullName = `${first} ${last}`;
+    const userPhone = `9${randInt(100000000, 999999999)}`;
+    const userDoor = `${randInt(1, 500)}`;
+    const userStreet = `${pick(FIRST_NAMES)} Avenue`;
+    const userCity = `${loc.state.split(' - ')[0]} City`;
+    const userPincode = randInt(100000, 999999);
+
     const user = await new User({
-      name: `${first} ${last}`,
+      name: fullName,
       email: `${first.toLowerCase()}.${last.toLowerCase()}${i}@example.com`,
-      phone: `9${randInt(100000000, 999999999)}`,
+      phone: userPhone,
       password: 'Password@123',
       role: 'user',
       address: {
-        door: `${randInt(1, 500)}`,
-        street: `${pick(FIRST_NAMES)} Street`,
-        city: `${loc.state.split(' - ')[0]} City`,
+        door: userDoor,
+        street: userStreet,
+        city: userCity,
         state: loc._id,
-        pincode: randInt(100000, 999999)
-      }
+        pincode: userPincode,
+      },
+      addresses: [
+        {
+          label: 'Home',
+          name: fullName,
+          phone: userPhone,
+          door: userDoor,
+          street: userStreet,
+          city: userCity,
+          state: loc._id,
+          pincode: userPincode,
+          is_default: true,
+        },
+      ],
     }).save();
     created.push(user);
   }
@@ -102,62 +233,7 @@ const seedUsers = async (locations: any[]) => {
   return created;
 };
 
-// ── Locations (100) ──────────────────────────────────────────────────
-// insertMany is safe here — Location has no pre('save') hook.
-
-const INDIAN_STATES = [
-  'Andaman and Nicobar Islands', 'Andhra Pradesh', 'Arunachal Pradesh', 'Assam',
-  'Bihar', 'Chandigarh', 'Chhattisgarh', 'Dadra and Nagar Haveli and Daman and Diu',
-  'Delhi', 'Goa', 'Gujarat', 'Haryana', 'Himachal Pradesh', 'Jammu and Kashmir',
-  'Jharkhand', 'Karnataka', 'Kerala', 'Ladakh', 'Lakshadweep', 'Madhya Pradesh',
-  'Maharashtra', 'Manipur', 'Meghalaya', 'Mizoram', 'Nagaland', 'Odisha',
-  'Puducherry', 'Punjab', 'Rajasthan', 'Sikkim', 'Tamil Nadu', 'Telangana',
-  'Tripura', 'Uttar Pradesh', 'Uttarakhand', 'West Bengal',
-];
-
-const eraseLocations = async () => {
-  const result = await Location.deleteMany({});
-  console.log(`  erased   ${result.deletedCount} location(s)`);
-};
-
-const seedLocations = async () => {
-  const locations: any[] = [];
-  const usedCodes = new Set<string>();
-
-  for (let i = 0; i < COUNT; i++) {
-    const state = INDIAN_STATES[i % INDIAN_STATES.length];
-    const zone = ['North', 'South', 'East', 'West', 'Central'][Math.floor(i / INDIAN_STATES.length) % 5];
-    const label = i < INDIAN_STATES.length ? state : `${state} - ${zone} Zone`;
-
-    let code = `${state.slice(0, 2).toUpperCase()}${i}`.slice(0, 6);
-    while (usedCodes.has(code)) code = `${code}X`;
-    usedCodes.add(code);
-
-    const base = 25 + randInt(0, 30);
-    locations.push({
-      state: label,
-      code,
-      deliverable: true,
-      slabs: [
-        { min: 0, max: 0.5, rate: base },
-        { min: 0.5, max: 1, rate: base + 15 },
-        { min: 1, max: 1.5, rate: base + 30 },
-        { min: 1.5, max: 2, rate: base + 45 },
-        { min: 2, max: 5, rate: base + 80 },
-      ],
-    });
-  }
-
-  const created = await Location.insertMany(locations);
-  console.log(`  created  ${created.length} locations`);
-  return created;
-};
-
-// ── Categories (20) ───────────────────────────────────────────────────
-// NOTE: one-by-one .save() if Category has slug-generation in
-// pre('save'), same reasoning as Product below. If it turns out
-// Category has no such hook, this can safely switch to insertMany.
-
+// ── Categories (20) ─────────────────────────────────────────────────────
 const CATEGORY_NAMES = [
   '1:18 Diecast Hypercars', 'Formula 1 Collectibles', 'RC Drift Cars 4WD',
   'Endurance & GT Racers', 'Classic Muscle & Roadsters', 'Supercars & Exotics',
@@ -183,17 +259,7 @@ const seedCategories = async () => {
 };
 
 // ── Products (100 = 20 categories × 5 variants) ─────────────────────────
-// NOTE: one-by-one .save() — code + slug generation live in pre('save'),
-// which insertMany does NOT run, causing every doc to get code: null
-// and collide on the unique index.
-
 const VARIANTS = ['Standard', 'Pro', 'Sport', 'Deluxe', 'Off-Road'];
-
-const eraseProducts = async () => {
-  const result = await Product.deleteMany({});
-  console.log(`  erased   ${result.deletedCount} product(s)`);
-};
-
 const CAR_IMAGES = [
   '/cars/gt3_rs.jpg',
   '/cars/redbull_f1.jpg',
@@ -216,9 +282,15 @@ const BADGES_LIST = [
   [],
 ];
 
+const eraseProducts = async () => {
+  const result = await Product.deleteMany({});
+  console.log(`  erased   ${result.deletedCount} product(s)`);
+};
+
 const seedProducts = async (categories: any[]) => {
   const specs: any[] = [];
   let imgIndex = 0;
+
   for (const category of categories) {
     for (const variant of VARIANTS) {
       const img1 = CAR_IMAGES[imgIndex % CAR_IMAGES.length];
@@ -226,6 +298,7 @@ const seedProducts = async (categories: any[]) => {
       const img3 = CAR_IMAGES[(imgIndex + 2) % CAR_IMAGES.length];
       imgIndex++;
 
+      // Paisa prices configured for Razorpay test transactions (0.10 to 1.00 INR)
       const PAISA_PRICES = [0.10, 0.20, 0.25, 0.35, 0.50, 0.65, 0.75, 0.80, 0.90, 0.99, 1.00];
       const price = pick(PAISA_PRICES);
       const hasDiscount = Math.random() > 0.3;
@@ -236,8 +309,8 @@ const seedProducts = async (categories: any[]) => {
       specs.push({
         name: `${variant} ${category.name}`,
         category: category._id,
-        description: `${variant} edition ${category.name.toLowerCase()} precision built for collectors with authentic racing aerodynamic details and display case.`,
-        stock: randInt(4, 99),
+        description: `${variant} edition ${category.name.toLowerCase()} precision built for collectors with authentic racing aerodynamics and acrylic display case.`,
+        stock: randInt(8, 99),
         weight: randFloat(0.5, 3.5),
         price,
         images: [img1, img2, img3],
@@ -249,7 +322,7 @@ const seedProducts = async (categories: any[]) => {
         },
       });
     }
-  } // 20 × 5 = 100
+  }
 
   const created: any[] = [];
   for (const p of specs) {
@@ -259,14 +332,11 @@ const seedProducts = async (categories: any[]) => {
   return created;
 };
 
-// ── Settings (100 = 11 real + 89 synthetic feature flags) ───────────────
-// insertMany is safe — Setting has no pre('save') hook.
-
+// ── Settings (100 = real + synthetic feature flags) ────────────────────
 const REAL_SETTINGS = [
   { key: 'free_delivery', value: false, description: 'Whether delivery/shipping is free of cost for all orders' },
-
-  { key: 'support_phone', value: '', description: 'Customer support phone number' },
-  { key: 'business_address', value: '', description: 'Registered business address' },
+  { key: 'support_phone', value: '9840402938', description: 'Customer support phone number' },
+  { key: 'business_address', value: '42B Pit Lane Circuit, Chennai, Tamil Nadu - 600028', description: 'Registered business address' },
   { key: 'low_stock_threshold', value: 10, description: 'Stock level that triggers a low-stock warning' },
   { key: 'gst_percentage', value: 18, description: 'GST rate percentage applied to orders' },
   { key: 'allow_cod', value: true, description: 'Whether cash-on-delivery is offered at checkout' },
@@ -283,8 +353,6 @@ const REAL_SETTINGS = [
   },
   { key: 'new_signups_enabled', value: true, description: 'Whether new customer registration is open' },
   { key: 'ecom_announcement_banner', value: '⚡ SPECIAL OFFER: Get 10% off + Free Shipping on orders over ₹999!', description: 'Announcement banner text displayed at top of storefront' },
-
-
 ];
 
 const eraseSettings = async () => {
@@ -311,21 +379,18 @@ const seedSettings = async () => {
   return created;
 };
 
-// ── Orders (100) ─────────────────────────────────────────────────────────
-// NOTE: one-by-one .save() — code generation + status_history seeding
-// both live in pre('save'), which insertMany does not run.
-
-const ORDER_STATUSES = ['placed', 'confirmed', 'shipped', 'delivered', 'cancelled'] as const;
-const PAYMENT_METHODS = ['cod', 'online'] as const;
-
-const eraseOrders = async () => {
-  const result = await Order.deleteMany({});
-  console.log(`  erased   ${result.deletedCount} order(s)`);
+// ── Orders & Payments ──────────────────────────────────────────────────
+const eraseOrdersAndPayments = async () => {
+  const pResult = await Payment.deleteMany({});
+  const oResult = await Order.deleteMany({});
+  console.log(`  erased   ${oResult.deletedCount} order(s)`);
+  console.log(`  erased   ${pResult.deletedCount} payment(s)`);
 };
 
-const seedOrders = async (users: any[], products: any[], locations: any[]) => {
+const seedOrdersAndPayments = async (users: any[], products: any[], locations: any[]) => {
   const deliverableLocations = locations.filter((l) => l.deliverable);
-  const created: any[] = [];
+  const createdOrders: any[] = [];
+  const createdPayments: any[] = [];
 
   for (let i = 0; i < COUNT; i++) {
     const user = pick(users);
@@ -358,8 +423,25 @@ const seedOrders = async (users: any[], products: any[], locations: any[]) => {
       location.slabs.find((s: any) => totalWeight > s.min && totalWeight <= s.max) ??
       location.slabs[location.slabs.length - 1];
     const shippingCost = slab.rate;
-    const status = pick(['placed', 'confirmed', 'shipped', 'delivered', 'cancelled']);
-    const paymentMethod = pick(['cod', 'online']);
+    const subtotalFormatted = Math.round(subtotal * 100) / 100;
+    const totalFormatted = Math.round((subtotalFormatted + shippingCost) * 100) / 100;
+
+    const status = pick(['placed', 'confirmed', 'shipped', 'delivered', 'cancelled'] as const);
+    const paymentMethod = pick(['cod', 'online'] as const);
+
+    let paymentStatus: 'pending' | 'paid' | 'failed' | 'cancelled';
+    if (status === 'delivered' || status === 'shipped') {
+      paymentStatus = 'paid';
+    } else if (status === 'cancelled') {
+      paymentStatus = Math.random() > 0.5 ? 'cancelled' : 'failed';
+    } else if (status === 'confirmed') {
+      paymentStatus = paymentMethod === 'online' ? 'paid' : 'pending';
+    } else {
+      paymentStatus = paymentMethod === 'cod' ? 'pending' : pick(['pending', 'paid', 'failed'] as const);
+    }
+
+    const rzpOrderId = paymentMethod === 'online' ? `order_rzp_${randHex(14)}` : undefined;
+    const txnId = paymentStatus === 'paid' ? `pay_rzp_${randHex(14)}` : undefined;
 
     const order = await new Order({
       user: user._id,
@@ -372,48 +454,98 @@ const seedOrders = async (users: any[], products: any[], locations: any[]) => {
         pincode: randInt(600001, 600120),
       },
       pricing: {
-        subtotal,
-        total_weight: totalWeight,
+        subtotal: subtotalFormatted,
+        total_weight: Math.round(totalWeight * 100) / 100,
         shipping_cost: shippingCost,
-        total: subtotal + shippingCost,
+        total: totalFormatted,
       },
       payment: {
         method: paymentMethod,
-        status: paymentMethod === 'cod' ? 'pending' : pick(['pending', 'paid', 'failed'] as const),
+        status: paymentStatus,
+        razorpay_order_id: rzpOrderId,
+        transaction_id: txnId,
       },
       status,
     }).save();
 
-    // Spread orders over the last 6 months (approx 180 days)
-    // Bias days towards recent days to simulate revenue growth (more orders recently)
+    // Spread orders over past 180 days
     const randomDaysAgo = Math.floor(Math.pow(Math.random(), 2) * 180);
-    
-    // Bias hours towards evening (18:00 - 22:00) and late morning (10:00 - 12:00)
-    const hourPool = [
-      18, 18, 18, 19, 19, 19, 19, 20, 20, 20, 21, 21, 21, 22, 22,
-      10, 10, 11, 11, 12, 12,
-      ...Array.from({length: 24}, (_, i) => i) // add baseline of 1 per hour
-    ];
-    const randomHoursAgo = hourPool[randInt(0, hourPool.length - 1)];
-
+    const randomHoursAgo = pick([10, 11, 14, 15, 18, 19, 20, 21]);
     const pastDate = new Date();
     pastDate.setDate(pastDate.getDate() - randomDaysAgo);
     pastDate.setHours(randomHoursAgo);
-    // Use raw mongodb collection to bypass ANY mongoose timestamp hooks
+
     await Order.collection.updateOne(
-      { _id: order._id }, 
+      { _id: order._id },
       { $set: { createdAt: pastDate, updatedAt: pastDate } }
     );
 
-    created.push(order);
+    // If online payment, create matching Payment document in Payment collection
+    if (paymentMethod === 'online' && rzpOrderId) {
+      let pStatus: 'created' | 'paid' | 'failed' | 'cancelled';
+      if (paymentStatus === 'paid') pStatus = 'paid';
+      else if (paymentStatus === 'cancelled') pStatus = 'cancelled';
+      else if (paymentStatus === 'failed') pStatus = 'failed';
+      else pStatus = 'created';
+
+      const paymentDoc = await Payment.create({
+        order: order._id,
+        razorpay_order_id: rzpOrderId,
+        razorpay_payment_id: txnId,
+        amount: totalFormatted,
+        currency: 'INR',
+        status: pStatus,
+        createdAt: pastDate,
+        updatedAt: pastDate,
+      });
+      createdPayments.push(paymentDoc);
+    }
+
+    createdOrders.push(order);
   }
 
-  console.log(`  created  ${created.length} orders`);
-  return created;
+  console.log(`  created  ${createdOrders.length} orders`);
+  console.log(`  created  ${createdPayments.length} payments`);
+  return createdOrders;
 };
 
-// ── Reviews (up to 100 — only against delivered orders, unique per user+product) ─
+// ── Carts ───────────────────────────────────────────────────────────────
+const eraseCarts = async () => {
+  const result = await Cart.deleteMany({});
+  console.log(`  erased   ${result.deletedCount} cart(s)`);
+};
 
+const seedCarts = async (users: any[], products: any[]) => {
+  const primaryUser = users.find((u) => u.email === 'torquetoyzz@gmail.com') || users[0];
+  const sampleProducts = products.slice(0, 2);
+  const items = sampleProducts.map((p) => ({
+    product: p._id,
+    name: p.name,
+    image: p.images[0],
+    price: p.price,
+    weight: p.weight,
+    quantity: 1,
+  }));
+  const subtotal = Math.round(items.reduce((sum, item) => sum + item.price * item.quantity, 0) * 100) / 100;
+  const totalWeight = Math.round(items.reduce((sum, item) => sum + item.weight * item.quantity, 0) * 100) / 100;
+
+  await Cart.create({
+    user: primaryUser._id,
+    items,
+    pricing: {
+      subtotal,
+      tax: 0,
+      total_weight: totalWeight,
+      shipping_cost: 0,
+      total: subtotal,
+    },
+    active: true,
+    deleted: false,
+  });
+  console.log('  created  1 active cart for primary user');
+};
+
+// ── Reviews ─────────────────────────────────────────────────────────────
 const eraseReviews = async () => {
   const result = await Review.deleteMany({});
   console.log(`  erased   ${result.deletedCount} review(s)`);
@@ -424,13 +556,13 @@ const seedReviews = async (orders: any[]) => {
   const seen = new Set<string>();
   const reviews: any[] = [];
   const comments = [
-    'Great quality, fits perfectly.',
-    'Exactly as described, fast shipping.',
-    'Good value for the price.',
-    'Not bad, but expected better finish.',
-    'Excellent product, highly recommend!',
-    'Works well so far.',
-    'Decent quality for the price point.',
+    'Outstanding precision detailing! Perfect replica for my showcase.',
+    'Flawless paint finish and smooth rolling rubber tires. Fast dispatch.',
+    'Great build quality for the price. The livery lines are razor sharp.',
+    'Packaged with exceptional care in pristine foam display box. Highly recommended!',
+    'Exceeded expectations! Beautiful aerodynamic profile and working cockpit parts.',
+    'Stunning addition to my GT3 collection. Truly authentic diecast craftsmanship.',
+    'Solid weight and clean contours. Very satisfied with this purchase.',
   ];
 
   outer: for (const order of delivered) {
@@ -441,7 +573,7 @@ const seedReviews = async (orders: any[]) => {
       reviews.push({
         product: item.product,
         user: order.user,
-        rating: randInt(2, 5),
+        rating: randInt(4, 5),
         comment: pick(comments),
       });
       if (reviews.length >= COUNT) break outer;
@@ -449,20 +581,16 @@ const seedReviews = async (orders: any[]) => {
   }
 
   if (reviews.length === 0) {
-    console.log('  skipped  no delivered orders to review yet');
+    console.log('  skipped  no delivered orders to review');
     return [];
   }
 
-  // insertMany is safe here — Review has no pre('save') hook,
-  // and duplicates are already de-duplicated via `seen` above.
   const created = await Review.insertMany(reviews);
   console.log(`  created  ${created.length} reviews`);
   return created;
 };
 
-// ── Wishlists (up to 100 users) ───────────────────────────────────────────
-// insertMany is safe — Wishlist has no pre('save') hook.
-
+// ── Wishlists ───────────────────────────────────────────────────────────
 const eraseWishlists = async () => {
   const result = await Wishlist.deleteMany({});
   console.log(`  erased   ${result.deletedCount} wishlist(s)`);
@@ -488,19 +616,15 @@ const seedWishlists = async (users: any[], products: any[]) => {
   return created;
 };
 
-// ── OTPs (100) ─────────────────────────────────────────────────────────
-// Uses the model's own `generate` static, which already handles hashing.
-
+// ── OTPs ────────────────────────────────────────────────────────────────
 const eraseOtps = async () => {
   const result = await Otp.deleteMany({});
   console.log(`  erased   ${result.deletedCount} otp(s)`);
 };
 
 const seedOtps = async (users: any[]) => {
-  const purposes = ['login', 'password_reset', 'phone_verification', 'email_verification'] as const;
   let created = 0;
-
-  for (let i = 0; i < COUNT; i++) {
+  for (let i = 0; i < 30; i++) {
     const user = pick(users);
     await Otp.generate(user.email, pick(['login', 'password_reset', 'phone_verification', 'email_verification']));
     created++;
@@ -508,8 +632,7 @@ const seedOtps = async (users: any[]) => {
   console.log(`  created  ${created} otps`);
 };
 
-// ── Run ──────────────────────────────────────────────────────────────
-
+// ── Main Pipeline ───────────────────────────────────────────────────────
 const run = async () => {
   if (!MONGO_URI) {
     console.error('MONGO_URI is missing in .env');
@@ -518,9 +641,13 @@ const run = async () => {
 
   console.log('Connecting to MongoDB...');
   await mongoose.connect(MONGO_URI);
-  console.log('Connected.\n');
+  console.log('Connected successfully.\n');
 
-  console.log('Locations...');
+  console.log('Resetting Counters & Error Logs...');
+  await eraseCounters();
+  await eraseErrorLogs();
+
+  console.log('\nLocations...');
   await eraseLocations();
   const locations = await seedLocations();
 
@@ -540,9 +667,13 @@ const run = async () => {
   await eraseSettings();
   await seedSettings();
 
-  console.log('\nOrders...');
-  await eraseOrders();
-  const orders = await seedOrders(users, products, locations);
+  console.log('\nOrders & Payments...');
+  await eraseOrdersAndPayments();
+  const orders = await seedOrdersAndPayments(users, products, locations);
+
+  console.log('\nCarts...');
+  await eraseCarts();
+  await seedCarts(users, products);
 
   console.log('\nReviews...');
   await eraseReviews();
@@ -556,12 +687,12 @@ const run = async () => {
   await eraseOtps();
   await seedOtps(users);
 
-  console.log('\nSeed complete — ~100 records per collection.');
+  console.log('\n🎉 Comprehensive database reseed completed across all 13 collections!');
   await mongoose.disconnect();
   process.exit(0);
 };
 
 run().catch((err) => {
-  console.error('Seed failed:', err);
+  console.error('Seed pipeline failed:', err);
   process.exit(1);
 });

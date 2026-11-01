@@ -9,6 +9,7 @@ import { ApiError } from "@core/errors/api.error.ts";
 import { getShippingSlab } from "@modules/order/order.services.ts";
 import { enhanceCart } from "./cart.util.ts";
 import { enhanceOrder } from "@modules/order/order.util.ts";
+import { createPaymentOrder } from "@modules/payment/payment.services.ts";
 
 export const recalculateCartPricing = async (cart: any) => {
   let subtotal = 0;
@@ -390,5 +391,21 @@ export const checkoutCart = async (
   cartRaw.shipping_address = undefined;
   await recalculateCartPricing(cartRaw);
 
-  return enhanceOrder(newOrder);
+  const enhanced = await enhanceOrder(newOrder);
+
+  if (data.payment_method === "online") {
+    try {
+      const razorpayData = await createPaymentOrder(String(newOrder._id));
+      const orderObj = typeof (enhanced as any).toObject === "function" ? (enhanced as any).toObject() : enhanced;
+      return {
+        ...orderObj,
+        razorpay: razorpayData,
+      };
+    } catch (paymentErr) {
+      console.error("Failed to initialize razorpay order during checkout:", paymentErr);
+      return enhanced;
+    }
+  }
+
+  return enhanced;
 };

@@ -357,7 +357,9 @@ export default function Checkout() {
         }
 
         try {
-          const rzpOrder = await loadOnly(() => api.payments.createPaymentOrder(orderId));
+          const rzpOrder =
+            res.razorpay ||
+            (await loadOnly(() => api.payments.createPaymentOrder(orderId)));
 
           let paymentHandled = false;
 
