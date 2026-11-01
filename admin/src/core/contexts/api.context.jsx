@@ -38,6 +38,7 @@ export const ApiProvider = ({ children }) => {
     payments: paymentModule,
     categories: categoryModule,
     settings: settingModule,
+    dashboard: dashboardModule,
   });
 
   return (

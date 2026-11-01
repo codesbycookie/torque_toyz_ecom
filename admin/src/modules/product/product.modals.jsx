@@ -10,6 +10,7 @@ import {
   ViewReviews,
   DeleteReview,
   ViewImages,
+  ProductUISettings,
 } from "./product.modal.components";
 
 export const modals = {
@@ -24,4 +25,5 @@ export const modals = {
   reviews: ViewReviews,
   deleteReview: DeleteReview,
   viewImages: ViewImages,
+  uiSettings: ProductUISettings,
 };

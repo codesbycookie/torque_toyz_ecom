@@ -23,10 +23,20 @@ export const useUserModule = (exported) => {
 
   // NOTE: No openCreate here on purpose — user creation isn't handled yet.
 
+  const openViewAddresses = (user) => {
+    return openModal(modals.viewAddresses, {
+      user,
+      exported,
+    });
+  };
+
   const openView = (user) => {
     setCurrent(user);
     return openModal(modals.view, {
       user,
+      onResetPassword: () => openResetPassword(user),
+      onToggleActive: () => openDisable(user._id, user.name, user.active),
+      onViewAddresses: () => openViewAddresses(user),
       exported,
     });
   };
@@ -109,6 +119,7 @@ export const useUserModule = (exported) => {
     setCurrent,
     useUserColumns,
     openView,
+    openViewAddresses,
     openDelete,
     openResetPassword,
     openDisable,

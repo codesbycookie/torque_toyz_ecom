@@ -4,7 +4,7 @@ import { useLoader } from "@/core/hooks/useLoader";
 import { createbtn } from "@/core/utils/datatable.helper.util";
 import paginator from "@/core/utils/paginate.util";
 import sorter from "@/core/utils/sorter.util";
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 
 export default function Category() {
   const { categories } = useApi();
@@ -13,16 +13,32 @@ export default function Category() {
 
   const columns = useCategoryColumns(categories);
 
-  const filterOptions = [
-    { label: "Latest", action: categories.filters.latest },
-    { label: "Oldest", action: categories.filters.oldest },
-    { label: "A - Z", action: () => categories.filters.ascending("name") },
-    { label: "Z - A", action: () => categories.filters.descending("name") },
-  ];
-
   useEffect(() => {
     load(categories);
   }, []);
+
+  const customs = useMemo(
+    () => [
+      {
+        title: "Status",
+        filters: [
+          { label: "Active Categories", action: () => categories.fetch({ active: true, page: 1 }) },
+          { label: "Inactive Categories", action: () => categories.fetch({ active: false, page: 1 }) },
+        ],
+      },
+      {
+        title: "Sort",
+        filters: [
+          { label: "Name (A-Z)", action: () => categories.sortByColumn("name", "asc") },
+          { label: "Name (Z-A)", action: () => categories.sortByColumn("name", "desc") },
+          { label: "Latest Created", action: () => categories.sortByColumn("createdAt", "desc") },
+          { label: "Oldest Created", action: () => categories.sortByColumn("createdAt", "asc") },
+          { label: "Active First", action: () => categories.sortByColumn("active", "desc") },
+        ],
+      },
+    ],
+    [categories]
+  );
 
   return (
     <DataTable
@@ -37,7 +53,7 @@ export default function Category() {
       limit={categories.pagination.limit}
       pageCount={categories.pagination.pages}
       totalRows={categories.pagination.total}
-      filters={filterOptions}
+      customs={customs}
       onPaginationChange={(p) => paginator(categories, p)}
       onSortChange={(p) => sorter(categories, p)}
     />

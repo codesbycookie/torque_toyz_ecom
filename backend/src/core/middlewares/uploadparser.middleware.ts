@@ -32,5 +32,42 @@ export const parseProductUpload = (req: Request, res: Response, next: NextFuncti
   if (req.body.active === 'true') req.body.active = true;
   if (req.body.active === 'false') req.body.active = false;
 
+  // Handle form-data stringified ui object
+  if (typeof req.body.ui === 'string') {
+    try {
+      req.body.ui = JSON.parse(req.body.ui);
+    } catch (e) {
+      // let zod validation fail or pass naturally
+    }
+  }
+
+  if (req.body.ui && typeof req.body.ui === 'object') {
+    if (req.body.ui.slash_price !== undefined) {
+      req.body.ui.slash_price = Number(req.body.ui.slash_price) || 0;
+    }
+    if (req.body.ui.actual_price !== undefined) {
+      req.body.ui.actual_price = Number(req.body.ui.actual_price) || 0;
+      if (req.body.price === undefined || req.body.price === 0) {
+        req.body.price = req.body.ui.actual_price;
+      }
+    }
+    if (req.body.ui.is_trending === 'true' || req.body.ui.is_trending === true) {
+      req.body.ui.is_trending = true;
+    } else if (req.body.ui.is_trending === 'false' || req.body.ui.is_trending === false) {
+      req.body.ui.is_trending = false;
+    }
+    if (typeof req.body.ui.badges === 'string') {
+      try {
+        req.body.ui.badges = JSON.parse(req.body.ui.badges);
+      } catch {
+        req.body.ui.badges = req.body.ui.badges.split(',').map((b: string) => b.trim()).filter(Boolean);
+      }
+    }
+  }
+
+  if (req.body.price !== undefined && req.body.ui && req.body.ui.actual_price === undefined) {
+    req.body.ui.actual_price = req.body.price;
+  }
+
   next();
 };

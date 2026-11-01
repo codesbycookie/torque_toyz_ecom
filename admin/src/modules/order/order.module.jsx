@@ -23,7 +23,56 @@ export const useOrderModule = (exported) => {
 
   const openView = (order) => {
     setCurrent(order);
-    return openModal(modals.view, { order, exported });
+    return openModal(modals.view, {
+      order,
+      exported,
+      onOpenChangeStatus: (ord, initialStatus) => openChangeStatus(ord, initialStatus),
+      onOpenRefund: (ord) => openRefund(ord),
+    });
+  };
+
+  const refundOrder = async (orderId, reason = "Refund approved by admin") => {
+    try {
+      const res = await apiRequest("post", apiurls.payments.refund.url(), {
+        data: { orderId, reason },
+      });
+
+      const currentOrder = store.list?.find((o) => o._id === orderId) || store.current;
+      update(orderId, {
+        status: "cancelled",
+        payment: { ...(currentOrder?.payment || {}), status: "refunded" },
+        status_history: [
+          ...(currentOrder?.status_history || []),
+          { status: "cancelled", timestamp: new Date().toISOString(), note: reason },
+        ],
+      });
+
+      if (store.current?._id === orderId) {
+        setCurrent({
+          ...store.current,
+          status: "cancelled",
+          payment: { ...(store.current.payment || {}), status: "refunded" },
+          status_history: [
+            ...(store.current.status_history || []),
+            { status: "cancelled", timestamp: new Date().toISOString(), note: reason },
+          ],
+        });
+      }
+
+      toast.success(res?.message || "Refund processed and order marked cancelled");
+      return res;
+    } catch (err) {
+      toast.error(err?.response?.data?.message || err?.message || "Failed to process refund");
+      throw err;
+    }
+  };
+
+  const openRefund = (order) => {
+    return openModal(modals.refund, {
+      order,
+      submitFn: (orderId, reason) => refundOrder(orderId, reason),
+      exported,
+    });
   };
 
   const openDelete = (id, name) => {
@@ -44,6 +93,10 @@ export const useOrderModule = (exported) => {
   };
 
   const setStatus = async (order, status, trackingUrl) => {
+    if (order.status === "cancelled") {
+      toast.error("Cannot change status of a cancelled order");
+      return;
+    }
     if (order.status === status && !trackingUrl) return;
 
     if (trackingUrl) {
@@ -94,6 +147,10 @@ export const useOrderModule = (exported) => {
   };
 
   const openChangeStatus = (order, initialStatus) => {
+    if (order.status === "cancelled") {
+      toast.error("Cannot change status of a cancelled order");
+      return;
+    }
     return openModal(modals.changeStatus, {
       order,
       initialStatus,
@@ -141,6 +198,8 @@ export const useOrderModule = (exported) => {
     setCurrent,
     useOrderColumns,
     openView,
+    openRefund,
+    refundOrder,
     openDelete,
     openRetrieve,
     openChangeStatus,

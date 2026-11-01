@@ -14,6 +14,11 @@ export interface FilterConfig<T> {
   filterable?: (keyof T | string)[];
   sortable?: (keyof T | string)[];
   defaultSort?: keyof T | string;
+  extras?: {
+    select?: string;
+  };
+  forcePopulate?: any[];
+  populate?: any[];
 }
 
 export interface PaginationOptions {
@@ -327,8 +332,9 @@ export async function dynamicFilter<T extends Document>(
 
         const baseSelect = ["_id", "name", "code"];
 
-        if (options?.extras?.select) {
-          const extras = options.extras.select.split(/[\s,]+/).filter(Boolean);
+        const effectiveExtrasSelect = options?.extras?.select || config?.extras?.select;
+        if (effectiveExtrasSelect) {
+          const extras = effectiveExtrasSelect.split(/[\s,]+/).filter(Boolean);
           baseSelect.push(...extras);
         }
 
@@ -346,8 +352,9 @@ export async function dynamicFilter<T extends Document>(
     );
   }
 
-  if (options?.forcePopulate && options.forcePopulate.length > 0) {
-    data = await model.populate(data, options.forcePopulate);
+  const effectiveForcePopulate = options?.forcePopulate || config?.forcePopulate || config?.populate;
+  if (effectiveForcePopulate && effectiveForcePopulate.length > 0) {
+    data = await model.populate(data, effectiveForcePopulate);
   }
 
   const pages = limit === 0 ? 1 : Math.ceil(total / limit);

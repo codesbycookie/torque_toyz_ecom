@@ -31,6 +31,8 @@ import {
   EyeOff,
   Loader2,
   AlertCircle,
+  Edit3,
+  Plus,
   Lock,
   Package,
   Truck,
@@ -50,6 +52,7 @@ import {
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { ThemeSegmented } from '@/components/global/theme-toggle';
+import { AddressModalDialog } from '@/pages/checkout/shipping-address.components';
 
 // Helper to extract initials
 function getInitials(name, email) {
@@ -389,6 +392,14 @@ function ProfileSkeleton() {
           <Skeleton className="h-56 rounded-2xl" />
         </div>
       </div>
+
+      <AddressModalDialog
+        isOpen={isAddressModalOpen}
+        onOpenChange={setIsAddressModalOpen}
+        onSaveAddress={handleSaveAddress}
+        locations={locations}
+        initialData={editingAddress}
+      />
     </div>
   );
 }
@@ -396,6 +407,61 @@ function ProfileSkeleton() {
 export default function Profile() {
   const { user, loading, changePassword, logout, setUser } = useAuth();
   const api = useApi();
+
+  const [isAddressModalOpen, setIsAddressModalOpen] = useState(false);
+  const [editingAddress, setEditingAddress] = useState(null);
+
+  useEffect(() => {
+    if (api.locations?.fetchLocations) {
+      api.locations.fetchLocations();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const locations = useMemo(() => {
+    return api.locations?.state || api.locations?.list || [];
+  }, [api.locations?.state, api.locations?.list]);
+
+  const handleSaveAddress = async (newAddr) => {
+    const loc =
+      locations.find((l) => String(l._id) === String(newAddr.state)) ||
+      locations.find(
+        (l) =>
+          l.state?.trim().toLowerCase() ===
+          (newAddr.stateName || newAddr.state || "").trim().toLowerCase()
+      );
+    const cleanedAddr = {
+      ...newAddr,
+      state: loc?._id ? String(loc._id) : newAddr.state,
+      stateName: loc?.state || newAddr.stateName || "",
+      is_default: true,
+    };
+
+    if (user?._id && api.users?.saveUserAddress) {
+      try {
+        const updatedUser = await api.users.saveUserAddress(user, cleanedAddr);
+        if (updatedUser) {
+          setUser(updatedUser);
+        }
+      } catch (err) {
+        console.error("Failed to save address to user data:", err);
+      }
+    }
+
+    try {
+      const raw = localStorage.getItem("torque_garage_addresses");
+      const current = raw ? JSON.parse(raw) : [];
+      const updated = [
+        cleanedAddr,
+        ...current.filter((c) => String(c._id || c.id) !== String(cleanedAddr._id || cleanedAddr.id)),
+      ];
+      localStorage.setItem("torque_garage_addresses", JSON.stringify(updated));
+    } catch {
+      // ignore
+    }
+
+    toast.success("Shipping address saved to your profile!");
+  };
 
   // Local storage stored addresses (same cache used in checkout & settings)
   const storedAddresses = useMemo(() => {

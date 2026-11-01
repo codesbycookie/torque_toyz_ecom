@@ -14,7 +14,8 @@
     "fast": "tsx watch src/server.ts",
     "start": "node dist/server.js",
     "seed": "npx tsx src/scripts/seed.ts",
-    "dump": "npx tsx src/scripts/dump.ts"
+    "dump": "npx tsx src/scripts/dump.ts",
+    "seed:products": "npx tsx src/scripts/seed-products.ts"
   },
   "keywords": [],
   "author": "",

@@ -4,11 +4,11 @@ import Setting from '@db/models/setting.model.ts';
 // so the frontend can build "Business Info" / "Orders" / "Site" tabs
 // without hardcoding the grouping on the frontend.
 const SECTIONS: Record<string, string[]> = {
-    business: ['site_name', 'support_email', 'support_phone', 'business_address'],
-    orders: ['low_stock_threshold', 'allow_cod', 'allow_online_payment', 'min_order_amount', 'gst_percentage'],
+    business: ['support_phone', 'business_address'],
+    orders: ['free_delivery', 'low_stock_threshold', 'allow_cod', 'allow_online_payment', 'min_order_amount', 'gst_percentage'],
     catalog: ['default_product_images'],
     site: ['maintenance_mode', 'new_signups_enabled'],
-    ecom: ['ecom_announcement_banner', 'ecom_sales_notifications_enabled', 'ecom_must_buy_count', 'ecom_recommended_count'],
+    ecom: ['ecom_announcement_banner', 'ecom_sales_notifications_enabled'],
 };
 
 export const getAllSettings = async () => {

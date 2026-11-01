@@ -13,6 +13,7 @@ import {
   FormField,
   FormItem,
   FormLabel,
+  FormMessage,
   Form,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
@@ -22,13 +23,18 @@ import { useSubmit } from "@/core/hooks/useSubmit";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useLoader } from "@/core/hooks/useLoader";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
+import CopyButton from "@/components/ui/copy-button";
+import formatdate from "@/core/utils/formatdate.util";
 import {
   productCreateSchema,
   productEditSchema,
   productStockSchema,
+  productUISettingsSchema,
 } from "./product.schema";
-import ProductForm from "./product.form";
+import ProductForm, { BadgesInput } from "./product.form";
+import { Switch } from "@/components/ui/switch";
+import { useSettingStore } from "@/modules/setting/setting.store";
 
 import { Pencil, Star, Trash2 } from "lucide-react";
 import { safeId } from "@/core/utils/normalize-id";
@@ -278,99 +284,367 @@ export const DeleteReview = ({
   </DialogContent>
 );
 
-export const View = ({ product, closeModal = () => { } }) => {
+export const View = ({
+  product,
+  closeModal = () => { },
+  onEdit,
+  onUISettings,
+  onReviews,
+}) => {
   if (!product) return null;
 
+  const [activeImageIndex, setActiveImageIndex] = useState(0);
+  const images = Array.isArray(product.images) ? product.images : [];
+  const currentImage = images[activeImageIndex] || images[0];
+
+  const actualPrice = product.ui?.actual_price ?? product.price ?? 0;
+  const slashPrice = product.ui?.slash_price ?? 0;
+  const hasDiscount = Number(slashPrice) > Number(actualPrice) && Number(actualPrice) > 0;
+  const discountPercent = hasDiscount
+    ? Math.round(((slashPrice - actualPrice) / slashPrice) * 100)
+    : null;
+
+  const categoryName =
+    typeof product.category === "object"
+      ? product.category?.name || "-"
+      : product.category || "-";
+
+  const reviews = Array.isArray(product.reviews) ? product.reviews : [];
+  const avgRating = reviews.length
+    ? (reviews.reduce((sum, r) => sum + (r.rating || 0), 0) / reviews.length).toFixed(1)
+    : null;
+
+  const badges = Array.isArray(product.ui?.badges) ? product.ui.badges : [];
+
+  const handleEdit = () => {
+    closeModal();
+    if (onEdit) onEdit();
+  };
+
+  const handleUISettings = () => {
+    closeModal();
+    if (onUISettings) onUISettings();
+  };
+
+  const handleReviews = () => {
+    closeModal();
+    if (onReviews) onReviews();
+  };
+
   return (
-    <DialogContent className="sm:max-w-2xl w-full">
+    <DialogContent className="sm:max-w-4xl max-h-[90vh] overflow-y-auto">
+      {/* Header */}
       <DialogHeader>
-        <DialogTitle className="text-xl">{product.name}</DialogTitle>
-        <DialogDescription>
-          Code: <span className="font-mono">{product.code}</span> · Slug:{" "}
-          <span className="font-mono">{product.slug}</span>
-        </DialogDescription>
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pb-2 border-b">
+          <div className="space-y-1">
+            <DialogTitle className="text-xl font-bold tracking-tight">
+              {product.name}
+            </DialogTitle>
+            <DialogDescription className="flex flex-wrap items-center gap-2 text-xs">
+              <span className="font-mono flex items-center gap-1">
+                <span>Code: {product.code || "—"}</span>
+                {product.code && (
+                  <CopyButton
+                    text={product.code}
+                    label="Product Code"
+                    className="size-4"
+                    iconClassName="size-3"
+                  />
+                )}
+              </span>
+              <span>•</span>
+              <span className="font-mono flex items-center gap-1">
+                <span>Slug: {product.slug || "—"}</span>
+                {product.slug && (
+                  <CopyButton
+                    text={product.slug}
+                    label="Slug"
+                    className="size-4"
+                    iconClassName="size-3"
+                  />
+                )}
+              </span>
+              <span>•</span>
+              <span className="font-mono flex items-center gap-1">
+                <span>ID: {safeId(product._id)}</span>
+                <CopyButton
+                  text={safeId(product._id)}
+                  label="Product ID"
+                  className="size-4"
+                  iconClassName="size-3"
+                />
+              </span>
+            </DialogDescription>
+          </div>
+
+          <div className="flex items-center gap-2">
+            {onUISettings && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleUISettings}
+                className="text-xs font-medium"
+              >
+                UI Settings
+              </Button>
+            )}
+            {onEdit && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleEdit}
+                className="text-xs font-medium"
+              >
+                Edit Product
+              </Button>
+            )}
+          </div>
+        </div>
       </DialogHeader>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 py-4">
-        <div className="space-y-3">
-          <h4 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
-            Images
-          </h4>
-          <div className="grid grid-cols-3 gap-2">
-            {(product.images || []).map((src, i) => (
-              <img
-                key={i}
-                src={src}
-                alt={`${product.name} ${i + 1}`}
-                className="size-full aspect-square rounded-md object-cover border"
-              />
-            ))}
+      {/* KPI Stats Strip */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 py-1">
+        <div className="rounded-xl border bg-muted/30 p-3 space-y-1">
+          <span className="text-xs font-medium text-muted-foreground block">
+            Selling Price
+          </span>
+          <div className="flex items-baseline gap-1.5 flex-wrap">
+            <span className="text-base font-semibold text-foreground">
+              ₹{Number(actualPrice).toFixed(2)}
+            </span>
+            {hasDiscount && (
+              <span className="text-xs text-muted-foreground line-through">
+                ₹{Number(slashPrice).toFixed(2)}
+              </span>
+            )}
+            {discountPercent !== null && (
+              <span className="text-[11px] font-medium text-emerald-600 dark:text-emerald-400">
+                {discountPercent}% OFF
+              </span>
+            )}
           </div>
-
-          {product.description && (
-            <>
-              <h4 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground pt-2">
-                Description
-              </h4>
-              <p className="text-sm text-muted-foreground">
-                {product.description}
-              </p>
-            </>
-          )}
         </div>
 
-        <div className="space-y-3 text-sm">
-          <h4 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
-            Details
-          </h4>
-
-          <div className="flex justify-between items-center py-2 border-b">
-            <span className="text-muted-foreground">Price</span>
-            <span className="font-semibold">
-              ₹{Number(product.price).toFixed(2)}
+        <div className="rounded-xl border bg-muted/30 p-3 space-y-1">
+          <span className="text-xs font-medium text-muted-foreground block">
+            Inventory
+          </span>
+          <div className="flex items-center gap-2">
+            <span className="text-base font-semibold text-foreground">
+              {product.stock ?? 0} units
             </span>
-          </div>
-
-          <div className="flex justify-between items-center py-2 border-b">
-            <span className="text-muted-foreground">Stock</span>
-            <span className="font-medium">{product.stock}</span>
-          </div>
-
-          <div className="flex justify-between items-center py-2 border-b">
-            <span className="text-muted-foreground">Weight</span>
-            <span className="font-medium">{product.weight} kg</span>
-          </div>
-
-          <div className="flex justify-between items-center py-2 border-b">
-            <span className="text-muted-foreground">Status</span>
-            <Badge variant={product.active ? "default" : "outline"}>
-              {product.active ? "Active" : "Inactive"}
+            <Badge
+              variant={product.stock <= 0 ? "destructive" : "outline"}
+              className={`text-[10px] px-1.5 py-0 font-normal ${
+                product.stock > 0 && product.stock <= (Number(useSettingStore.getState().current?.low_stock_threshold ?? 10))
+                  ? "bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-500/30"
+                  : ""
+              }`}
+            >
+              {product.stock <= 0
+                ? "Out of Stock"
+                : product.stock <= (Number(useSettingStore.getState().current?.low_stock_threshold ?? 10))
+                ? "Need more stock"
+                : "In Stock"}
             </Badge>
           </div>
+        </div>
 
-          {product.deleted && (
-            <div className="flex justify-between items-center py-2 border-b">
-              <span className="text-muted-foreground">Deleted At</span>
-              <span className="font-medium">
-                {product.deletedAt
-                  ? new Date(product.deletedAt).toLocaleDateString()
-                  : "-"}
-              </span>
-            </div>
-          )}
+        <div className="rounded-xl border bg-muted/30 p-3 space-y-1">
+          <span className="text-xs font-medium text-muted-foreground block">
+            Category
+          </span>
+          <div className="text-sm font-semibold truncate text-foreground">
+            {categoryName}
+          </div>
+        </div>
 
-          <div className="flex justify-between items-center py-2">
-            <span className="text-muted-foreground">Created</span>
-            <span className="font-medium">
-              {product.createdAt
-                ? new Date(product.createdAt).toLocaleDateString()
-                : "-"}
-            </span>
+        <div className="rounded-xl border bg-muted/30 p-3 space-y-1">
+          <span className="text-xs font-medium text-muted-foreground block">
+            Visibility Status
+          </span>
+          <div>
+            <Badge
+              variant={product.active ? "default" : "outline"}
+              className="text-xs font-normal"
+            >
+              {product.active ? "Active" : "Inactive"}
+            </Badge>
           </div>
         </div>
       </div>
 
-      <DialogFooter>
+      {/* Main 2-column Content */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-5 py-2">
+        {/* Left Column: Image Gallery & Description */}
+        <div className="space-y-4">
+          {/* Image Display */}
+          <div className="rounded-xl border bg-card p-3 space-y-3">
+            <div className="flex items-center justify-between border-b pb-2">
+              <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                Product Media ({images.length})
+              </span>
+              {images.length > 0 && (
+                <span className="text-xs text-muted-foreground">
+                  Image {activeImageIndex + 1} of {images.length}
+                </span>
+              )}
+            </div>
+
+            {currentImage ? (
+              <div className="space-y-2">
+                <div className="aspect-video w-full rounded-lg border bg-muted/20 overflow-hidden flex items-center justify-center">
+                  <img
+                    src={currentImage}
+                    alt={product.name}
+                    className="size-full object-contain"
+                  />
+                </div>
+
+                {images.length > 1 && (
+                  <div className="flex items-center gap-2 overflow-x-auto pb-1">
+                    {images.map((img, idx) => (
+                      <button
+                        key={idx}
+                        type="button"
+                        onClick={() => setActiveImageIndex(idx)}
+                        className={`relative size-14 rounded-md border overflow-hidden shrink-0 transition-all ${
+                          idx === activeImageIndex
+                            ? "ring-2 ring-primary border-primary"
+                            : "opacity-70 hover:opacity-100"
+                        }`}
+                      >
+                        <img
+                          src={img}
+                          alt=""
+                          className="size-full object-cover"
+                        />
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="aspect-video w-full rounded-lg border border-dashed flex items-center justify-center text-xs text-muted-foreground">
+                No images uploaded
+              </div>
+            )}
+          </div>
+
+          {/* Description */}
+          <div className="rounded-xl border bg-card p-3.5 space-y-2">
+            <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground block border-b pb-2">
+              Description
+            </span>
+            <p className="text-xs text-muted-foreground leading-relaxed whitespace-pre-wrap">
+              {product.description || "No description provided."}
+            </p>
+          </div>
+        </div>
+
+        {/* Right Column: Merchandising, Reviews, Specs */}
+        <div className="space-y-4">
+          {/* Merchandising & UI Display */}
+          <div className="rounded-xl border bg-card p-3.5 space-y-3">
+            <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground block border-b pb-2">
+              Merchandising & UI Display
+            </span>
+
+            <div className="space-y-2.5 text-xs">
+              <div className="flex items-center justify-between py-1 border-b">
+                <span className="text-muted-foreground">Trending Showcase</span>
+                <Badge
+                  variant={product.ui?.is_trending ? "secondary" : "outline"}
+                  className="text-xs font-normal"
+                >
+                  {product.ui?.is_trending ? "Trending Active" : "Not Trending"}
+                </Badge>
+              </div>
+
+              <div className="flex items-center justify-between py-1 border-b">
+                <span className="text-muted-foreground">Slash MRP</span>
+                <span className="font-mono font-medium">
+                  {slashPrice > 0 ? `₹${Number(slashPrice).toFixed(2)}` : "—"}
+                </span>
+              </div>
+
+              <div className="py-1">
+                <span className="text-muted-foreground block mb-1.5">
+                  Assigned Badges ({badges.length})
+                </span>
+                {badges.length > 0 ? (
+                  <div className="flex flex-wrap gap-1.5">
+                    {badges.map((badge, idx) => (
+                      <Badge
+                        key={idx}
+                        variant="secondary"
+                        className="text-xs font-normal"
+                      >
+                        {badge}
+                      </Badge>
+                    ))}
+                  </div>
+                ) : (
+                  <span className="text-xs text-muted-foreground italic">
+                    No promotional badges assigned
+                  </span>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Specs & Reviews */}
+          <div className="rounded-xl border bg-card p-3.5 space-y-3">
+            <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground block border-b pb-2">
+              Specifications & Feedback
+            </span>
+
+            <div className="space-y-2 text-xs">
+              <div className="flex items-center justify-between py-1 border-b">
+                <span className="text-muted-foreground">Shipping Weight</span>
+                <span className="font-medium">{product.weight ?? 0} kg</span>
+              </div>
+
+              <div className="flex items-center justify-between py-1 border-b">
+                <span className="text-muted-foreground">Customer Reviews</span>
+                <div className="flex items-center gap-2">
+                  <span className="font-medium">
+                    {reviews.length} {reviews.length === 1 ? "review" : "reviews"}
+                    {avgRating && ` (${avgRating} / 5.0)`}
+                  </span>
+                  {onReviews && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={handleReviews}
+                      className="h-6 px-2 text-[11px]"
+                    >
+                      View
+                    </Button>
+                  )}
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between py-1 border-b">
+                <span className="text-muted-foreground">Created At</span>
+                <span className="font-medium text-foreground">
+                  {product.createdAt ? formatdate(product.createdAt) : "—"}
+                </span>
+              </div>
+
+              <div className="flex items-center justify-between py-1">
+                <span className="text-muted-foreground">Last Updated</span>
+                <span className="font-medium text-foreground">
+                  {product.updatedAt ? formatdate(product.updatedAt) : "—"}
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Footer */}
+      <DialogFooter className="pt-2">
         <DialogClose asChild>
           <Button variant="outline" onClick={closeModal}>
             Close
@@ -380,9 +654,6 @@ export const View = ({ product, closeModal = () => { } }) => {
     </DialogContent>
   );
 };
-
-
-
 
 export const ViewImages = ({ product, closeModal = () => { } }) => {
   if (!product) return null;
@@ -467,7 +738,7 @@ export const Create = ({ submitFn = () => { }, closeModal = () => { }, exported 
   }, []);
 
   return (
-    <DialogContent className="w-xl">
+    <DialogContent className="sm:max-w-4xl max-h-[90vh] overflow-y-auto">
       <DialogHeader>
         <DialogTitle>Create Product</DialogTitle>
         <DialogDescription>Enter details of the product</DialogDescription>
@@ -507,6 +778,7 @@ export const UpdateStock = ({
     resolver: zodResolver(productStockSchema),
     defaultValues: {
       stock: product?.stock ?? 0,
+      price: product?.price ?? 0,
     },
   });
 
@@ -523,10 +795,10 @@ export const UpdateStock = ({
   return (
     <DialogContent className="sm:max-w-[425px]">
       <DialogHeader>
-        <DialogTitle>Update Stock</DialogTitle>
+        <DialogTitle>Update Stock & Rate</DialogTitle>
         <DialogDescription>
-          Update available stock for {product?.name}. Current stock:{" "}
-          {product?.stock ?? 0}.
+          Update available stock and rate for {product?.name}. Current stock:{" "}
+          {product?.stock ?? 0}, current rate: ₹{Number(product?.price ?? 0).toFixed(2)}.
         </DialogDescription>
       </DialogHeader>
 
@@ -535,18 +807,46 @@ export const UpdateStock = ({
           className="grid gap-4 py-2"
           onSubmit={form.handleSubmit(onSubmit)}
         >
-          <FormField
-            control={form.control}
-            name="stock"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Stock</FormLabel>
-                <FormControl>
-                  <Input type="number" placeholder="Enter stock" {...field} />
-                </FormControl>
-              </FormItem>
-            )}
-          />
+          <div className="grid grid-cols-2 gap-4">
+            <FormField
+              control={form.control}
+              name="stock"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Stock</FormLabel>
+                  <FormControl>
+                    <Input type="number" placeholder="Enter stock" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="price"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Rate</FormLabel>
+                  <FormControl>
+                    <div className="relative">
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
+                        ₹
+                      </span>
+                      <Input
+                        type="number"
+                        step="0.01"
+                        placeholder="0.00"
+                        className="pl-6"
+                        {...field}
+                      />
+                    </div>
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
           {ErrorAlert}
           <DialogFooter>
             <DialogClose asChild>
@@ -555,7 +855,7 @@ export const UpdateStock = ({
             <Button
               type="submit"
               loading={loading}
-              loadingText="Updating stock.."
+              loadingText="Updating..."
             >
               Save
             </Button>
@@ -606,7 +906,7 @@ export const Edit = ({
   }, []);
 
   return (
-    <DialogContent className="w-xl">
+    <DialogContent className="sm:max-w-4xl max-h-[90vh] overflow-y-auto">
       <DialogHeader>
         <DialogTitle>Edit Product</DialogTitle>
         <DialogDescription>Update details of {product?.name}</DialogDescription>
@@ -774,6 +1074,174 @@ export const ActiveStatus = ({
           {exported?.loading?.edit ? "Updating..." : actionLabel}
         </Button>
       </DialogFooter>
+    </DialogContent>
+  );
+};
+
+// ─── Product UI Settings ──────────────────────────────────────
+export const ProductUISettings = ({
+  product,
+  submitFn = () => { },
+  closeModal = () => { },
+} = {}) => {
+  const form = useForm({
+    resolver: zodResolver(productUISettingsSchema),
+    defaultValues: {
+      slash_price: product?.ui?.slash_price ?? 0,
+      actual_price: product?.ui?.actual_price ?? product?.price ?? 0,
+      badges: Array.isArray(product?.ui?.badges) ? product.ui.badges : [],
+      is_trending: Boolean(product?.ui?.is_trending),
+    },
+  });
+
+  const { run, loading, ErrorAlert, clearError } = useAsync(submitFn);
+
+  useClearError(form, clearError);
+
+  const onSubmit = useSubmit({
+    run,
+    form,
+    transform: (values) => ({
+      ui: values,
+      price: Number(values.actual_price) || 0,
+    }),
+    onSuccess: closeModal,
+  });
+
+  const actualPrice = Number(form.watch("actual_price")) || 0;
+  const slashPrice = Number(form.watch("slash_price")) || 0;
+  const discountPercent =
+    slashPrice > actualPrice && actualPrice > 0
+      ? Math.round(((slashPrice - actualPrice) / slashPrice) * 100)
+      : null;
+
+  return (
+    <DialogContent className="sm:max-w-lg">
+      <DialogHeader>
+        <DialogTitle>Product UI Settings</DialogTitle>
+        <DialogDescription>
+          Configure promotional prices, badges, and trends for {product?.name}
+        </DialogDescription>
+      </DialogHeader>
+
+      <Form {...form}>
+        <form
+          className="grid gap-4 py-2"
+          onSubmit={form.handleSubmit(onSubmit)}
+        >
+          <div className="grid grid-cols-2 gap-4">
+            <FormField
+              control={form.control}
+              name="actual_price"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Selling Price</FormLabel>
+                  <FormControl>
+                    <div className="relative">
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
+                        ₹
+                      </span>
+                      <Input
+                        type="number"
+                        step="0.01"
+                        placeholder="0.00"
+                        className="pl-6"
+                        {...field}
+                      />
+                    </div>
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="slash_price"
+              render={({ field }) => (
+                <FormItem>
+                  <div className="flex items-center justify-between">
+                    <FormLabel>Slash Price (MRP)</FormLabel>
+                    {discountPercent !== null && (
+                      <span className="text-[11px] font-medium text-emerald-600 dark:text-emerald-400">
+                        {discountPercent}% OFF
+                      </span>
+                    )}
+                  </div>
+                  <FormControl>
+                    <div className="relative">
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
+                        ₹
+                      </span>
+                      <Input
+                        type="number"
+                        step="0.01"
+                        placeholder="0.00"
+                        className="pl-6"
+                        {...field}
+                      />
+                    </div>
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
+
+          <FormField
+            control={form.control}
+            name="badges"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Product Badges</FormLabel>
+                <FormControl>
+                  <BadgesInput
+                    value={field.value || []}
+                    onChange={field.onChange}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="is_trending"
+            render={({ field }) => (
+              <FormItem className="flex items-center justify-between rounded-lg border p-3.5">
+                <div className="space-y-0.5">
+                  <FormLabel>Trending Product</FormLabel>
+                  <p className="text-xs text-muted-foreground">
+                    Highlight this product with a trending badge.
+                  </p>
+                </div>
+                <FormControl>
+                  <Switch
+                    checked={Boolean(field.value)}
+                    onCheckedChange={field.onChange}
+                  />
+                </FormControl>
+              </FormItem>
+            )}
+          />
+
+          {ErrorAlert}
+
+          <DialogFooter className="pt-2">
+            <DialogClose asChild>
+              <Button variant="outline">Cancel</Button>
+            </DialogClose>
+            <Button
+              type="submit"
+              loading={loading}
+              loadingText="Saving UI settings..."
+            >
+              Save Settings
+            </Button>
+          </DialogFooter>
+        </form>
+      </Form>
     </DialogContent>
   );
 };

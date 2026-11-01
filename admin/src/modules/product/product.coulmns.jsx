@@ -11,12 +11,21 @@ import { MoreHorizontal } from "lucide-react";
 import { Hint } from "@/core/utils/tooltip.util";
 import { safeId } from "@/core/utils/normalize-id";
 
-export const useProductColumns = (products) => {
+export const useProductColumns = (products, options = {}) => {
+  const lowStockThreshold = options?.lowStockThreshold ?? 10;
   return [
     {
       accessorKey: "code",
       header: () => Hint("Code", "Product code"),
-      cell: ({ row }) => <span>{row.getValue("code")}</span>,
+      cell: ({ row }) => (
+        <button
+          type="button"
+          onClick={() => products.openView(row.original)}
+          className="font-mono font-semibold text-foreground hover:underline cursor-pointer text-left transition-colors"
+        >
+          {row.getValue("code")}
+        </button>
+      ),
     },
     {
       accessorKey: "name",
@@ -38,7 +47,42 @@ export const useProductColumns = (products) => {
                 <span className="text-xs text-muted-foreground">-</span>
               </div>
             )}
-            <span className="font-medium">{product.name}</span>
+            <div className="flex flex-col gap-1 min-w-0">
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <button
+                  type="button"
+                  onClick={() => products.openView(product)}
+                  className="font-medium truncate text-foreground hover:underline cursor-pointer text-left transition-colors"
+                >
+                  {product.name}
+                </button>
+                {product.ui?.is_trending && (
+                  <Badge
+                    variant="secondary"
+                    className="h-4 px-1.5 text-[10px] font-normal"
+                  >
+                    Trending
+                  </Badge>
+                )}
+              </div>
+              {product.ui?.badges?.length > 0 && (
+                <div className="flex items-center gap-1 flex-wrap">
+                  {product.ui.badges.slice(0, 2).map((badge, idx) => (
+                    <span
+                      key={idx}
+                      className="inline-flex items-center rounded-sm border px-1 py-0 text-[10px] font-normal text-muted-foreground bg-muted/30"
+                    >
+                      {badge}
+                    </span>
+                  ))}
+                  {product.ui.badges.length > 2 && (
+                    <span className="text-[10px] text-muted-foreground">
+                      +{product.ui.badges.length - 2}
+                    </span>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
         );
       },
@@ -54,14 +98,45 @@ export const useProductColumns = (products) => {
     {
       accessorKey: "stock",
       header: () => Hint("Stock", "Units available"),
-      cell: ({ row }) => <span>{row.getValue("stock")}</span>,
+      cell: ({ row }) => {
+        const product = row.original;
+        const stock = Number(product.stock ?? 0);
+        const needsMoreStock = stock <= lowStockThreshold;
+
+        return (
+          <div className="flex flex-col gap-1 items-start">
+            <span className="font-medium text-xs text-foreground">
+              {stock}
+            </span>
+            {needsMoreStock && (
+              <span className="text-[10px] font-medium text-amber-700 dark:text-amber-300 bg-amber-500/15 border border-amber-500/30 px-1.5 py-0.5 rounded leading-none">
+                Need more stock
+              </span>
+            )}
+          </div>
+        );
+      },
     },
     {
       accessorKey: "price",
-      header: () => Hint("Price", "Product price"),
-      cell: ({ row }) => (
-        <span>${Number(row.getValue("price")).toFixed(2)}</span>
-      ),
+      header: () => Hint("Price", "Product price & promotional slash price"),
+      cell: ({ row }) => {
+        const product = row.original;
+        const actual = product.ui?.actual_price ?? product.price ?? 0;
+        const slash = product.ui?.slash_price;
+        const hasSlash = Number(slash) > Number(actual);
+
+        return (
+          <div className="flex flex-col">
+            <span className="font-medium">₹{Number(actual).toFixed(2)}</span>
+            {hasSlash && (
+              <span className="text-xs text-muted-foreground line-through">
+                ₹{Number(slash).toFixed(2)}
+              </span>
+            )}
+          </div>
+        );
+      },
     },
     {
       accessorKey: "weight",
@@ -101,11 +176,13 @@ export const useProductColumns = (products) => {
               <DropdownMenuItem onClick={() => products.openEdit(product)}>
                 Edit
               </DropdownMenuItem>
-
+              <DropdownMenuItem onClick={() => products.openUISettings(product)}>
+                UI Settings
+              </DropdownMenuItem>
               <DropdownMenuItem
                 onClick={() => products.openStockUpdate(product)}
               >
-                Update Stock
+                Update Stock & Rate
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => products.openReviews(product)}>
                 Reviews ({product.reviews?.length || 0})

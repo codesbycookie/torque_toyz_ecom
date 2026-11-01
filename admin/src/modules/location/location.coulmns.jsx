@@ -15,7 +15,13 @@ export const useLocationColumns = (locations) => {
     {
       accessorKey: "state",
       header: () => Hint("State", "State name"),
-      cell: ({ row }) => <span>{row.getValue("state")}</span>,
+      cell: ({ row }) => <button
+          type="button"
+          onClick={() => locations.openViewSlabs(row.original)}
+          className="font-semibold text-foreground hover:underline cursor-pointer text-left transition-colors"
+        >
+          {row.getValue("state")}
+        </button>,
     },
     {
       accessorKey: "code",

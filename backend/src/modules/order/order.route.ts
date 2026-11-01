@@ -48,7 +48,7 @@ router.patch(
   updatePaymentStatus,
 );
 
-router.patch("/:id/delivery-partner-url", zodValidate(updateDeliveryPartnerUrl, 'params', "UpdateOrderStatus"), setDeliveryPartnerUrl);
+router.patch("/:id/delivery-partner-url", zodValidate(updateDeliveryPartnerUrl), setDeliveryPartnerUrl);
 
 router.delete("/:id", deleteOrder);
 

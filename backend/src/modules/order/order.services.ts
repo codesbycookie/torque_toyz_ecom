@@ -76,6 +76,9 @@ export const createOrder = async (userId: string, data: CreateOrderPayload) => {
     throw new ApiError(400, "No delivery rate available for this location/weight");
   }
 
+  const isFreeDelivery = await Setting.get("free_delivery");
+  const shipping_cost = isFreeDelivery === true ? 0 : slab.rate;
+
   const settingGst = await Setting.get("gst_percentage");
   const gstRate = typeof settingGst === "number" ? settingGst : 18;
   const tax = Math.round(subtotal * (gstRate / 100) * 100) / 100;
@@ -84,8 +87,8 @@ export const createOrder = async (userId: string, data: CreateOrderPayload) => {
     subtotal,
     tax,
     total_weight,
-    shipping_cost: slab.rate,
-    total: Math.round((subtotal + slab.rate + tax) * 100) / 100,
+    shipping_cost,
+    total: Math.round((subtotal + shipping_cost + tax) * 100) / 100,
   };
 
   const order = await Order.createOrder({
@@ -133,8 +136,12 @@ export const updateOrderStatus = async (id: string, status: OrderStatus, note?: 
 
   if (!existingOrder) return null;
 
+  if (existingOrder.status === "cancelled") {
+    throw new ApiError(400, "Cannot change status of a cancelled order");
+  }
+
   // Restock products if order status is transitioning to cancelled
-  if (status === "cancelled" && existingOrder.status !== "cancelled") {
+  if (status === "cancelled") {
     await Promise.all(
       existingOrder.items.map((i: IOrderItem) =>
         Product.findByIdAndUpdate(i.product, { $inc: { stock: i.quantity } })

@@ -25,6 +25,9 @@ export const useProductModule = (exported) => {
     return openModal(modals.view, {
       product,
       exported,
+      onEdit: () => openEdit(product),
+      onUISettings: () => openUISettings(product),
+      onReviews: () => openReviews(product),
     });
   };
 
@@ -95,6 +98,14 @@ export const useProductModule = (exported) => {
     });
   };
 
+  const openUISettings = (product) => {
+    return openModal(modals.uiSettings, {
+      product,
+      submitFn: (data) => crud.edit(product._id, data),
+      exported,
+    });
+  };
+
   const openReviews = (product) => {
     return openModal(modals.reviews, {
       product,
@@ -153,6 +164,7 @@ export const useProductModule = (exported) => {
     openActiveStatus,
     openReviews,
     openStockUpdate,
+    openUISettings,
     toggleActive,
     crud,
     fetch,

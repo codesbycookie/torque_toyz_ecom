@@ -1,3 +1,6 @@
+import formatdate from "@/core/utils/formatdate.util";
+import CopyButton from "@/components/ui/copy-button";
+import { Calendar, Clock, FileText, FolderTree, Layers, Pencil, Power, Tag } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -171,55 +174,241 @@ export const Retrieve = ({ id, submitFn, closeModal }) => (
   </DialogContent>
 );
 
-export const View = ({ category, closeModal = () => {} }) => {
+export const View = ({
+  category,
+  onEdit,
+  onToggleActive,
+  closeModal = () => {},
+}) => {
   if (!category) return null;
 
+  const handleEdit = () => {
+    closeModal();
+    onEdit?.(category);
+  };
+
+  const handleToggle = () => {
+    closeModal();
+    onToggleActive?.(category._id, category.active);
+  };
+
   return (
-    <DialogContent className="sm:max-w-lg w-full">
-      <DialogHeader>
-        <DialogTitle className="text-xl">{category.name}</DialogTitle>
-        <DialogDescription>
-          Slug: <span className="font-mono">{category.slug}</span>
-        </DialogDescription>
+    <DialogContent className="sm:max-w-2xl w-full max-h-[88vh] overflow-y-auto p-6 gap-6">
+      {/* Header */}
+      <DialogHeader className="gap-2 border-b pb-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pr-6">
+          <div className="flex items-center gap-3">
+            <div className="size-12 rounded-xl bg-primary/10 text-primary flex items-center justify-center border border-primary/20 shrink-0">
+              <Layers className="size-6" />
+            </div>
+            <div>
+              <div className="flex flex-wrap items-center gap-2">
+                <DialogTitle className="text-xl font-bold tracking-tight">
+                  {category.name}
+                </DialogTitle>
+                <Badge
+                  className={
+                    category.active
+                      ? "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/30 text-xs font-semibold"
+                      : "bg-muted text-muted-foreground text-xs"
+                  }
+                >
+                  {category.active ? "Active" : "Inactive"}
+                </Badge>
+                {category.deleted && (
+                  <Badge variant="destructive" className="text-xs">
+                    Deleted
+                  </Badge>
+                )}
+              </div>
+              <DialogDescription className="mt-1 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                <span className="font-mono flex items-center gap-1">
+                  <span>/{category.slug}</span>
+                  <CopyButton
+                    text={category.slug}
+                    label="Slug"
+                    className="size-4"
+                    iconClassName="size-3"
+                  />
+                </span>
+                <span>•</span>
+                <span className="font-mono flex items-center gap-1">
+                  <span>ID: {category._id}</span>
+                  <CopyButton
+                    text={category._id}
+                    label="Category ID"
+                    className="size-4"
+                    iconClassName="size-3"
+                  />
+                </span>
+              </DialogDescription>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2">
+            {onEdit && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleEdit}
+                className="gap-1.5 text-xs font-medium"
+              >
+                <Pencil className="size-3.5" />
+                Edit Category
+              </Button>
+            )}
+          </div>
+        </div>
       </DialogHeader>
 
-      <div className="space-y-3 text-sm py-2">
-        {category.description && (
-          <>
-            <h4 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
-              Description
-            </h4>
-            <p className="text-muted-foreground">{category.description}</p>
-          </>
-        )}
-
-        <div className="flex justify-between items-center py-2 border-b">
-          <span className="text-muted-foreground">Status</span>
-          <Badge variant={category.active ? "default" : "outline"}>
+      {/* KPI Stats Strip */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div className="rounded-xl border bg-muted/30 p-3.5 space-y-1">
+          <div className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
+            <Power className="size-3.5 text-primary" />
+            <span>Status</span>
+          </div>
+          <div className="text-sm font-semibold capitalize text-foreground flex items-center gap-1">
             {category.active ? "Active" : "Inactive"}
-          </Badge>
+          </div>
         </div>
 
-        {category.deleted && (
-          <div className="flex justify-between items-center py-2 border-b">
-            <span className="text-muted-foreground">Deleted At</span>
-            <span className="font-medium">
-              {category.deletedAt ? new Date(category.deletedAt).toLocaleDateString() : "-"}
-            </span>
+        <div className="rounded-xl border bg-muted/30 p-3.5 space-y-1">
+          <div className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
+            <Tag className="size-3.5 text-primary" />
+            <span>URL Slug</span>
           </div>
-        )}
+          <div className="text-xs font-mono font-semibold text-foreground truncate flex items-center gap-1">
+            <span className="truncate">{category.slug}</span>
+            <CopyButton
+              text={category.slug}
+              label="Slug"
+              className="size-4"
+              iconClassName="size-3"
+            />
+          </div>
+        </div>
 
-        <div className="flex justify-between items-center py-2">
-          <span className="text-muted-foreground">Created</span>
-          <span className="font-medium">
-            {category.createdAt ? new Date(category.createdAt).toLocaleDateString() : "-"}
-          </span>
+        <div className="rounded-xl border bg-muted/30 p-3.5 space-y-1">
+          <div className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
+            <Calendar className="size-3.5 text-primary" />
+            <span>Created</span>
+          </div>
+          <div className="text-xs font-medium text-foreground">
+            {category.createdAt ? formatdate(category.createdAt) : "—"}
+          </div>
+        </div>
+
+        <div className="rounded-xl border bg-muted/30 p-3.5 space-y-1">
+          <div className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
+            <Clock className="size-3.5 text-primary" />
+            <span>Updated</span>
+          </div>
+          <div className="text-xs font-medium text-foreground">
+            {category.updatedAt ? formatdate(category.updatedAt) : "—"}
+          </div>
         </div>
       </div>
 
-      <DialogFooter>
+      {/* Description & Details Cards - col-6 col-6 in 1 row */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+        {/* Description Card */}
+        <div className="rounded-xl border bg-card p-4 space-y-3 flex flex-col justify-between">
+          <div>
+            <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5 border-b pb-2.5">
+              <FileText className="size-3.5 text-primary" />
+              Category Description
+            </h4>
+            <div className="pt-2 text-sm text-foreground/90 leading-relaxed">
+              {category.description ? (
+                <p>{category.description}</p>
+              ) : (
+                <p className="text-xs text-muted-foreground italic">
+                  No description provided for this category.
+                </p>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* System & Metadata Card */}
+        <div className="rounded-xl border bg-card p-4 space-y-3 flex flex-col justify-between">
+          <div>
+            <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5 border-b pb-2.5">
+              <FolderTree className="size-3.5 text-primary" />
+              Metadata & Identifiers
+            </h4>
+
+            <div className="space-y-2.5 text-xs pt-2">
+              <div className="flex justify-between items-center text-muted-foreground">
+                <span>Database ID</span>
+                <div className="flex items-center gap-1 font-mono text-[11px] text-foreground">
+                  <span className="truncate max-w-[140px]">{category._id}</span>
+                  <CopyButton
+                    text={category._id}
+                    label="Database ID"
+                    className="size-4"
+                    iconClassName="size-3"
+                  />
+                </div>
+              </div>
+
+              <div className="flex justify-between items-center text-muted-foreground border-t pt-2">
+                <span>URL Path</span>
+                <span className="font-mono text-[11px] text-foreground">
+                  /category/{category.slug}
+                </span>
+              </div>
+
+              <div className="flex justify-between items-center text-muted-foreground border-t pt-2">
+                <span>Catalog Visibility</span>
+                <span className="font-medium text-foreground">
+                  {category.active ? "Publicly Visible" : "Hidden from Storefront"}
+                </span>
+              </div>
+
+              {category.deleted && (
+                <div className="flex justify-between items-center text-destructive border-t pt-2">
+                  <span>Deleted At</span>
+                  <span className="font-medium">
+                    {category.deletedAt ? formatdate(category.deletedAt) : "—"}
+                  </span>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Footer */}
+      <DialogFooter className="mt-2 pt-3 border-t flex flex-col sm:flex-row items-center justify-between gap-3">
+        <div className="w-full sm:w-auto flex items-center gap-2">
+          {onEdit && (
+            <Button
+              variant="default"
+              size="default"
+              onClick={handleEdit}
+              className="gap-2 w-full sm:w-auto"
+            >
+              <Pencil className="size-4" />
+              Edit Category
+            </Button>
+          )}
+          {onToggleActive && (
+            <Button
+              variant={category.active ? "outline" : "secondary"}
+              size="default"
+              onClick={handleToggle}
+              className="gap-2 w-full sm:w-auto"
+            >
+              <Power className="size-4" />
+              {category.active ? "Deactivate" : "Activate"}
+            </Button>
+          )}
+        </div>
+
         <DialogClose asChild>
-          <Button variant="outline" onClick={closeModal}>
+          <Button variant="outline" size="default" onClick={closeModal} className="w-full sm:w-auto">
             Close
           </Button>
         </DialogClose>

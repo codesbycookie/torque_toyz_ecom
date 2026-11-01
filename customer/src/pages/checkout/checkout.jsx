@@ -166,7 +166,7 @@ export default function Checkout() {
   };
 
   // Save new or edited address from modal popup
-  const handleSaveAddress = (newAddr) => {
+  const handleSaveAddress = async (newAddr) => {
     const loc =
       locations.find((l) => String(l._id) === String(newAddr.state)) ||
       locations.find(
@@ -179,6 +179,18 @@ export default function Checkout() {
       state: loc?._id ? String(loc._id) : newAddr.state,
       stateName: loc?.state || newAddr.stateName || "",
     };
+
+    // If authenticated, persist to user data in MongoDB
+    if (user?._id && api.users?.saveUserAddress) {
+      try {
+        const updatedUser = await api.users.saveUserAddress(user, cleanedAddr);
+        if (updatedUser) {
+          setUser(updatedUser);
+        }
+      } catch (err) {
+        console.error("Failed to persist address to user account:", err);
+      }
+    }
 
     const exists = storedAddresses.some((a) => (a.id || a._id) === (cleanedAddr.id || cleanedAddr._id));
     let updated;
@@ -202,7 +214,18 @@ export default function Checkout() {
   };
 
   // Delete saved address
-  const handleDeleteAddress = (addrId) => {
+  const handleDeleteAddress = async (addrId) => {
+    if (user?._id && api.users?.deleteUserAddress) {
+      try {
+        const updatedUser = await api.users.deleteUserAddress(user, addrId);
+        if (updatedUser) {
+          setUser(updatedUser);
+        }
+      } catch (err) {
+        console.error("Failed to delete address from user account:", err);
+      }
+    }
+
     const filtered = storedAddresses.filter((a) => (a.id || a._id) !== addrId);
     setStoredAddresses(filtered);
     try {

@@ -38,6 +38,8 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { useApi } from "@/core/contexts/api.context";
+import { useAuth } from "@/core/contexts/auth.context";
 
 /**
  * Standard list of all 36 Indian States & Union Territories
@@ -654,8 +656,24 @@ export function ShippingAddressManager({
   onSubmit,
   isUpdating,
 }) {
+  const api = useApi();
+  const { user, setUser } = useAuth();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingAddress, setEditingAddress] = useState(null);
+
+  const handleSave = async (payload) => {
+    if (onSaveNewAddress) {
+      onSaveNewAddress(payload);
+    } else if (user?._id && api.users?.saveUserAddress) {
+      try {
+        const updated = await api.users.saveUserAddress(user, payload);
+        if (updated) setUser(updated);
+        toast.success("Shipping address saved!");
+      } catch (err) {
+        console.error("Failed to save address:", err);
+      }
+    }
+  };
 
   const selectedLoc = useMemo(() => {
     if (!selectedAddress) return null;
@@ -813,7 +831,7 @@ export function ShippingAddressManager({
       <AddressModalDialog
         isOpen={isModalOpen}
         onOpenChange={setIsModalOpen}
-        onSaveAddress={onSaveNewAddress}
+        onSaveAddress={handleSave}
         locations={locations}
         initialData={editingAddress}
       />

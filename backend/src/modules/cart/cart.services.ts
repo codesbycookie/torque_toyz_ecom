@@ -33,8 +33,9 @@ export const recalculateCartPricing = async (cart: any) => {
   }
 
   let shipping_cost = 0;
+  const isFreeDelivery = await Setting.get("free_delivery");
 
-  if (cart.shipping_address && cart.shipping_address.state) {
+  if (!isFreeDelivery && cart.shipping_address && cart.shipping_address.state) {
     const slab = await getShippingSlab(cart.shipping_address.state, total_weight);
     if (slab) {
       shipping_cost = slab.rate;
@@ -320,7 +321,8 @@ export const checkoutCart = async (
 
   await recalculateCartPricing(cartRaw);
 
-  if (cartRaw.pricing.shipping_cost === 0) {
+  const isFreeDelivery = await Setting.get("free_delivery");
+  if (!isFreeDelivery && cartRaw.pricing.shipping_cost === 0) {
     const slab = await getShippingSlab(
       cartRaw.shipping_address.state,
       cartRaw.pricing.total_weight
@@ -335,6 +337,9 @@ export const checkoutCart = async (
       cartRaw.pricing.shipping_cost = slab.rate;
       cartRaw.pricing.total = Math.round((cartRaw.pricing.subtotal + (cartRaw.pricing.tax || 0) + slab.rate) * 100) / 100;
     }
+  } else if (isFreeDelivery) {
+    cartRaw.pricing.shipping_cost = 0;
+    cartRaw.pricing.total = Math.round((cartRaw.pricing.subtotal + (cartRaw.pricing.tax || 0)) * 100) / 100;
   }
 
   // Deduct stock for each product in cart

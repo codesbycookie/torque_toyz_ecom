@@ -1,3 +1,4 @@
+import { ArrowRight, MapPin, Pencil, Scale } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -17,7 +18,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { locationCreateSchema, locationEditSchema } from "./location.schema";
 import LocationForm from "./location.form";
 
-export const Create = ({ submitFn = () => {}, closeModal = () => {} } = {}) => {
+export const Create = ({ submitFn = () => { }, closeModal = () => { } } = {}) => {
   const form = useForm({
     resolver: zodResolver(locationCreateSchema),
     defaultValues: {
@@ -58,7 +59,7 @@ export const Create = ({ submitFn = () => {}, closeModal = () => {} } = {}) => {
   );
 };
 
-export const Edit = ({ location, submitFn = () => {}, closeModal = () => {} } = {}) => {
+export const Edit = ({ location, submitFn = () => { }, closeModal = () => { } } = {}) => {
   const form = useForm({
     resolver: zodResolver(locationEditSchema),
     defaultValues: {
@@ -101,7 +102,7 @@ export const Edit = ({ location, submitFn = () => {}, closeModal = () => {} } = 
   );
 };
 
-export const Delete = ({ id, name, closeModal = () => {}, submitFn = () => {} }) => (
+export const Delete = ({ id, name, closeModal = () => { }, submitFn = () => { } }) => (
   <DialogContent className="sm:max-w-[425px]">
     <DialogHeader>
       <DialogTitle>Are you sure you want to delete {name}?</DialogTitle>
@@ -175,43 +176,143 @@ export const DeliverableStatus = ({ id, status, submitFn, closeModal, exported }
   );
 };
 
-// Read-only. No form, no submit — just displays the slabs currently saved on the location.
-export const ViewSlabs = ({ location, closeModal = () => {} }) => (
-  <DialogContent className="sm:max-w-[500px]">
-    <DialogHeader>
-      <DialogTitle>Tariff Slabs</DialogTitle>
-      <DialogDescription>Weight-based rates for {location?.state}</DialogDescription>
-    </DialogHeader>
+// Displays weight-based tariff slabs with modern styling and direct edit shortcuts.
+export const ViewSlabs = ({ location, onEdit, closeModal = () => { } }) => {
+  const slabs = location?.slabs || [];
 
-    <div className="flex flex-col gap-2 max-h-80 overflow-y-auto">
-      {location?.slabs?.length ? (
-        <div className="rounded-md border divide-y">
-          <div className="grid grid-cols-3 px-3 py-2 text-xs font-medium text-muted-foreground">
-            <span>Min (kg)</span>
-            <span>Max (kg)</span>
-            <span>Rate</span>
-          </div>
-          {location.slabs.map((s) => (
-            <div key={s._id} className="grid grid-cols-3 px-3 py-2 text-sm">
-              <span>{s.min}</span>
-              <span>{s.max}</span>
-              <span>
-                <Badge variant="outline">₹{s.rate}</Badge>
-              </span>
-            </div>
-          ))}
+  const handleEdit = () => {
+    closeModal();
+    onEdit?.(location);
+  };
+
+  return (
+    <DialogContent className="sm:max-w-[520px] gap-5">
+      <DialogHeader className="gap-1.5">
+        <div className="flex items-center justify-between pr-6">
+          <DialogTitle className="text-lg font-semibold flex items-center gap-2">
+            <MapPin className="size-5 text-primary" />
+            Tariff Slabs
+          </DialogTitle>
+          <Badge variant={location?.deliverable ? "default" : "outline"}>
+            {location?.deliverable ? "Deliverable" : "Non-deliverable"}
+          </Badge>
         </div>
-      ) : (
-        <p className="text-sm text-muted-foreground">No tariff slabs configured.</p>
-      )}
-    </div>
+        <DialogDescription>
+          Weight-based shipping tariff slabs configured for {location?.state || "this location"}.
+        </DialogDescription>
+      </DialogHeader>
 
-    <DialogFooter>
-      <DialogClose asChild>
-        <Button variant="outline" onClick={closeModal}>
-          Close
-        </Button>
-      </DialogClose>
-    </DialogFooter>
-  </DialogContent>
-);
+      <div className="grid grid-cols-3 gap-3 p-3 rounded-lg border bg-muted/40 text-xs">
+        <div>
+          <span className="text-muted-foreground block text-[11px] font-medium uppercase tracking-wider">
+            State
+          </span>
+          <span className="font-semibold text-sm text-foreground truncate block">
+            {location?.state || "—"}
+          </span>
+        </div>
+        <div>
+          <span className="text-muted-foreground block text-[11px] font-medium uppercase tracking-wider">
+            Code
+          </span>
+          <span className="font-mono font-medium text-sm text-foreground block">
+            {location?.code || "—"}
+          </span>
+        </div>
+        <div>
+          <span className="text-muted-foreground block text-[11px] font-medium uppercase tracking-wider">
+            Total Slabs
+          </span>
+          <span className="font-semibold text-sm text-foreground block">
+            {slabs.length} configured
+          </span>
+        </div>
+      </div>
+
+      <div className="space-y-2">
+        <div className="flex items-center justify-between px-1">
+          <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+            Weight Brackets & Rates
+          </h4>
+          <div className="flex items-center gap-2">
+            {slabs.length > 0 && (
+              <span className="text-[11px] text-muted-foreground">
+                {slabs.length} tier{slabs.length !== 1 ? "s" : ""}
+              </span>
+            )}
+
+          </div>
+        </div>
+
+        {slabs.length > 0 ? (
+          <div className="max-h-[300px] overflow-y-auto rounded-lg border divide-y bg-card">
+            {slabs.map((s, idx) => (
+              <div
+                key={s._id || idx}
+                className="flex items-center justify-between px-3.5 py-2.5 hover:bg-muted/30 transition-colors group"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="size-7 rounded-md bg-primary/10 text-primary flex items-center justify-center font-semibold text-xs shrink-0">
+                    #{idx + 1}
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-1.5 font-medium text-sm text-foreground">
+                      <span>{s.min} kg</span>
+                      <ArrowRight className="size-3 text-muted-foreground" />
+                      <span>{s.max} kg</span>
+                    </div>
+                    <span className="text-[11px] text-muted-foreground block">
+                      Weight bracket
+                    </span>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-3">
+                  <div className="text-right">
+                    <div className="font-semibold text-sm text-foreground">
+                      ₹{Number(s.rate).toFixed(2)}
+                    </div>
+                    <span className="text-[11px] text-muted-foreground block">
+                      delivery rate
+                    </span>
+                  </div>
+
+
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="flex flex-col items-center justify-center py-10 text-center rounded-lg border border-dashed bg-muted/20">
+            <Scale className="size-10 text-muted-foreground/40 mb-2" />
+            <p className="font-medium text-sm text-foreground">No tariff slabs configured</p>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              No weight-based delivery rates are set for this location.
+            </p>
+            {onEdit && (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="mt-3 gap-1.5 text-xs"
+                onClick={handleEdit}
+              >
+                <Pencil className="size-3.5" />
+                Add Tariff Slabs
+              </Button>
+            )}
+          </div>
+        )}
+      </div>
+
+      <DialogFooter className="">
+        <DialogClose asChild>
+          <Button variant="outline" onClick={closeModal}>
+            Close
+          </Button>
+        </DialogClose>
+
+      </DialogFooter>
+    </DialogContent>
+  );
+};

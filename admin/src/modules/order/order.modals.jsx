@@ -1,7 +1,8 @@
-// order.modals.js
-import { ViewOrder, ChangeOrderStatus } from "./order.modal.components";
+// order.modals.jsx
+import { ViewOrder, ChangeOrderStatus, ApproveInitiateRefund } from "./order.modal.components";
 
 export const modals = {
   view: ViewOrder,
   changeStatus: ChangeOrderStatus,
+  refund: ApproveInitiateRefund,
 };

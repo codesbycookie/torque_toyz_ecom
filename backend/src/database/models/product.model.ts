@@ -2,6 +2,13 @@ import mongoose, { Schema, Document, Types } from "mongoose";
 import { Counter } from "./counter.model.ts";
 import "./review.model.ts";
 
+export interface IProductUI {
+  slash_price?: number;
+  actual_price?: number;
+  badges?: string[];
+  is_trending?: boolean;
+}
+
 export interface IProduct extends Document {
   code: string;
   name: string;
@@ -14,6 +21,7 @@ export interface IProduct extends Document {
   active: boolean;
   deleted: boolean;
   stock: number;
+  ui?: IProductUI;
   deletedAt?: Date;
   createdAt: Date;
   updatedAt: Date;
@@ -56,6 +64,12 @@ const ProductSchema = new Schema<IProduct, IProductModel>(
     price: {
       type: Number,
       default: 0,
+    },
+    ui: {
+      slash_price: { type: Number, min: 0, default: 0 },
+      actual_price: { type: Number, min: 0, default: 0 },
+      badges: { type: [String], default: [] },
+      is_trending: { type: Boolean, default: false },
     },
     active: { type: Boolean, default: true },
     deleted: { type: Boolean, default: false },

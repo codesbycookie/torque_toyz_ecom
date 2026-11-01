@@ -205,6 +205,17 @@ const CAR_IMAGES = [
   '/cars/shelby_cobra.jpg',
 ];
 
+const BADGES_LIST = [
+  ['Best Seller'],
+  ['New Arrival'],
+  ['Hot'],
+  ['Limited Edition'],
+  ['Trending'],
+  ['Top Rated'],
+  ['Exclusive'],
+  [],
+];
+
 const seedProducts = async (categories: any[]) => {
   const specs: any[] = [];
   let imgIndex = 0;
@@ -215,14 +226,26 @@ const seedProducts = async (categories: any[]) => {
       const img3 = CAR_IMAGES[(imgIndex + 2) % CAR_IMAGES.length];
       imgIndex++;
 
+      const price = randInt(20, 500) * 10;
+      const hasDiscount = Math.random() > 0.3;
+      const slash_price = hasDiscount ? Math.round(price * (1 + randFloat(0.15, 0.4))) : price;
+      const is_trending = Math.random() < 0.25;
+      const badges = pick(BADGES_LIST);
+
       specs.push({
         name: `${variant} ${category.name}`,
         category: category._id,
         description: `${variant} edition ${category.name.toLowerCase()} precision built for collectors with authentic racing aerodynamic details and display case.`,
         stock: randInt(4, 99),
         weight: randFloat(0.5, 3.5),
-        price: randInt(20, 500) * 10, // ₹200–5000
+        price,
         images: [img1, img2, img3],
+        ui: {
+          actual_price: price,
+          slash_price,
+          badges,
+          is_trending,
+        },
       });
     }
   } // 20 × 5 = 100
@@ -239,8 +262,8 @@ const seedProducts = async (categories: any[]) => {
 // insertMany is safe — Setting has no pre('save') hook.
 
 const REAL_SETTINGS = [
-  { key: 'site_name', value: 'Torque Toyz', description: 'Store display name' },
-  { key: 'support_email', value: '', description: 'Customer support email' },
+  { key: 'free_delivery', value: false, description: 'Whether delivery/shipping is free of cost for all orders' },
+
   { key: 'support_phone', value: '', description: 'Customer support phone number' },
   { key: 'business_address', value: '', description: 'Registered business address' },
   { key: 'low_stock_threshold', value: 10, description: 'Stock level that triggers a low-stock warning' },
@@ -261,8 +284,8 @@ const REAL_SETTINGS = [
   { key: 'new_signups_enabled', value: true, description: 'Whether new customer registration is open' },
   { key: 'ecom_announcement_banner', value: '⚡ SPECIAL OFFER: Get 10% off + Free Shipping on orders over ₹999!', description: 'Announcement banner text displayed at top of storefront' },
   { key: 'ecom_sales_notifications_enabled', value: true, description: 'Enable/disable live sales proof toast notifications' },
-  { key: 'ecom_must_buy_count', value: 4, description: 'Number of items to feature in Must-Buy section' },
-  { key: 'ecom_recommended_count', value: 8, description: 'Number of items to feature in Recommended section' },
+
+
 ];
 
 const eraseSettings = async () => {

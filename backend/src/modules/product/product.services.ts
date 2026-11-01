@@ -1,4 +1,5 @@
 import Product from '@db/models/product.model.ts';
+import Setting from '@db/models/setting.model.ts';
 import { dynamicFilter } from '@core/constants/dynamicfilter.constant.ts';
 import { CreateProductPayload, UpdateProductPayload } from '@typings/product.types.ts';
 import { Role } from '@typings/auth.types.js';
@@ -31,6 +32,15 @@ export const getAllProducts = async (queries: Record<string, unknown>, role?: Ro
     rawQuery.stock = { $gt: 0 };
   }
 
+  if (queries.lowStock === 'true' || queries.lowStock === true) {
+    const settingVal = await Setting.get('low_stock_threshold');
+    const threshold =
+      settingVal !== null && settingVal !== undefined && !isNaN(Number(settingVal))
+        ? Number(settingVal)
+        : 10;
+    rawQuery.stock = { $lte: threshold };
+  }
+
   return dynamicFilter(Product, productFilterConfig, queries, {
     visibility: getVisibility(role),
     rawQuery,
@@ -56,6 +66,11 @@ export const getProductBySlug = async(slug: string) => {
   return enhanceProduct(product);
 }
 export const updateProduct = async (id: string, data: UpdateProductPayload) => {
+  if (data.ui?.actual_price !== undefined) {
+    data.price = data.ui.actual_price;
+  } else if (data.price !== undefined && data.ui) {
+    data.ui.actual_price = data.price;
+  }
   const updated = await Product.findByIdAndUpdate(id, data, UPDATE_OPTIONS);
   if (!updated) return null;
   return enhanceProduct(updated);

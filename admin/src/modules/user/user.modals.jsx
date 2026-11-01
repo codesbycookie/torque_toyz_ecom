@@ -1,4 +1,4 @@
-import { Delete, Erase, Retrieve, ResetPassword, DisableUser, View } from "./user.modal.components";
+import { Delete, Erase, Retrieve, ResetPassword, DisableUser, View, ViewAddresses } from "./user.modal.components";
 
 export const modals = {
   delete: Delete,
@@ -7,4 +7,5 @@ export const modals = {
   resetPassword: ResetPassword,
   disable: DisableUser,
   view: View,
+  viewAddresses: ViewAddresses,
 };

@@ -55,7 +55,11 @@ export const useLocationModule = (exported) => {
 
   // Read-only — no submitFn, nothing is written back.
   const openViewSlabs = (location) => {
-    return openModal(modals.viewSlabs, { location, exported });
+    return openModal(modals.viewSlabs, {
+      location,
+      onEdit: (loc) => openEdit(loc || location),
+      exported,
+    });
   };
 
  const toggleDeliverable = (location) => {
