@@ -53,7 +53,10 @@
     "exclude": [
         "node_modules",
         "dist",
-        "src/utils"
+        "src/utils",
+        "src/tests",
+        "src/tests/**/*",
+        "src/core/constants/tester.constant.ts"
     ],
     "ts-node": {
         "esm": true,

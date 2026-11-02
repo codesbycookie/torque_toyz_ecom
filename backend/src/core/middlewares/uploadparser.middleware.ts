@@ -1,8 +1,9 @@
 import { Request, Response, NextFunction } from 'express';
 
 export const parseUserUpload = (req: Request, res: Response, next: NextFunction) => {
-  if (req.file) {
-    req.body.profile = { url: req.file.path || 'http://dummy.url/test.jpg' };
+  const reqAny = req as any;
+  if (reqAny.file) {
+    req.body.profile = { url: reqAny.file.path || 'http://dummy.url/test.jpg' };
   }
   
   // Handle form-data stringified booleans and objects
@@ -21,8 +22,9 @@ export const parseUserUpload = (req: Request, res: Response, next: NextFunction)
 };
 
 export const parseProductUpload = (req: Request, res: Response, next: NextFunction) => {
-  if (req.files && Array.isArray(req.files) && req.files.length > 0) {
-    req.body.images = req.files.map((file: any) => file.path || 'http://dummy.url/test.jpg');
+  const reqAny = req as any;
+  if (reqAny.files && Array.isArray(reqAny.files) && reqAny.files.length > 0) {
+    req.body.images = reqAny.files.map((file: any) => file.path || 'http://dummy.url/test.jpg');
   }
 
   // Handle form-data stringified numbers & booleans

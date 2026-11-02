@@ -65,7 +65,7 @@ export const loadRoutes = async (app: Application): Promise<void> => {
         continue;
       }
 
-      endpoints.forEach((ep) => {
+      endpoints.forEach((ep: any) => {
         const methodColor = ep.methods.includes('GET')
           ? chalk.green
           : ep.methods.includes('POST')
