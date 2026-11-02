@@ -1,18 +1,42 @@
 import axios from 'axios';
 
 const api = axios.create({
-  baseURL: import.meta.env.VITE_BASE_URL,
+  baseURL: import.meta.env.VITE_BASE_URL || 'http://localhost:3000/api/v1',
   timeout: 15000,
   withCredentials: true,
 });
 
+api.interceptors.request.use((config) => {
+  if (typeof window !== 'undefined') {
+    const token = localStorage.getItem('access_token');
+    if (token) {
+      config.headers = config.headers || {};
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+  }
+  return config;
+});
+
 let isLoggingOut = false;
+
+export const resetLogoutState = () => {
+  isLoggingOut = false;
+};
 
 export const setupInterceptors = (onUnauthorized) => {
   api.interceptors.response.use(
     (res) => res,
     (error) => {
       if (error.response?.status === 401) {
+        const url = error.config?.url || '';
+        const isAuthCheck = url.includes('/auth/me') || url.includes('/auths/me');
+        const isExplicitSilent = error.config?.__options?.silent || error.config?.silent;
+        const isAuthPage = typeof window !== 'undefined' && window.location.pathname === '/';
+
+        if (isAuthCheck || isExplicitSilent || isAuthPage) {
+          return Promise.reject(error);
+        }
+
         if (!isLoggingOut) {
           isLoggingOut = true;
           const message =
@@ -20,6 +44,9 @@ export const setupInterceptors = (onUnauthorized) => {
             error.response?.data?.error ||
             'Session expired. Please login again.';
           onUnauthorized?.(message);
+          setTimeout(() => {
+            isLoggingOut = false;
+          }, 3000);
         }
       }
       return Promise.reject(error);
@@ -88,5 +115,3 @@ export const downloadFile = async (url, params) => {
 
   return filename;
 };
-
-
