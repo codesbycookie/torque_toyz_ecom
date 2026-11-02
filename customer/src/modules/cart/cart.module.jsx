@@ -23,7 +23,7 @@ export const useCartModule = (exported) => {
   const fetchCart = async () => {
     try {
       useCartStore.getState().setLoading(true);
-      const res = await apiRequest("get", `${baseUrl}/cart`, {
+      const res = await apiRequest("get", `${baseUrl}/carts`, {
         headers: getHeaders(),
       });
       const data = res?.data || res;
@@ -42,7 +42,7 @@ export const useCartModule = (exported) => {
     const cleanProductId = resolveProductId(product);
     try {
       useCartStore.getState().setLoading(true);
-      const res = await apiRequest("post", `${baseUrl}/cart/items`, {
+      const res = await apiRequest("post", `${baseUrl}/carts/items`, {
         headers: getHeaders(),
         data: { productId: cleanProductId, quantity },
       });
@@ -78,7 +78,7 @@ export const useCartModule = (exported) => {
     const cleanProductId = resolveProductId(productOrId);
     try {
       useCartStore.getState().setLoading(true);
-      const res = await apiRequest("put", `${baseUrl}/cart/items`, {
+      const res = await apiRequest("put", `${baseUrl}/carts/items`, {
         headers: getHeaders(),
         data: { productId: cleanProductId, quantity },
       });
@@ -101,7 +101,7 @@ export const useCartModule = (exported) => {
       useCartStore.getState().setLoading(true);
       const res = await apiRequest(
         "delete",
-        `${baseUrl}/cart/items/${cleanProductId}`,
+        `${baseUrl}/carts/items/${cleanProductId}`,
         {
           headers: getHeaders(),
         }
@@ -122,7 +122,7 @@ export const useCartModule = (exported) => {
   const updateShippingAddress = async (shipping_address) => {
     try {
       useCartStore.getState().setLoading(true);
-      const res = await apiRequest("put", `${baseUrl}/cart/address`, {
+      const res = await apiRequest("put", `${baseUrl}/carts/address`, {
         headers: getHeaders(),
         data: { shipping_address },
       });
@@ -142,7 +142,7 @@ export const useCartModule = (exported) => {
   const clearCart = async () => {
     try {
       useCartStore.getState().setLoading(true);
-      const res = await apiRequest("delete", `${baseUrl}/cart`, {
+      const res = await apiRequest("delete", `${baseUrl}/carts`, {
         headers: getHeaders(),
       });
       const data = res?.data || res;
@@ -160,7 +160,7 @@ export const useCartModule = (exported) => {
   const checkoutDraft = async (payment_method, shipping_address) => {
     try {
       useCartStore.getState().setLoading(true);
-      const res = await apiRequest("post", `${baseUrl}/cart/checkout`, {
+      const res = await apiRequest("post", `${baseUrl}/carts/checkout`, {
         headers: getHeaders(),
         data: { payment_method, shipping_address },
       });
