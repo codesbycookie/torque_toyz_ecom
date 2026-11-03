@@ -19,7 +19,7 @@ import {
 
 const router = Router();
 
-export const basePath = "/cart";
+export const basePath = "/carts";
 
 // Direct Cart Routes
 router.get("/", optionalAuthMiddleware, getCart);
