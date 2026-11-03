@@ -219,6 +219,10 @@ export default function Orders() {
       }
 
       const rzpOrder = await payments.createPaymentOrder(orderId);
+      if (!rzpOrder || !rzpOrder.key_id) {
+        toast.error("Online payment gateway is temporarily unavailable. Please try again later.");
+        return;
+      }
 
       const options = {
         key: rzpOrder.key_id,

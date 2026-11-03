@@ -20,6 +20,13 @@ export const createPaymentOrder = async (orderId: string) => {
     throw new ApiError(400, 'This order has been cancelled');
   }
 
+  if (!process.env.RAZORPAY_KEY_ID || !process.env.RAZORPAY_KEY_SECRET) {
+    throw new ApiError(
+      500,
+      'Razorpay API credentials (RAZORPAY_KEY_ID, RAZORPAY_KEY_SECRET) are missing or not configured.'
+    );
+  }
+
   // Razorpay requires a minimum amount of 100 paise (₹1.00 INR)
   const calculatedPaise = toPaise(order.pricing.total);
   const amountInPaise = Math.max(calculatedPaise, 100);

@@ -361,6 +361,12 @@ export default function Checkout() {
             res.razorpay ||
             (await loadOnly(() => api.payments.createPaymentOrder(orderId)));
 
+          if (!rzpOrder || !rzpOrder.key_id) {
+            toast.error("Online payment is currently unavailable. You can complete this order anytime from your Orders page.");
+            navigate(`/orders/${orderId}`);
+            return;
+          }
+
           let paymentHandled = false;
 
           const options = {
